@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = \
   -I$(includedir) \
   -I$(OFFLINE_MAIN)/include \
-  -isystem$(ROOTSYS)/include
+  -I$(ROOTSYS)/include
 
 AM_LDFLAGS = \
   -L$(libdir) \
@@ -11,29 +11,28 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  JetKinematicCheck.h
+  TowerRhoAna.h
 
 lib_LTLIBRARIES = \
-  libJetKinematicCheck.la
+  libTowerRhoAna.la
 
-libJetKinematicCheck_la_SOURCES = \
-  JetKinematicCheck.cc
+libTowerRhoAna_la_SOURCES = \
+  TowerRhoAna.cc
 
-libJetKinematicCheck_la_LIBADD = \
+libTowerRhoAna_la_LIBADD = \
   -lphool \
   -lSubsysReco \
   -lfun4all \
   -lg4dst \
-  -lg4eval \
-  -lg4jets
-
+  -lg4eval 
+  
 BUILT_SOURCES = testexternals.cc
 
 noinst_PROGRAMS = \
   testexternals
 
 testexternals_SOURCES = testexternals.cc
-testexternals_LDADD   = libJetKinematicCheck.la
+testexternals_LDADD   = libTowerRhoAna.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
