@@ -21,7 +21,8 @@ libCalorimeterCorrelationsPP_la_SOURCES = \
 
 libCalorimeterCorrelationsPP_la_LIBADD = \
   -lphool \
-  -lSubsysReco
+  -lSubsysReco \
+  -lCaloReco
 
 BUILT_SOURCES = testexternals.cc
 

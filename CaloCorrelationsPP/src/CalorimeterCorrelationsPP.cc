@@ -97,7 +97,31 @@ int CalorimeterCorrelationsPP::InitRun(PHCompositeNode *topNode)
 //____________________________________________________________________________..
 int CalorimeterCorrelationsPP::process_event(PHCompositeNode *topNode)
 {
-  std::cout << "CalorimeterCorrelationsPP::process_event(PHCompositeNode *topNode) Processing Event" << std::endl;
+	n_evt++;
+  	std::cout << "CalorimeterCorrelationsPP::process_event(PHCompositeNode *topNode) Processing Event " <<n_evt << std::endl;
+	//For the time being, need to do the calo tower wbuilder myself
+	
+	TowerInfoContainerv2* IHtowers=NULL, *OHtowers=NULL, *EMtowers=NULL;
+  	std::string IHCALgeom="TOWERGEOM_HCALIN", OHCALgeom="TOWERGEOM_HCALOUT", EMCALgeom="TOWERGEOM_CEMC";
+  	IHtowers=findNode::getClass<TowerInfoContainerv2>(topNode, "TOWERINFO_CALIB_HCALIN");
+  	OHtowers=findNode::getClass<TowerInfoContainerv2>(topNode, "TOWERINFO_CALIB_HCALOUT");
+  	EMtowers=findNode::getClass<TowerInfoContainerv2>(topNode, "TOWERINFO_CALIB_CEMC");
+	EMclusters=findNode::getClass<>(topNode, "CLUSTERINFO_POS_COR_CEMC");
+	RawTowerGeomContainer_Cylinderv1 *ihg=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, ihcalgeom);
+	RawTowerGeomContainer_Cylinderv1 *ohg=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, ohcalgeom);
+	RawTowerGeomContainer_Cylinderv1 *emg=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, emcalgeom);
+	GlobalVertexMapv1* vtxmap=findNode::getClass<GlobalVertexMapv1>(topNode, "GlobalVertexMap");
+	if(vtxmap->empty()) std::cout<<"Vertex map is empty" <<std::endl;
+	GlobalVertex* vtx=nullptr;
+	if(vtxmap) for(GlobalVertexMap::ConstIter vtx_iter = vtxmap->begin(); vtx_iter != vtxmap->end(); ++vtd_iter) vtx=vtx_iter->second();
+	h_vtx_z->Fill(vtx->get_z());
+	float rvtx=sqrt(pow(vtx->get_x(), 2) + pow(vtx->get_y(),2));
+	float phivtx=atan2(vtx->get_y(), vtx->get_x());
+	h_vtx_2d->Fill(vtx->get_x(), vtx->get_y());
+	h_vtx_rz->Fill(rvtx, vtx->get_z());
+	h_vtx_phi->Fill(phivtx);
+
+	
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
