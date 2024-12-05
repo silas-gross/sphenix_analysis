@@ -57,10 +57,15 @@ class DijetEventCuts{
 			if(abs(vertex[2]) > 30 ) good=false; //cut on z=30 vertex
 			m_zvtx=vertex[2];
 			float leadjetpt=0., subleadjetpt=0.;
+<<<<<<< HEAD
 			float leadingenergyratio=0., subleadingenergyratio=0.;
 			bool haspartner=false;
 		       	Jet* leadjet=NULL, *subleadjet=NULL;
 			int index=0; //associate the jet with its energy ratios
+=======
+			bool haspartner=false;
+		       	Jet* leadjet=NULL, *subleadjet=NULL;
+>>>>>>> CaloEnergyCorrelatorToolkit
 		       	for(auto j: *eventjets){
 				float pt=j->get_pt();
 				if(pt > leadjetpt){
