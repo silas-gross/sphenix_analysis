@@ -65,7 +65,7 @@
 #include <TInterpreter.h>
 //Homebrews 
 #include <calorimetertowerenc/MethodHistograms.h> 
-#include <DijetEventCuts.h>
+#include <largerlenc/DijetEventCuts.h>
 
 #define PI 3.14159265358979323464
 class PHCompositeNode;
