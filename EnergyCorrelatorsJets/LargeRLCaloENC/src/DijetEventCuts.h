@@ -57,15 +57,10 @@ class DijetEventCuts{
 			if(abs(vertex[2]) > 30 ) good=false; //cut on z=30 vertex
 			m_zvtx=vertex[2];
 			float leadjetpt=0., subleadjetpt=0.;
-<<<<<<< HEAD
 			float leadingenergyratio=0., subleadingenergyratio=0.;
 			bool haspartner=false;
 		       	Jet* leadjet=NULL, *subleadjet=NULL;
 			int index=0; //associate the jet with its energy ratios
-=======
-			bool haspartner=false;
-		       	Jet* leadjet=NULL, *subleadjet=NULL;
->>>>>>> CaloEnergyCorrelatorToolkit
 		       	for(auto j: *eventjets){
 				float pt=j->get_pt();
 				if(pt > leadjetpt){
@@ -73,7 +68,7 @@ class DijetEventCuts{
 					leadjet=j;
 				       	subleadjetpt=leadjetpt;
 				       	leadjetpt=pt;
-					leadenergyratio=ohcal_ratio_jets.at(index);
+					leadingenergyratio=ohcal_ratio_jets.at(index);
 				       }
 				if(!negativeEnergy){
 					if(j->get_e() < 0){
@@ -88,7 +83,7 @@ class DijetEventCuts{
 			else{
 			leadeta=leadjet->get_eta();
 			m_etal=leadeta;
-			m_leadER=leadenergy_ratio;
+			m_leadER=leadingenergyratio;
 		       	leadphi=leadjet->get_phi();
 			if(abs(leadeta) > etaedge ) good=false; //getting rid of events that have the leading jet outside of acceptance region
 			if( m_leadER > maxOHCAL ) good=false; 
@@ -99,7 +94,7 @@ class DijetEventCuts{
 				       	subleadjet=j;
 					subleadjetpt=j->get_pt();
 					haspartner=true;
-					subleadenergyratio=ohcal_ratio_jets.at(index);
+					subleadingenergyratio=ohcal_ratio_jets.at(index);
 					
 				break;}
 				index++;
@@ -109,8 +104,8 @@ class DijetEventCuts{
 				if(abs(sldeta) > etaedge) good=false;
 				m_etasl=sldeta;
 				m_deltaphi=subleadjet->get_phi()-leadjet->get_phi();
-				m_subleadingER=subleadenergyratio;
-				if(m_subleadingER > maxOHCAL) good=false
+				m_subleadingER=subleadingenergyratio;
+				if(m_subleadingER > maxOHCAL) good=false;
 
 			}
 			
@@ -176,7 +171,7 @@ class DijetEventCuts{
 		float leadphi=0.;
 		float leadeta=0.;
 		float m_subleadingER=0.;
-		float m_leadER=0.
+		float m_leadER=0.;
 		bool m_isdijet=false;
 		bool m_hasnege=false;
 };
