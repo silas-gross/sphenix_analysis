@@ -79,40 +79,42 @@ int RunLargeRLENC(std::string data_dst="none", std::string truthjetfile="none", 
 		}
 		catch(std::exception& e){std::cout<<"Unable to load file " <<f.first <<std::endl;}
 	}
-	recoConsts *rc = recoConsts::instance();
-	rc->set_StringFlag("CDB_GLOBALTAG", dbtag);
-	rc->set_uint64Flag("TIMESTAMP", run_number);
-	CDBInterface::instance() -> Verbosity(1);
-	Process_Calo_Calib();
-	bool nojets=true, retower_needed=true;
-	if(data){ //check if the jet objects have already been constructed and retowering needed
-		TFile* f1=new TFile(data_dst.c_str(), "READ");
-		if(f1->IsOpen())
-		{
-			TTree* T=(TTree*) f1->Get("T");
-			auto brlist=T->GetListOfBranches();
-			for(int b=0; b<(int) brlist->GetEntries(); b++)
-			{
-				std::string branch_name (brlist[b].GetName());
-				std::transform(branch_name.begin(), branch_name.end(), std::tolower);
-				if(branch_name.find("retower")!= std::string::npos) retower_needed=false;
-				if(branch_name.find("antikt")!= std::string::npos) nojets=false;
-			}
-		}
+	if(data){
+		recoConsts *rc = recoConsts::instance();
+		rc->set_StringFlag("CDB_GLOBALTAG", dbtag);
+		rc->set_uint64Flag("TIMESTAMP", run_number);
+		CDBInterface::instance() -> Verbosity(0);
+	//	Process_Calo_Calib();
 	}
-	if(data && retower_needed){
+	bool nojets=true, retower_needed=true;
+//	if(data){ //check if the jet objects have already been constructed and retowering needed
+//		TFile* f1=new TFile(data_dst.c_str(), "READ");
+//		if(f1->IsOpen())
+//		{
+//			TTree* T=(TTree*) f1->Get("T");
+//			auto brlist=T->GetListOfBranches();
+//			for(int b=0; b<(int) brlist->GetEntries(); b++)
+//			{
+//				std::string branch_name (brlist[b].GetName());
+//				std::transform(branch_name.begin(), branch_name.end(), branch_name.begin(), ::tolower);
+//				if(branch_name.find("retower")!= std::string::npos) retower_needed=false;
+//				if(branch_name.find("antikt")!= std::string::npos) nojets=false;
+//			}
+//		}	
+//	}
+/*	if(data && retower_needed){
 		RetowerCEMC* rtcemc=new RetowerCEMC("RetowerCEMC");
 		rtcemc->Verbosity(0);
 		rtcemc->set_towerinfo(true);
 		rtcemc->set_frac_cut(0.5);
 		se->registerSubsystem(rtcemc);
-	}
+	}*/
 	if(data && nojets){ //if no jet objects, run fastjet
 		JetReco* data_jets=new JetReco("JetReco");
 		data_jets->add_input(new TowerJetInput(Jet::CEMC_TOWERINFO_RETOWER));
 		data_jets->add_input(new TowerJetInput(Jet::HCALIN_TOWERINFO));
 		data_jets->add_input(new TowerJetInput(Jet::HCALOUT_TOWERINFO));
-		data_jets->add_algo(new FastJetAlgoSub(Jet::ANTIKT, 0.4), "AntiKt_TowerInfo_r04");
+		data_jets->add_algo(new FastJetAlgo(Jet::ANTIKT, 0.4), "AntiKt_TowerInfo_r04");
 		data_jets->set_algo_node("ANTIKT");
 		data_jets->set_input_node("TOWER");
 		data_jets->Verbosity(0);

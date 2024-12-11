@@ -75,28 +75,28 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	EEC->Branch("E_CEMC",    &m_eemcal);
 	EEC->Branch("E_IHCAL",   &m_eihcal);
 	EEC->Branch("E_OHCAL",   &m_eohcal);
-	EEC->Branch("vertex",    &m_vertex);
+/*	EEC->Branch("vertex",    &m_vertex);
 	EEC->Branch("vertex_x",  &m_vtx);
 	EEC->Branch("vertex_y",  &m_vty);
-	EEC->Branch("vertex_z",  &m_vtz);
+	EEC->Branch("vertex_z",  &m_vtz);*/
 	EEC->Branch("Region",    &m_region);
 	EEC->Branch("Calo", 	 &m_calo);
 	EEC->Branch("R_L", 	 &m_rl);
 	EEC->Branch("R_min",     &m_rm);
 	EEC->Branch("R_i", 	 &m_ri);
-	EEC->Branch("2_pt",      &m_e2c/*"region/C:calo/C:r_l/F:e2c/F"*/);
+//	EEC->Branch("2_pt",      &m_e2c/*"region/C:calo/C:r_l/F:e2c/F"*/);
 	EEC->Branch("3_pt",      &m_e3c /*, "region/C:calo/C:r_l/F:e3c/F"*/);
-	JetEvtObs=new TTree("JetEvtObs", "Tree for Event shape jet observable studies");
-	JetEvtObs->Branch("emcal", &m_emcal, "emcal_tower[3]/F"/*, "region/C:calo/C:eta/F:phi/F:pt/F"*/); //need to fix like above, floatten it out by hand
-	JetEvtObs->Branch("ihcal", &m_ihcal, "ihcal_tower[3]/F"/*, "region/C:calo/C:eta/F:phi/F:pt/F"*/); //need to fix like above, floatten it out by hand
+//	JetEvtObs=new TTree("JetEvtObs", "Tree for Event shape jet observable studies");
+//	JetEvtObs->Branch("emcal", &m_emcal, "emcal_tower[3]/F"/*, "region/C:calo/C:eta/F:phi/F:pt/F"*/); //need to fix like above, floatten it out by hand
+//	JetEvtObs->Branch("ihcal", &m_ihcal, "ihcal_tower[3]/F"/*, "region/C:calo/C:eta/F:phi/F:pt/F"*/); //need to fix like above, floatten it out by hand
 	
-	JetEvtObs->Branch("ohcal",  &m_ohcal, "ohcal_tower[3]/F"/*, "region/C:calo/C:eta/F:phi/F:pt/F"*/); //need to fix like above, floatten it out by hand
-	JetEvtObs->Branch("vertex_x",  &m_vtx);
-	JetEvtObs->Branch("vertex_y",  &m_vty);
-	JetEvtObs->Branch("vertex_z",  &m_vtz);
-	JetEvtObs->Branch("N_J", &m_Njets);
-	JetEvtObs->Branch("eta_lead", &m_etalead);
-	JetEvtObs->Branch("phi_lead", &m_philead);
+//	JetEvtObs->Branch("ohcal",  &m_ohcal, "ohcal_tower[3]/F"/*, "region/C:calo/C:eta/F:phi/F:pt/F"*/); //need to fix like above, floatten it out by hand
+//	JetEvtObs->Branch("vertex_x",  &m_vtx);
+//	JetEvtObs->Branch("vertex_y",  &m_vty);
+//	JetEvtObs->Branch("vertex_z",  &m_vtz);
+//	JetEvtObs->Branch("N_J", &m_Njets);
+//	JetEvtObs->Branch("eta_lead", &m_etalead);
+//	JetEvtObs->Branch("phi_lead", &m_philead);
 	emcal_occup=new TH1F("emcal_occup", "Occupancy in the emcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
 	ihcal_occup=new TH1F("ihcal_occup", "Occupancy in the ihcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
 	ohcal_occup=new TH1F("ohcal_occup", "Occupancy in the ohcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
@@ -106,6 +106,30 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	bad_occ_em_oh=new TH2F("bad_occ_em_oh", "EMCAL to OHCAL tower deposition of \" Bad Hit\" events; Percent EMCAL towers; Percent OHCAL Towers; N_{evts}", 100, -0.5, 99.5, 100, -0.5, 99.5);
 	bad_occ_em_h=new TH2F("em_allh_bad_hits", "Emcal_occ to Average hcal energy deposition of \" Bad Hit\" events;Percent EMCAL Towers; Average Percent HCAL towers; N_{evts}", 100, -0.5, 99.5, 100, -0.5, 99.5);
 	MinpTComp=0.01; //10 MeV cut on tower/components
+	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
+		std::string Calo_name;
+		auto EC=&Et_miss_hists[ci];
+		if(ci == 0){
+			Calo_name="EMCAL";
+		}
+		else if(ci == 1){
+			Calo_name = "IHCAL";
+		}
+		else if(ci == 2) {
+			Calo_name = "OHCAL";
+		}
+		else{
+			Calo_name= "ERR_CAL_NOT_FOUND";
+		}
+		for(int ri=0; ri<(int)EC->size(); ri++){
+			float Rval=0.;
+			if(ri==0) Rval=0.1;
+			if(ri==1) Rval=0.4;
+			if(ri==2) Rval=1.0;
+			int r_no_dec=ri+1;
+			EC->at(ri)=new TH1F(Form("h_%s_ETmiss_r_%d", Calo_name.c_str(), r_no_dec), Form("#tilde{E}_{T} of Jet Event Observable for %s at R=%f; #tilde{E}_{T} [GeV]; N_{event}", Calo_name.c_str(), Rval), 100, -0.5, 99.5);
+		}
+	}
 /*	if(nSegment >= 0 ){
 		write_to_file=true;
 		std::fstream test_file;
@@ -183,82 +207,124 @@ JetContainer* LargeRLENC::getJets(std::string input, std::string radius, std::ar
 	}
 	return fastjetCont;
 }	
-float LargeRLENC::MatchtoTowers(Jet* jet, PHCompositeNode* topNode)
+float LargeRLENC::HadronicEnergyBalence(Jet* jet, float ohcal_ihcal_ratio, PHCompositeNode* topNode)
 {
 	//For the case where we don't already have the source pieces
-		
+	float hadronic_energy=0., electromagnetic_energy=0.;
+	float ohcal_conversion=ohcal_ihcal_ratio-1.;
+	ohcal_conversion=1./ohcal_conversion;
+	try{
+		findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+	}
+	catch(std::exception& e){ return 0.;}
+	auto truth_particles_p=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+	auto truth_particles=truth_particles_p->GetMap();
+	for(auto& iter:jet->get_comp_vec()){
+		Jet::SRC source=iter.first;
+		if(source != Jet::SRC::PARTICLE && source != Jet::SRC::CHARGED_PARTICLE && source != Jet::SRC::HEPMC_IMPORT){
+			//don't have a source particle so skip it
+			continue;
+		}
+		else{
+			unsigned int id=iter.second;
+			if(truth_particles.find(id) == truth_particles.end()){
+				continue;
+			}
+			else{
+				PHG4Particle* particle = truth_particles[id];
+				int pid=particle->get_pid();
+				if(abs(pid) == 11 || pid== 22){ 
+					//electrons, positrons and photons get put in the emcal
+					electromagnetic_energy+=particle->get_e();
+				}
+				else if(abs(pid) > 11 && abs(pid) <= 18){
+					//don't count neutrinos, muons, tau
+					hadronic_energy+=particle->get_e();
+				}
+			}
+		}
+	}
+	//assume that the hcal energy split is consistent with the whole detector energy split 
+	float ohcal_energy=hadronic_energy*ohcal_conversion;
+	float ohcal_ratio=ohcal_energy/(hadronic_energy+electromagnetic_energy);
+	return ohcal_ratio;
 }
-std::vector<float> LargeRLENC::getJetEnergyRatios(JetContainer* jets, PHCompositeNode* topNode)
+std::vector<float> LargeRLENC::getJetEnergyRatios(JetContainer* jets, float ohcal_ihcal_ratio, PHCompositeNode* topNode)
 {
 	//get the energy ballence in each calorimeter for each jet
 	std::vector<float> ohcal_ratio;
-	auto emcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_CEMC"   );
+	auto emcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_CEMC_RETOWER"   );
 	auto ihcal_tower_energy= findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALIN");
 	auto ohcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALOUT");
 
 	for(auto j: *jets)
 	{
-		bool has_towers=false;
+		bool has_particle=false;
 		float ohcal_energy=0., allcal_energy=0.; 
 		for(auto& iter:j->get_comp_vec()){
 			Jet::SRC source=iter.first; //get source of object
-			if(source < Jet::SRC::CEMC_TOWER ||  source==Jet::SRC::HEPMC_IMPORT || source > Jet::SRC::HCALOUT_TOWERINFOR_SIM)continue;
+	/*		if(source == Jet::SRC::PARTICLE || source == Jet::SRC::CHARGED_PARTICLE || source == Jet::SRC::HEPMC_IMPORT){
+				has_particle=true; 
+				//if any particle source is found, we can use that. otherwise have to not use this cut
+			}	*/
+			if(source < Jet::SRC::CEMC_TOWER ||  source==Jet::SRC::HEPMC_IMPORT || source > Jet::SRC::HCALOUT_TOWERINFO_SIM)continue;
 			else{
 				if(source== Jet::SRC::HCALOUT_TOWER || source == Jet::SRC::HCALOUT_CLUSTER || source == Jet::SRC::HCALOUT_TOWER_SUB1 ){
-					int tower_id=iter.second;
-					float e=ohcal_tower_energy->gettower_at_channel(tower_id)->get_energy();
-					ohcal_energy+= e//functionally the same as below, I just want to make things readable
-					allcal_energy+= e
+					unsigned int tower_id=iter.second;
+					float e=ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::HCALOUT_TOWERINFO || source == Jet::SRC::HCALOUT_TOWER_SUB1CS ){
-					int tower_id=iter.second;
-					float e=ohcal_tower_energy->gettower_at_channel(tower_id)->get_energy();
-					ohcal_energy+= e//functionally the same as below, I just want to make things readable
-					allcal_energy+= e
+					unsigned int tower_id=iter.second;
+					float e=ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::HCALOUT_TOWERINFO_SIM || source == Jet::SRC::HCALOUT_TOWERINFO_SUB1 || source==Jet::SRC::HCALOUT_TOWERINFO_EMBED ){
-					int tower_id=iter.second;
-					float e=ohcal_tower_energy->gettower_at_channel(tower_id)->get_energy();
-					ohcal_energy+= e//functionally the same as below, I just want to make things readable
-					allcal_energy+= e
+					unsigned int tower_id=iter.second;
+					float e=ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::HCALIN_TOWER || source == Jet::SRC::HCALIN_CLUSTER || source == Jet::SRC::HCALIN_TOWER_SUB1 ){
-					int tower_id=iter.second;
+					unsigned int tower_id=iter.second;
 					float e=ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					allcal_energy+= e
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::HCALIN_TOWERINFO || source == Jet::SRC::HCALIN_TOWER_SUB1CS ){
-					int tower_id=iter.second;
+					unsigned int tower_id=iter.second;
 					float e=ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					allcal_energy+= e
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::HCALIN_TOWERINFO_SIM || source == Jet::SRC::HCALIN_TOWERINFO_SUB1 || source==Jet::SRC::HCALIN_TOWERINFO_EMBED ){
-					int tower_id=iter.second;
+					unsigned int tower_id=iter.second;
 					float e=ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					allcal_energy+= e
+					allcal_energy+= e;
 				}
 				
 				else if(source== Jet::SRC::CEMC_TOWER || source == Jet::SRC::CEMC_CLUSTER || source == Jet::SRC::CEMC_TOWER_SUB1 ){
-					int tower_id=iter.second;
+					unsigned int tower_id=iter.second;
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					ohcal_energy+= e//functionally the same as below, I just want to make things readable
-					allcal_energy+= e
+					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::CEMC_TOWERINFO || source == Jet::SRC::CEMC_TOWER_SUB1CS ){
-					int tower_id=iter.second;
+					unsigned int tower_id=iter.second;
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					allcal_energy+= e
+					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::CEMC_TOWERINFO_SIM || source == Jet::SRC::CEMC_TOWERINFO_SUB1 || source==Jet::SRC::CEMC_TOWERINFO_EMBED ){
-					int tower_id=iter.second;
+					unsigned int tower_id=iter.second;
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					allcal_energy+= e
+					allcal_energy+= e;
 				}
 			}
 		}
-		if(ohcal_energy == 0 || allcal_energy== 0 )
+		if(ohcal_energy == 0. || allcal_energy == 0. )
 		{
-			ohcal_ratio.push_back(MatchtoTowers(j)); //if there is no 
+			if(has_particle) ohcal_ratio.push_back(HadronicEnergyBalence(j, ohcal_ihcal_ratio, topNode)); //if there is no tower source present, use the particles  
+			else ohcal_ratio.push_back(0.);
 		}
 		else{
 			ohcal_energy=ohcal_energy/allcal_energy;
@@ -281,7 +347,25 @@ void LargeRLENC::addTower(int n, TowerInfoContainer* energies, RawTowerGeomConta
 	float r=geom->get_radius();
 //	std::cout<<"energy is " <<tower->get_energy()<<std::endl;
 	std::array<float, 3> center {etacenter, phicenter, r};
-	towers->insert(std::make_pair(center, tower->get_energy()));
+	if(td != RawTowerDefs::CEMC) towers->insert(std::make_pair(center, tower->get_energy()));
+	if(td==RawTowerDefs::CEMC){
+		//retowering it by hand for rioght now to improve running speed 
+		for(int j=0; j<24; j++){
+			float hcalbinval=((j+1)*1.1/12.)-1.1;
+			if(center[0] < hcalbinval){
+			 	center[0]=hcalbinval;
+			}
+			else break;
+		}
+		for(auto j=0; j<64; j++)
+		{
+			float hcalbinval=(j+1)*2*PI/64.;
+			if(center[1] < hcalbinval)  center[1]=hcalbinval;
+			else break;
+		}
+		if(towers->find(center) != towers->end()) towers->at(center)+=tower->get_energy();
+		else towers->insert(std::make_pair(center, tower->get_energy()));
+	}
 	return;
 }
 int LargeRLENC::process_event(PHCompositeNode* topNode)
@@ -301,7 +385,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT");
 	auto ohcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALOUT");
 	//look for the jet objects 
-	////std::cout<<__LINE__<<std::endl;
+	//std::cout<<__LINE__<<std::endl;
 	JetContainer* jets=NULL;
 	bool foundJetConts=false, isDijet=false;
 	try{
@@ -394,7 +478,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		return Fun4AllReturnCodes::EVENT_OK;
 	}
 	if(ohcal_rat > 1 || ohcal_rat < 0 )std::cout<<"Strange values of hcal ratio ohcal energy " <<ohcal_energy << "\n ihcal energy : " <<ihcal_energy <<"\n emcal energy " <<emcal_energy <<std::endl;
-	std::vector<float> ohcal_jet_rat=getJetEnergyRatios(jets); //get the energy ballence in each individual jet
+	std::vector<float> ohcal_jet_rat;/*=getJetEnergyRatios(jets, ohcal_energy/(float)ihcal_energy, topNode);*/ //get the energy ballence in each individual jet
+	for(int i = 0; i< (int)jets->size(); i++){
+		float v=i/(float)jets->size();
+		v=v/10.;
+		ohcal_jet_rat.push_back(v);
+	}
 	isDijet=eventCut->passesTheCut(jets, ohcal_jet_rat, ohcal_rat, vertex);	
 	//////////std::cout<<__LINE__<<std::endl;
 	if(!isDijet){ //stores some data about the bad cuts to look for any arrising structure
@@ -538,7 +627,7 @@ void LargeRLENC::CaloRegion(std::map<std::array<float, 3>, float> emcal, std::ma
 void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float jetMinpT, std::array<float, 3> vertex, /*int region,*/ bool transverse, bool energy, std::map<int, std::pair<float, float>> phi_edges,/* std::vector<MethodHistograms*>* Histos,*/ int which_calo, float* total_e_region)
 {
 	MethodHistograms* ha=NULL, *hc=NULL;
-	MethodHistograms* full_ha=FullCal.at(0), *full_hc=FullCal.at(which_calo);
+	MethodHistograms /* full_ha=FullCal.at(0),*/ *full_hc=FullCal.at(which_calo);
 	auto i=cal.begin();
 	std::map<std::array<float, 3>, float> p_T_save;
 	int n=0;
@@ -580,43 +669,30 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			 continue;
 		}
 		else{
-	//////std::cout<<__LINE__<<std::endl;
 //			if( which_calo == 3) std::cout<<"\n should have filled pt in towards?????? \n Region histogram gives " << hc->pt->GetName() <<std::endl;
 			cal[j]=j_val;
-	////std::cout<<__LINE__<<std::endl;
 			e_region[region_index]+=j_val;
 			e_region[0]+=j_val;
 //		       	++i;
-	////std::cout<<__LINE__<<std::endl;
 			pT=j_val; //right now using p approx E, can probably improve soon
-	////std::cout<<__LINE__<<std::endl;
 			pT=pT/cosh(eta_shift);
-	////std::cout<<__LINE__<<std::endl;
 			if(pT > MinpTComp) p_T_save[j]=pT;
-	////std::cout<<__LINE__<<std::endl;
 			hc->pt->Fill(pT);
 			full_hc->pt->Fill(pT);
-	////std::cout<<__LINE__<<std::endl;
 			bool printout=false;
 		//	if(n % 100000==0  && n_evts <=2 ) printout=true;
 		//	else printout=false;
 			float R=getR(j[0], j[1], eventCut->getLeadEta(), eventCut->getLeadPhi(), printout );
-	////std::cout<<__LINE__<<std::endl;
 			if(n_evts < 5 && printout) std::cout<<"R val is " <<R <<" \n with inputs " <<j[0] <<", " <<j[1] <<" , " <<eventCut->getLeadEta() <<" , " <<eventCut->getLeadPhi() <<std::endl;
 			hc->R_pt->Fill(R,pT);
-	////std::cout<<__LINE__<<std::endl;
 			full_hc->R_pt->Fill(R,pT);
-	////std::cout<<__LINE__<<std::endl;
 		}
 	}
-	////std::cout<<__LINE__<<std::endl;
-	for(int i=0; i<(int)e_region.size(); i++)
+/*	for(int i=0; i<(int)e_region.size(); i++)
 		if(e_region[i]==0.) 
 			e_region[i]=1.; //just correcting for any nan inputs
 	std::map<std::array<float, 3>, float> cal_2=cal;
-	////std::cout<<__LINE__<<std::endl;
 	std::map<int, std::map<float, float>> e2c, e3c;
-	////std::cout<<__LINE__<<std::endl;
 	std::map<int, std::map<std::array<float, 3>, float>> e3c_full;
 	for(int i=0; i<4; i++){
 		std::map<float, float> dummy {{0.,0.}};
@@ -625,44 +701,35 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		std::array<float, 3> dummy_array {0., 0., 0.};
 		std::map<std::array<float, 3>, float> dummy_2{{dummy_array, 0.}}; 
 		e3c_full[i]=dummy_2;
-	} //just make sure the maps are initialized to be in working order ahead of the calculations
-	////std::cout<<__LINE__<<std::endl;
+	} *///just make sure the maps are initialized to be in working order ahead of the calculations
 	//hc->N->Fill((int)cal.size());
 	full_hc->N->Fill((int)cal.size());
-	//////std::cout<<__LINE__<<std::endl;
 	//hc->E->Fill(e_region);
 	full_hc->E->Fill(e_region[0]);
-	////////std::cout<<__LINE__<<std::endl;
 	(*total_e_region)+=e_region[0];
-	//////std::cout<<__LINE__<<std::endl;
 //	std::cout<<"Runing over " <<cal.size() <<" correlators options" <<std::endl;
-	for(auto i=cal.begin(); i != cal.end(); ++i){
+/*	for(auto i=cal.begin(); i != cal.end(); ++i){
 		std::array<float, 3> tower {i->first[0], i->first[1], i->second}; 
 		if(which_calo == LargeRLENC::Calorimeter::EMCAL)m_emcal.push_back(tower);
 		else if(which_calo == LargeRLENC::Calorimeter::IHCAL)m_ihcal.push_back(tower);
 		else if(which_calo == LargeRLENC::Calorimeter::OHCAL)m_ohcal.push_back(tower);
-		////////std::cout<<__LINE__<<std::endl;
 		auto j=cal_2.find(i->first);
 		if(j != cal_2.end()) 
 			cal_2.erase(j); //getting rid of double counting by removing the base value from the second map 
-		////////std::cout<<__LINE__<<std::endl;
 		auto cal_3=cal_2;
 		auto k=cal_3.find(j->first);
 		if(k != cal_3.end()) 
 			cal_3.erase(k); //getting rid of double counting by removing the base value from the third map 
-		////////std::cout<<__LINE__<<std::endl;
 		std::vector<std::pair<float, std::pair<float, float> > > point_correlator ((int)cal_2.size()); //allow for easy looping over the towers to parrelize
-		////////std::cout<<__LINE__<<std::endl;
 		std::vector< std::pair<float, std::vector< std::pair< std::pair<float, float>, float > > > > threept_full ((int) cal_2.size());
-		////////std::cout<<__LINE__<<std::endl;
-		std::vector<std::thread> calculating_threads; 
+	//	std::vector<std::thread> calculating_threads; 
 		int index=0;
 		std::map<int, int> region_index; //gives a way to pull the relevant region after the fact to fill hc
 		for(auto l:cal_2)
 		{
 		 	//threading over all pairs to allow for faster calculation 
 			if(l.second < MinpTComp) continue;
-			calculating_threads.push_back(std::thread(&LargeRLENC::CalculateENC, this, *i, l, cal_3, &point_correlator[index], &threept_full[index], transverse, energy)); 
+		//	calculating_threads.push_back(std::thread(&LargeRLENC::CalculateENC, this, *i, l, cal_3, &point_correlator[index], &threept_full[index], transverse, energy)); 
 			index++;
 			for(auto x:phi_edges){
 				int regions_val=x.first;
@@ -678,7 +745,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 				}
 		}
 //		std::cout<<"Need to run " <<calculating_threads.size() <<" computational threads" <<std::endl;
-		for(int t=0; t<(int) calculating_threads.size(); t++) calculating_threads[t].join();
+	//	for(int t=0; t<(int) calculating_threads.size(); t++) calculating_threads[t].join();
 		index=0;
 		for(auto v:point_correlator){
 			auto l=e2c[region_index[index]].find(v.first);
@@ -700,7 +767,6 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			index++;
 		}
 		index=0;
-		////////std::cout<<__LINE__<<std::endl;
 		for(auto v:threept_full){
 			for(auto w:v.second){
 				std::array<float, 3> key= {v.first, w.first.first, w.first.second};
@@ -713,7 +779,6 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			}
 		}
 	}
-		////////std::cout<<__LINE__<<std::endl;
 	for(auto es:e2c){
 		std::vector<std::pair<float, float>> holding_2;
 		for(auto v:es.second){
@@ -723,7 +788,6 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		}
 		t_e2c.push_back(std::make_pair(es.first, holding_2));
 	}
-		////////std::cout<<__LINE__<<std::endl;
 	for(auto es:e3c){
 		std::vector<std::pair<float, float>> holding_3;
 		for(auto v:es.second){
@@ -748,18 +812,14 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 //			full_hc->E3C->Fill(R_L, vf);
 		}
 		t_e3c_full.push_back(std::make_pair(es.first, holding_3));
-	}
-		////////std::cout<<__LINE__<<std::endl;
+	}*/
 	/*for(auto e:e2c){
 		 for(auto ei:e.second){
 			t_e2c.push_back(e);
-		////////std::cout<<__LINE__<<std::endl;
 	for(auto e:e3c) t_e3c.push_back(e);
-		////////std::cout<<__LINE__<<std::endl;
 	for(auto e:e3c_full) t_e3c_full.push_back(e);
-		////////std::cout<<__LINE__<<std::endl;
 	t_pt[which_calo-1]=p_T_save;	*/
-	for(int i=0; i<(int)t_e2c.size(); i++)
+/*	for(int i=0; i<(int)t_e2c.size(); i++)
 	{
 		m_region=t_e2c[i].first;
 		m_calo=which_calo; //ive made the class, maybe I will use eventually
@@ -789,10 +849,54 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			}
 			m_rm=hold_vals[0];
 			m_ri=hold_vals[1];
-		//	EEC->Fill();
+			EEC->Fill();
+		}
+	}*/
+	//This is now doing the jet event observables 
+	std::map<float, std::vector<std::array<float, 3> > > etir;
+	std::map<int, std::map<float, float>*> ets;
+	std::vector<std::thread> jet_evt_obs_threads;
+	int index=0; 
+	for(auto i:cal){
+		std::map<float, float> ET;
+		ets[index]=&ET;
+		jet_evt_obs_threads.push_back(std::thread(&LargeRLENC::JetEventObservablesBuilding, this, i.first, cal, ets[index]));
+		index++;
+	}
+	for(int i=0; i<(int)jet_evt_obs_threads.size(); i++)
+	{
+		jet_evt_obs_threads.at(i).join();
+	}
+	index=0;
+	for(auto i:cal){
+		std::array<float, 3> et {i.first[0], i.first[1], 0};
+		for(auto a:(*ets[index])){
+			et[2]=a.second;
+			etir[a.first].push_back(et);
 		}
 	}
-			//JetEvtObs->Fill();
+	for(auto etR:etir){
+		//map of R:vector< <eta, phi, Eti>>
+		float et_tilde_x=0., et_tilde_y=0.; 
+		float R=etR.first;
+		for(auto eti:etR.second){
+			//data type is <eta, phi, Et>
+			float et_tresh=0.01; //10 MeV cut on cals, expected Cal energy is 50 GeV in EMCAL, 9 GeV in OHCAL, 2.5 GeV in IHCAL, and for smallest r, emcal gets ~100 MeV per tower on average, ihcal ~6, oHCAL ~20 for smallest r
+			if(eti[2] < et_tresh) continue;
+			else{
+				
+				et_tilde_x+=eti[2]*cos(eti[1]);
+				et_tilde_y+=eti[2]*sin(eti[2]);
+			}
+		}
+		float et_tilde=sqrt(pow(et_tilde_x,2)+pow(et_tilde_y,2));
+		int R_index=(R*10+1)/5;
+		if(R < 0.4) R_index=0;
+		else if(R < 1) R_index=1;
+		else R_index=2;
+		if(R_index >= (int) Et_miss_hists[which_calo-1].size() )continue; 
+		Et_miss_hists[which_calo-1][R_index]->Fill(et_tilde);
+	}
 	return;
 }
 void LargeRLENC::CalculateENC(std::pair<std::array<float, 3>, float> point_1, std::pair<std::array<float, 3>, float> point_2, std::map<std::array<float, 3>, float> cal, std::pair<float, std::pair<float, float>>* enc_out, std::pair<float, std::vector< std::pair< std::pair<float, float>, float > > > *threept_full, bool transverse, bool energy)
@@ -836,10 +940,11 @@ void LargeRLENC::JetEventObservablesBuilding(std::array<float, 3> central_tower,
 	//This is the Jet Event observable. Ideally I would seperate this out 
 	//Input is of the form <tower r, tower eta, tower phi>, tower E (vertex corrected)
 	//Output is <tower r, tower eta, tower phi>, <R=0.1-1.0, ETir> 
-
-	for(int r=0; r<10; r++)
+	for(int r=0; r<3; r++)
 	{
-		float Rmax=(r+1)/10.;
+		float Rmax=0.1;
+		if(r==1) Rmax=0.4;
+		if(r==2) Rmax=1.0;
 		(*Etir_output)[Rmax]=0.;
 	}
 	(*Etir_output)[-1.0]=0; //full calorimeter holding 
@@ -865,9 +970,9 @@ float LargeRLENC::getR(float eta1, float phi1, float eta2, float phi2, bool prin
 void LargeRLENC::Print(const std::string &what) const
 {
 	TFile* f1=new TFile(output_file_name.c_str(), "RECREATE");
-	DijetQA->Write();
-	EEC->Write();
-	JetEvtObs->Write();
+//	DijetQA->Write();
+//	EEC->Write();
+	//JetEvtObs->Write();
 	emcal_occup->Write();
 	ihcal_occup->Write();
 	ohcal_occup->Write();
@@ -877,7 +982,7 @@ void LargeRLENC::Print(const std::string &what) const
 	bad_occ_em_oh->Write();
 	bad_occ_em_h->Write();
 	eventCut->JetCuts->Write();
-	for(auto hv:FullCal){
+/*	for(auto hv:FullCal){
 		for( auto h:hv->histsvector) h->Write();
 		hv->R_pt->Write();
 	}
@@ -892,6 +997,11 @@ void LargeRLENC::Print(const std::string &what) const
 	for(auto hv:TowardRegion){	
 		for( auto h:hv->histsvector) h->Write();
 		hv->R_pt->Write();
+	}*/
+	for(auto EC:Et_miss_hists){
+		for(auto E:EC){
+			E->Write();
+		}
 	}
 	f1->Write();
 	f1->Close();

@@ -172,6 +172,8 @@ class LargeRLENC : public SubsysReco
 	//and now for the unique stuff
 	void addTower(int, TowerInfoContainer*, RawTowerGeomContainer_Cylinderv1*, std::map<std::array<float, 3>, float>*, RawTowerDefs::CalorimeterId);
 	
+	float HadronicEnergyBalence(Jet*, float, PHCompositeNode*);
+	std::vector<float> getJetEnergyRatios(JetContainer*, float, PHCompositeNode*);	
 	JetContainer* getJets(std::string, std::string, std::array<float, 3>, float ohcal_rat, PHCompositeNode*);
 
 	void CaloRegion(std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, float, std::string, std::array<float, 3>, float);
@@ -199,7 +201,7 @@ class LargeRLENC : public SubsysReco
 	std::map< std::string, std::array< std::map< std::pair< float, float >, float >, 3 > > t_pt_evt;
 	float m_phi, m_eta; 
 	std::string which_variable; //Which varaible are we caluclating the EEC over (E, E_T, p, p_T)
-	TTree* DijetQA, *EEC, *JetEvtObs;
+	TTree* DijetQA, *EEC/*, *JetEvtObs*/;
 	std::vector<MethodHistograms*> FullCal, TowardRegion, AwayRegion, TransverseRegion;
 	std::vector<std::vector<MethodHistograms*>> Region_vector;
 	float m_etotal, m_eemcal, m_eihcal, m_eohcal;
@@ -213,6 +215,7 @@ class LargeRLENC : public SubsysReco
 	TH1F* emcal_occup, *ihcal_occup, *ohcal_occup, *ohcal_rat_h;
 	TH2F* ohcal_rat_occup, *ohcal_bad_hits, *bad_occ_em_oh, *bad_occ_em_h;
 	std::vector<std::array<float, 3>> m_emcal, m_ihcal, m_ohcal; //3 points, eta, phi, et
+	std::array<std::array<TH1F*, 3>, 3> Et_miss_hists;
 
 };
 #endif // LARGERLENC_H

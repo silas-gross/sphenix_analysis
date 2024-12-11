@@ -11,7 +11,8 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  LargeRLENC.h
+  LargeRLENC.h \
+  DijetEventCuts.h
 
 lib_LTLIBRARIES = \
   libLargeRLENC.la
