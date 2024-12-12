@@ -31,10 +31,10 @@ R__LOAD_LIBRARY(libLargeRLENC.so)
 R__LOAD_LIBRARY(libjetbase.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 
-int RunLargeRLENC(std::string data_dst="none", std::string truthjetfile="none", std::string calotowersfile="none", std::string truthrecofile="none", std::string globalrecofile="none", std::string n_evt="0", std::string minpt="1.0", const std::string& dbtag="ProdA_2024")
+int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst, std::string truthjetfile="none", std::string calotowersfile="none", std::string truthrecofile="none", std::string globalrecofile="none", std::string n_evt="0", std::string minpt="1.0", const std::string& dbtag="ProdA_2024")
 {
 	std::cout<<"actually processing this thing" <<std::endl;
-	std::map<std::string, std::string> input_files {{data_dst, "data"}, {truthjetfile, "truthjet"}, {calotowersfile, "calotowers"}, {truthrecofile, "truthreco"}, {globalrecofile, "globalreco"}};
+	std::map<std::string, std::string> input_files {{data_dst, "data"}, {data_fitting_dst, "data_fitting"} {truthjetfile, "truthjet"}, {calotowersfile, "calotowers"}, {truthrecofile, "truthreco"}, {globalrecofile, "globalreco"}};
 	Fun4AllServer* se=Fun4AllServer::instance();
 	std::cout<<"Initiated the fun for all server" <<std::endl;
 	int run_number=0, segment=0, n_evts=std::stoi(n_evt);
@@ -84,8 +84,16 @@ int RunLargeRLENC(std::string data_dst="none", std::string truthjetfile="none", 
 		rc->set_StringFlag("CDB_GLOBALTAG", dbtag);
 		rc->set_uint64Flag("TIMESTAMP", run_number);
 		CDBInterface::instance() -> Verbosity(0);
-	//	Process_Calo_Calib();
+		Process_Calo_Calib();
 	}
+	else{
+		recoConsts *rc = recoConsts::instance();
+		rc->set_StringFlag("CDB_GLOBALTAG", "MDC2");
+		rc->set_uint64Flag("TIMESTAMP", run_number);
+		CDBInterface::instance() -> Verbosity(0);
+		Process_Calo_Calib();
+	}
+		
 	bool nojets=true, retower_needed=true;
 //	if(data){ //check if the jet objects have already been constructed and retowering needed
 //		TFile* f1=new TFile(data_dst.c_str(), "READ");
