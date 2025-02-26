@@ -25,6 +25,7 @@
 #include <phhepmc/PHHepMCGenEvent.h>
 #include <phhepmc/PHHepMCGenEventMap.h>
 #include <HepMC/GenEvent.h>
+#include <HepMC/GenVertex.h>
 
 //g4 packages 
 #include <g4main/PHG4VtxPoint.h>
@@ -47,7 +48,7 @@
 #include <map>
 #include <math.h>
 #include <algorithm>
-
+#include <array>
 //Root
 #include <TH1.h>
 #include <TH2.h>
@@ -103,6 +104,7 @@ class ThirdJetSpectra : public SubsysReco
 
    private:
 	std::vector<fastjet::PseudoJet> findAllJets(HepMC::GenEvent* e1);
+	std::vector<std::array<float, 4>> findInitialPartons(HepMC::GenEvent* e1);
 	void getJetTripplet(JetContainerv1*, std::vector<Jetv2*>*, bool);
 	void getJetPair(JetContainerv1*, std::vector<Jetv2*>*, bool);
 	
@@ -111,6 +113,10 @@ class ThirdJetSpectra : public SubsysReco
 	TH1F* first_jet_phi, *second_jet_phi, *third_jet_phi;
 	TH1F* first_jet_eta, *second_jet_eta, *third_jet_eta;
 	TH1F* first_jet_E, *second_jet_E, *third_jet_E;
+	TH1F* first_parton_pt, *second_parton_pt, *third_parton_pt;
+	TH1F* first_parton_phi, *second_parton_phi, *third_parton_phi;
+	TH1F* first_parton_eta, *second_parton_eta, *third_parton_eta;
+	TH1F* first_parton_E, *second_parton_E, *third_parton_E;
 	TH1F* dphi_12, *dphi_13, *dphi_23;
 	TH1F* xj_12, *xj_13, *xj_23;
 	TH1F* xj_strict_12, *xj_strict_13, *xj_strict_23;

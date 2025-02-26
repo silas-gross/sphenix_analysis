@@ -73,10 +73,10 @@ ThirdJetSpectra::ThirdJetSpectra(std::string numb, const std::string &name):
 {
 		this->segment_numb=numb;
   std::cout << "ThirdJetSpectra::ThirdJetSpectra(const std::string &name) Calling ctor" << std::endl;
-		xj = new TH1F("xj", "Dijet Momentum Imballance leading to subleading; x_{j}; N_{counts}", 20, 0,1);
-		xj_strict =new TH1F("xj_strict", "Dijet Momentum imballance leading to subleading (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 20, 0, 1);
-		xj_onl =new TH1F("xj_onl", "Dijet Momentum imballance leading to subleading without a third jet; x_{j}; N_{counts}", 20, 0, 1);
-		xj_strict_onl =new TH1F("xj_strict_onl", "Dijet Momentum imballance leading to subleading without a third jet (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 20, 0, 1);
+		xj = new TH1F("xj", "Dijet Momentum Imballance leading to subleading; x_{j}; N_{counts}", 100, 0,1);
+		xj_strict =new TH1F("xj_strict", "Dijet Momentum imballance leading to subleading (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 100, 0, 1);
+		xj_onl =new TH1F("xj_onl", "Dijet Momentum imballance leading to subleading without a third jet; x_{j}; N_{counts}", 100, 0, 1);
+		xj_strict_onl =new TH1F("xj_strict_onl", "Dijet Momentum imballance leading to subleading without a third jet (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 100, 0, 1);
 		first_jet_pt=new TH1F("first_jet_pt", "p_{T} of leading jet; p_{T} [GeV/c]; N_{counts}", 60, -0.5, 59.5);
 		second_jet_pt=new TH1F("second_jet_pt", "p_{T} of subleading jet; p_{T} [GeV/c]; N_{counts}", 60, -0.5, 59.5);
 		third_jet_pt=new TH1F("third_jet_pt", "p_{T} of subsubleading jet; p_{T} [GeV/c]; N_{counts}", 60, -0.5, 59.5);
@@ -89,15 +89,27 @@ ThirdJetSpectra::ThirdJetSpectra(std::string numb, const std::string &name):
 		first_jet_eta=new TH1F("first_jet_eta", "#eta of leading jet; #eta; N_{counts}", 24, -1.11, 1.11);
 		second_jet_eta=new TH1F("second_jet_eta", "#eta of leading jet; #eta; N_{counts}", 24, -1.11, 1.11);
 		third_jet_eta=new TH1F("third_jet_eta", "#eta of leading jet; #eta; N_{counts}", 24, -1.11, 1.11);
+		first_parton_pt=new TH1F("first_parton_pt", "p_{T} of leading parton; p_{T} [GeV/c]; N_{counts}", 60, -0.5, 59.5);
+		second_parton_pt=new TH1F("second_parton_pt", "p_{T} of subleading parton; p_{T} [GeV/c]; N_{counts}", 60, -0.5, 59.5);
+		third_parton_pt=new TH1F("third_parton_pt", "p_{T} of subsubleading parton; p_{T} [GeV/c]; N_{counts}", 60, -0.5, 59.5);
+		first_parton_E=new TH1F("first_parton_E", "E of leading parton; E [GeV/c]; N_{counts}", 60, -0.5, 59.5);
+		second_parton_E=new TH1F("second_parton_E", "E of subleading parton; E [GeV/c]; N_{counts}", 60, -0.5, 59.5);
+		third_parton_E=new TH1F("third_parton_E", "E of subsubleading parton; E [GeV/c]; N_{counts}", 60, -0.5, 59.5);
+		first_parton_phi=new TH1F("first_parton_phi", "#varphi of leading parton; #varphi; N_{counts}", 64, -0.5, 2*PI);
+		second_parton_phi=new TH1F("second_parton_phi", "#varphi of leading parton; #varphi; N_{counts}", 64, 0, 2*PI);
+		third_parton_phi=new TH1F("third_parton_phi", "#varphi of leading parton; #varphi; N_{counts}", 64, 0, 2*PI);
+		first_parton_eta=new TH1F("first_parton_eta", "#eta of leading parton; #eta; N_{counts}", 24, -1.11, 1.11);
+		second_parton_eta=new TH1F("second_parton_eta", "#eta of leading parton; #eta; N_{counts}", 24, -1.11, 1.11);
+		third_parton_eta=new TH1F("third_parton_eta", "#eta of leading parton; #eta; N_{counts}", 24, -1.11, 1.11);
 		dphi_12=new TH1F("dphi_12", "#Delta #varphi of leading jet to subleading; #Delta #varphi; N_{counts}", 64, -PI, PI);
 		dphi_13=new TH1F("dphi_13", "#Delta #varphi of leading jet to subsubleading; #Delta #varphi; N_{counts}", 64, -PI, PI);
 		dphi_23=new TH1F("dphi_23", "#Delta #varphi of subleading jet to subsubleading;  #Delta #varphi; N_{counts}", 64, -PI, PI);
 		xj_12 =new TH1F("xj_12", "Dijet Momentum imballance leading to subleading (with third); x_{j}; N_{counts}", 100, 0, 1);
 		xj_13 =new TH1F("xj_13", "Dijet Momentum imballance leading to subsubleading; x_{j}; N_{counts}", 100, 0, 1);
 		xj_23 =new TH1F("xj_23", "Dijet Momentum imballance subleading to subsubleading; x_{j}; N_{counts}", 100, 0, 1);
-		xj_strict_12 =new TH1F("xj_strict_12", "Dijet Momentum imballance leading to subleading with third (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 100, 0, 1);
-		xj_strict_13 =new TH1F("xj_strict_13", "Dijet Momentum imballance leading to subsubleading (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 100, 0, 1);
-		xj_strict_23 =new TH1F("xj_strict_23", "Dijet Momentum imballance subleading to subsubleading (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 100, 0, 1);
+		xj_strict_12 =new TH1F("xj_strict_12", "Dijet Momentum imballance leading to subleading with third (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 25, 0, 1);
+		xj_strict_13 =new TH1F("xj_strict_13", "Dijet Momentum imballance leading to subsubleading (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 25, 0, 1);
+		xj_strict_23 =new TH1F("xj_strict_23", "Dijet Momentum imballance subleading to subsubleading (Events passing Dijet Event Cuts); x_{j}; N_{counts}", 25, 0, 1);
 		third_jet_pt_dec = new TH1F("third_jet_pt_dec", "Average Decorrelation of leading and subleading jet as a function of subsubleading jet p_{T}; p_{T} [GeV]; < |#pi - #Delta #varphi| >", 60, -0.5, 59.5);	
 		third_jet_pt_dec_strict = new TH1F("third_jet_pt_dec_strict", "Average Decorrelation of leading and subleading jet as a function of subsubleading jet p_{T} (Events passing Dijet Event Cuts); p_{T} [GeV]; < |#pi - #Delta #varphi| >", 60, -0.5, 59.5);	
 		decorr = new TH1F("decorr", "Decorrelation of leading to subleading jets; | #pi -#Delta #varphi |; N_{counts}", 64, 0, PI); 
@@ -204,6 +216,25 @@ void ThirdJetSpectra::getJetPair(JetContainerv1* jc, std::vector<Jetv2*>* ds, bo
 	}
 	return;
 }
+std::vector<std::array<float, 4>> ThirdJetSpectra::findInitialPartons(HepMC::GenEvent* e1)
+{
+	std::vector<std::array<float, 4>> initial_partons;
+	HepMC::GenVertex* v1=e1->beam_particles().first->end_vertex();
+	if(v1){
+		for(HepMC::GenVertex::particles_out_const_iterator p_out = v1->particles_out_const_begin(); p_out != v1->particles_out_const_end(); ++p_out){
+			if(abs((*p_out)->pdg_id()) <= 6 || abs((*p_out)->pdg_id()) == 21){
+				float pt=std::sqrt(std::pow((*p_out)->momentum().px(), 2) + std::pow((*p_out)->momentum().py(), 2));
+				float phi=(*p_out)->momentum().phi();
+				float eta=(*p_out)->momentum().pseudoRapidity();
+				float e=(*p_out)->momentum().e();
+				std::array<float, 4> outgoing_parton {pt, phi, eta, e};
+				initial_partons.push_back(outgoing_parton);
+			}
+		}
+		
+	}
+	return initial_partons;
+}
 //____________________________________________________________________________..
 int ThirdJetSpectra::process_event(PHCompositeNode *topNode)
 {
@@ -218,6 +249,23 @@ int ThirdJetSpectra::process_event(PHCompositeNode *topNode)
 		HepMC::GenEvent* truthEvent = pHe->getEvent();
 		if(!truthEvent) continue;
 		auto jets=findAllJets(truthEvent);
+		auto partons=findInitialPartons(truthEvent);
+		if(partons.size() >= 2){
+			first_parton_pt->Fill(partons[0][0]);
+			first_parton_phi->Fill(partons[0][1]);
+			first_parton_eta->Fill(partons[0][2]);
+			first_parton_E->Fill(partons[0][3]);
+			second_parton_pt->Fill(partons[1][0]);
+			second_parton_phi->Fill(partons[1][1]);
+			second_parton_eta->Fill(partons[1][2]);
+			second_parton_E->Fill(partons[1][3]);
+			if(partons.size() > 2){
+				third_parton_pt->Fill(partons[2][0]);
+				third_parton_phi->Fill(partons[2][1]);
+				third_parton_eta->Fill(partons[2][2]);
+				third_parton_E->Fill(partons[2][3]);
+			}
+		}
 		if(jets.size() < 2) continue;
 		n_try++;
 		std::cout<<jets.at(0).pt() <<" is lead jet pt" <<std::endl;
@@ -274,7 +322,7 @@ int ThirdJetSpectra::process_event(PHCompositeNode *topNode)
 			if(!is_three) xj_strict_onl->Fill(xjs_12);
 		}
 		if(is_three){
-			Jetv2* j3=dijet_set[3];
+			Jetv2* j3=dijet_set[2];
 			float pt3=j3->get_pt();
 			float phi3=j3->get_phi();
 			std::cout<<x_j_12<<std::endl;
@@ -348,7 +396,7 @@ void ThirdJetSpectra::Print(const std::string &what) const
 	//I will need to normalize the decorreclation average after the fact, but thats ok 
   	std::cout<<"The number of events with at least three final state jets of pt> 3 GeV " <<n_three <<" and the number of events with an ID'ed dijet pair " <<n_evts <<std::endl;
 	std::cout<<"looked at " <<n_try<<" events" <<std::endl; 
-  	TFile* f1=new TFile(Form("Third_Jet_Contrib_%s.root", segment_numb.c_str()), "RECREATE");
+  	TFile* f1=new TFile(Form("Third_Jet_Contrib_no_%s.root", segment_numb.c_str()), "RECREATE");
 	first_jet_pt->Write();
 	first_jet_E->Write();
 	first_jet_eta->Write();
@@ -361,6 +409,19 @@ void ThirdJetSpectra::Print(const std::string &what) const
 	third_jet_E->Write();
 	third_jet_eta->Write();
 	third_jet_phi->Write();	
+
+	first_parton_pt->Write();
+	first_parton_E->Write();
+	first_parton_eta->Write();
+	first_parton_phi->Write();	
+	second_parton_pt->Write();
+	second_parton_E->Write();
+	second_parton_eta->Write();
+	second_parton_phi->Write();	
+	third_parton_pt->Write();
+	third_parton_E->Write();
+	third_parton_eta->Write();
+	third_parton_phi->Write();	
 
 	dphi_12->Write();
 	dphi_13->Write();
