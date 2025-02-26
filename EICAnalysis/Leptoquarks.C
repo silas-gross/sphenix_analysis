@@ -1,4 +1,5 @@
 #include "Leptoquarks.h"
+#include "TruthTrackerHepMC.h"
 
 #include <phool/getClass.h>
 #include <fun4all/Fun4AllServer.h>
@@ -40,7 +41,7 @@ Leptoquarks::Init(PHCompositeNode *topNode)
   _fout_root = new TFile(_foutname.c_str(), "RECREATE");
 
   _tree_event = new TNtuple("ntp_event","event information from LQ events",
-                            "ievent:has_tau:has_uds:tau_eta:tau_phi:tau_e:tau_p:tau_pt:tau_decay_prong:tau_decay_hcharged:tau_decay_lcharged:uds_eta:uds_phi:uds_e:uds_p:uds_pt");
+                            "ievent:pt_miss:pt_miss_phi:has_tau:has_uds:tau_eta:tau_phi:tau_e:tau_p:tau_pt:tau_decay_prong:tau_decay_hcharged:tau_decay_lcharged:uds_eta:uds_phi:uds_e:uds_p:uds_pt");
 
 
   return 0;
@@ -57,30 +58,36 @@ Leptoquarks::process_event(PHCompositeNode *topNode)
       return Fun4AllReturnCodes::ABORTRUN;
     }
 
-  /* Access GenEvent */
-  PHHepMCGenEvent *genevt = geneventmap->get(_embedding_id);
-  if (!genevt)
-    {
-      std::cout <<PHWHERE<<" - Fatal error - node PHHepMCGenEventMap missing subevent with embedding ID "<<_embedding_id;
-      std::cout <<". Print PHHepMCGenEventMap:";
-      geneventmap->identify();
-      return Fun4AllReturnCodes::ABORTRUN;
-    }
-
-  /* Access event */
-  HepMC::GenEvent* theEvent = genevt->getEvent();
-
-  if ( !theEvent )
-    {
-      cout << "Missing GenEvent!" << endl;
-      return Fun4AllReturnCodes::ABORTRUN;
-    }
-
   /* Look for leptoquark and tau particle in the event */
-  HepMC::GenParticle* particle_lq = NULL;
-  HepMC::GenParticle* particle_tau = NULL;
-  HepMC::GenParticle* particle_quark = NULL;
+  TruthTrackerHepMC truth;
+  truth.set_hepmc_geneventmap( geneventmap );
 
+  int pdg_lq = 39; // leptoquark
+  int pdg_tau = 15; // tau lepton
+
+  /* Search for leptoquark in event */
+  HepMC::GenParticle* particle_lq = truth.FindParticle( pdg_lq );
+
+  /* Search for lq->tau decay in event */
+  HepMC::GenParticle* particle_tau = truth.FindDaughterParticle( pdg_tau, particle_lq );
+
+  /* Search for lq->quark decay in event.
+   * Loop over all quark PDG codes until finding a matching quark. */
+  HepMC::GenParticle* particle_quark = NULL;
+  for ( int pdg_quark = 1; pdg_quark < 7; pdg_quark++ )
+    {
+      /* try quark */
+      particle_quark = truth.FindDaughterParticle( pdg_quark, particle_lq );
+      if (particle_quark)
+        break;
+
+      /* try anti-quark */
+      particle_quark = truth.FindDaughterParticle( -pdg_quark, particle_lq );
+      if (particle_quark)
+        break;
+    }
+
+  /* extract numbers from truth particles */
   bool tau_found = false;
   bool quark_found = false;
 
@@ -90,9 +97,9 @@ Leptoquarks::process_event(PHCompositeNode *topNode)
   double tau_p = 0;
   double tau_pt = 0;
 
-  int tau_decay_prong = 0;
-  int tau_decay_hcharged = 0;
-  int tau_decay_lcharged = 0;
+  uint tau_decay_prong = 0;
+  uint tau_decay_hcharged = 0;
+  uint tau_decay_lcharged = 0;
 
   double quark_eta = 0;
   double quark_phi = 0;
@@ -100,62 +107,13 @@ Leptoquarks::process_event(PHCompositeNode *topNode)
   double quark_p = 0;
   double quark_pt = 0;
 
-  /* Loop over all truth particles in event generator collection
-   *
-   * particle   ...   PGD code
-   * -------------------------
-   * LQ_ue      ...    39
-   * tau-       ...    15
-   * pi+        ...    211
-   * pi-        ...   -211
-   * u          ...    2
-   * d          ...    1 */
-  for ( HepMC::GenEvent::particle_iterator p = theEvent->particles_begin();
-        p != theEvent->particles_end(); ++p ) {
+  float pt_miss = 0;
+  float pt_miss_phi = 0;
 
-    /* check particle ID == LQ_ue */
-    if ( (*p)->pdg_id() == 39 )
-      {
-        particle_lq = (*p);
+  /* Calculate missing transverse momentum in event */
+  truth.FindMissingPt( pt_miss, pt_miss_phi );
 
-        /* Where does it end (=decay)? */
-        if ( particle_lq->end_vertex() )
-          {
-            /* Loop over mother particles at production vertex */
-            for ( HepMC::GenVertex::particle_iterator lq_child
-                    = particle_lq->end_vertex()->
-                    particles_begin(HepMC::children);
-                  lq_child != particle_lq->end_vertex()->
-                    particles_end(HepMC::children);
-                  ++lq_child )
-              {
-                /* Is child a tau? */
-                if ( (*lq_child)->pdg_id() == 15 )
-                  {
-                    particle_tau = (*lq_child);
-                    UpdateFinalStateParticle( particle_tau );
-                  }
-                /* Is child a quark? */
-                else if ( abs((*lq_child)->pdg_id()) > 0 && abs((*lq_child)->pdg_id() < 7) )
-                  {
-                    particle_quark = (*lq_child);
-                    UpdateFinalStateParticle( particle_quark );
-                  }
-                /* What else could it be? */
-                else
-                  {
-                    cerr << PHWHERE << " ERROR: Didn't expect to find a leptoquark child with pdg_id " << (*lq_child)->pdg_id() << endl;
-                    return Fun4AllReturnCodes::ABORTEVENT;
-                  }
-              }
-          }
-
-        /* end loop if leptoquark found */
-        break;
-      } // end if leptoquark //
-  } // end loop over all particles in event //
-
-  /* If TAU in event: Tag the tau candidate (i.e. jet) with smalles delta_R from this tau */
+  /* If TAU in event: update tau information */
   if( particle_tau )
     {
       tau_found = true;
@@ -172,36 +130,9 @@ Leptoquarks::process_event(PHCompositeNode *topNode)
                     pow( particle_tau->momentum().pz(), 2 ) );
       tau_pt = particle_tau->momentum().perp();
 
-      /* Add information about tau decay */
-      /* Loop over all particle at end vertex */
-      if ( particle_tau->end_vertex() )
-        {
-          for ( HepMC::GenVertex::particle_iterator tau_decay
-                  = particle_tau->end_vertex()->
-                  particles_begin(HepMC::children);
-                tau_decay != particle_tau->end_vertex()->
-                  particles_end(HepMC::children);
-                ++tau_decay )
-            {
-              /* Get entry from TParticlePDG because HepMC::GenPArticle does not provide charge or class of particle */
-              TParticlePDG * pdg_p = TDatabasePDG::Instance()->GetParticle( (*tau_decay)->pdg_id() );
+      /* Count how many charged particles (hadrons and leptons) the tau particle decays into. */
+      truth.FindDecayParticles( particle_tau, tau_decay_prong, tau_decay_hcharged, tau_decay_lcharged );
 
-              /* Check if particle is charged */
-              if ( pdg_p->Charge() != 0 )
-                {
-                  tau_decay_prong += 1;
-
-                  /* Check if particle is lepton */
-                  if ( string( pdg_p->ParticleClass() ) == "Lepton" )
-                    tau_decay_lcharged += 1;
-
-                  /* Check if particle is hadron, i.e. Meson or Baryon */
-                  else if ( ( string( pdg_p->ParticleClass() ) == "Meson"  ) ||
-                            ( string( pdg_p->ParticleClass() ) == "Baryon" ) )
-                    tau_decay_hcharged += 1;
-                }
-            }
-        }
     }
 
   /* If QUARK (->jet) in event: Tag the tau candidate (i.e. jet) with smalles delta_R from this quark */
@@ -226,7 +157,9 @@ Leptoquarks::process_event(PHCompositeNode *topNode)
     }
 
   /* Fill event information to ntupple */
-  float event_data[16] = { (float) _ievent,
+  float event_data[18] = { (float) _ievent,
+                           (float) pt_miss,
+                           (float) pt_miss_phi,
                            (float) tau_found,
                            (float) quark_found,
                            (float) tau_eta,

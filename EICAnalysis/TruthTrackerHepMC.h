@@ -2,9 +2,10 @@
 #define __TRUTHTRACKERHEPMC_H__
 
 /*HepMC include */
+#include <HepMC/GenParticle.h>
 #include <phhepmc/PHHepMCGenEvent.h>
 #include <phhepmc/PHHepMCGenEventMap.h>
-
+//#include <phhepmc/PHHepMCGenParticle.h>
 /**
    Class with helpful functions to trace particle and event information through HepMC event records.
 
@@ -43,8 +44,21 @@ public:
       Return pointer to first daughter particle with matching ID found. */
   HepMC::GenParticle* FindDaughterParticle( int , HepMC::GenParticle* );
 
+  /** Locate beam lepton; the incident lepton is assumed to be the first particle in the particle list. */
+  HepMC::GenParticle* FindBeamLepton();
+
+  /** Locate beam hadron; the incident hadron is assumed to be the second particle in the particle list. */
+  HepMC::GenParticle* FindBeamHadron();
+
+  /** Locate scattered lepton; the scattered lepton beam is assumed to be the first final-state particle in the particle list with the same PDG code as the incident lepton beam. */
+  HepMC::GenParticle* FindScatteredLepton( );
+
+
   /** Function to find final decay products of given particle */
   void FindDecayParticles(HepMC::GenParticle *, uint&, uint&, uint&);
+
+  /** Function to calculate missing transverse momentum (pT_miss) and azimuthal angle of missing pT (pT_miss_phi) */
+  void FindMissingPt( float & , float & );
 
 private:
 
