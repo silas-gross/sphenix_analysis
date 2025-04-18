@@ -19,17 +19,17 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 
 	n_evts=0;
 	this->pedestalData=pedestal;
-	if(pedestal){
-		ohcal_min=0.014;
-		emcal_min=0.062;
-		ihcal_min=0.004;
-		all_min=0.1;
-	}
+	//if(pedestal){
+		this->ohcal_min=0.001;
+		this->emcal_min=0.062;
+		this->ihcal_min=0.001;
+		this->all_min=0.06;
+	//}
 	thresh_mins[0]=all_min;
 	thresh_mins[1]=emcal_min;
 	thresh_mins[2]=ihcal_min;
 	thresh_mins[3]=ohcal_min;
-	thresh_mins[4]=0.1;
+	thresh_mins[4]=0.06;
 	MethodHistograms* fc, *fe, *fi, *fo, *tc, *te, *ti, *to, *ac, *ae, *ai, *ao, *trc, *tre, *tri, *tro;
 //set bin widths to tower size
 	float allcal_thresh=1000*all_min;
@@ -688,6 +688,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 									float phi=atan2(py, px);
 									float eta=atanh(px/(std::sqrt(px*px+py*py+pz*pz)));
 									float r=1.;
+									if(std::abs(eta) > 1.1) continue;
 									std::array<float, 3> loc {eta, phi, r};
 									truth_pts[loc]=E;
 
@@ -1266,13 +1267,13 @@ void LargeRLENC::CalculateENC(StrippedDownTower* tower1, std::vector<StrippedDow
 			tower1->FullOutput->AddE2CValues(e2c, R_L);
 			//std::cout<<"Adding pair " <<R_L <<", "<<e2c <<std::endl;
 			if(sameRegion)tower1->RegionOutput->AddE2CValues(e2c, R_L); //this is the two point done noew 
-			for(auto t3:e3c_relevant)
+	/*		for(auto t3:e3c_relevant)
 			{
 				if(t3.first.second.first > thresh){
 					tower1->FullOutput->AddE3CValues(t3.first.second.second, t3.first.first);
 					if(t3.second) tower1->RegionOutput->AddE3CValues(t3.first.second.second, t3.first.first);
 					}
-				}	
+				}*/	
 			}	
 		
 	}//caluclate the flattend e3c
@@ -1286,7 +1287,7 @@ void LargeRLENC::JetEventObservablesBuilding(std::array<float, 3> central_tower,
 	//This is the Jet Event observable. Ideally I would seperate this out 
 	//Input is of the form <tower r, tower eta, tower phi>, tower E (vertex corrected)
 	//Output is <tower r, tower eta, tower phi>, <R=0.1-1.0, ETir> 
-<
+
 	for(int r=0; r<3; r++)
 	{
 		float Rmax=0.1;
@@ -1366,7 +1367,7 @@ void LargeRLENC::Print(const std::string &what) const
 			for(auto hv:hr){
 				hv->R_pt->Write();
 				hv->E2C->Write();
-				hv->E3C->Write();
+			//	hv->E3C->Write();
 				hv->R->Write();
 				hv->N->Write();
 				hv->E->Write();
@@ -1385,7 +1386,7 @@ void LargeRLENC::Print(const std::string &what) const
 			}
 			hv->R_pt->Write();
 			hv->E2C->Write();
-			hv->E3C->Write();
+			//hv->E3C->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();
@@ -1397,7 +1398,7 @@ void LargeRLENC::Print(const std::string &what) const
 			for( auto h:hv->histsvector)if(h) h->Write();	
 			hv->R_pt->Write();
 			hv->E2C->Write();
-			hv->E3C->Write();
+			//hv->E3C->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();
@@ -1409,7 +1410,7 @@ void LargeRLENC::Print(const std::string &what) const
 			for( auto h:hv->histsvector)if(h) h->Write();
 			hv->R_pt->Write();
 			hv->E2C->Write();
-			hv->E3C->Write();
+		//	hv->E3C->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();
@@ -1421,7 +1422,7 @@ void LargeRLENC::Print(const std::string &what) const
 	//		for( auto h:hv->histsvector)if(h) h->Write(); //this stopped working for some reason
 			hv->R_pt->Write();
 			hv->E2C->Write();
-			hv->E3C->Write();
+		//	hv->E3C->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();

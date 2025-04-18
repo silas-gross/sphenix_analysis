@@ -133,7 +133,7 @@ class DijetEventCuts{
 
 			}
 			
-alse;
+				
 			}
 			//if(subleadjetpt < subleadingpt || !haspartner) good=false;
 			passesCut=good;
