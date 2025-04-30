@@ -26,7 +26,8 @@ mv $outfile_namestem"-S"$seedn"-"$filetag".out" $outfile_namestem"-"$filetag".ou
 mv $outfile_namestem"-S"$seedn"-"$filetag".tex" $outfile_namestem"-"$filetag".tex"
 mv $outfile_nameseed $outfile_name
 if [[ $triggervalue -gt -1 ]]; then 
-	/sphenix/user/sgross/sphenix_analysis/HerwigToHepMCProduction/RunHerwigHepMCFilter.sh $outfile_name $triggervalue $goalevents
+	echo $goalevents
+	/sphenix/user/sgross/sphenix_analysis/HerwigToHepMCProduction/HerwigHepMCFilter/RunHerwigHepMCFilter.sh $outfile_name $triggervalue $goalevents
 	rm $outfile_name
 fi
  

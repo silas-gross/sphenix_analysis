@@ -5,4 +5,4 @@ source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 input_file=${1:-''}
 jet_trigger=${2:-'10.'}
 n_events=${3:-'1000'}
-root.exe -x -b  /sphenix/user/sgross/coresoftware/generators/Herwig/HerwigHepMCFilter/RunHerwigHepMCFilter.C\(\"$input_file\",\"$jet_trigger\",$n_events\) 
+root.exe -x -b  /sphenix/user/sgross/sphenix_analysis/HerwigToHepMCProduction/HerwigHepMCFilter/RunHerwigHepMCFilter.C\(\"$input_file\",\"$jet_trigger\",$n_events\) 
