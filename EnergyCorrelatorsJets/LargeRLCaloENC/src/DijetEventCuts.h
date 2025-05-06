@@ -58,8 +58,9 @@ class DijetEventCuts{
 			//check if the particular event passed the cut 
 			bool good=true;
 			m_ohcalrat=hcalratio;
+			std::cout<<hcalratio<<std::endl;
 			if(hcalratio < 0 ) good=false;
-			if(hcalratio >0.95 /* maxOHCAL*/) good=false;
+			if(hcalratio > 0.95 /* maxOHCAL*/) good=false;
 			if(abs(vertex[2]) > 30 ) good=false; //cut on z=30 vertex
 			m_zvtx=vertex[2];
 			float leadjetpt=0., subleadjetpt=0.;
@@ -146,6 +147,46 @@ class DijetEventCuts{
 		}
 		float getLeadPhi(){ return leadphi;}
 		float getLeadEta(){ return leadeta;}
+		bool  getIsDijet(){ return m_isdijet;}
+		void dumpStatus(){
+			if(passesCut){
+				std::cout<<"A dijet event was found in the expected parameters. \n"
+						<<"The Lead jet is at phi = " 
+						<<leadphi <<" eta = " <<leadeta 
+						<<" with p_T = " <<m_lpt <<" GeV \n"
+						<<"The Sublead jet is at phi = " <<leadphi+m_deltaphi 
+						<<" eta = " <<m_etasl 
+						<<" with p_T = " <<m_slpt <<" GeV \n" <<std::endl;
+				}
+			else{
+				std::cout<<"Failed to find a dijet event. Outputing all crosschecked variables \n"
+				<<"\n passesCut: " <<passesCut
+				<<"\n m_isdijet: " <<m_isdijet
+				<<"\n m_nJets: " <<m_nJets
+				<<"\n leadingpt: " <<leadingpt
+				<<"\n subleadingpt: " <<subleadingpt 
+				<<"\n etaedge: " <<etaedge
+				<<"\n deltaphi: " <<deltaphi
+				<<"\n maxOHCAL: " <<maxOHCAL
+				<<"\n negativeEnergy: " <<negativeEnergy
+				<<"\n m_ohcalrat: " <<m_ohcalrat
+				<<"\n m_zvtx: " <<m_zvtx
+				<<"\n m_lpt: " <<m_lpt
+				<<"\n m_slpt: " <<m_slpt
+				<<"\n m_etal: " <<m_etal
+				<<"\n m_etasl: " <<m_etasl
+				<<"\n m_ile: " <<m_ile
+				<<"\n m_isle: " <<m_isle
+				<<"\n m_deltaphi: " <<m_deltaphi
+				<<"\n leadphi: " <<leadphi
+				<<"\n leadeta: " <<leadeta
+				<<"\n m_subleadingER: " <<m_subleadingER
+				<<"\n m_leadER: "<<m_leadER
+				<<"\n m_subleadingER_E: " <<m_subleadingER_E
+				<<"\n m_leadER_E: " <<m_leadER_E
+				<<"\n m_hasnege: " <<m_hasnege <<std::endl;
+			}
+		}
 		void getDijets(JetContainer* event_jets, std::vector<std::array<float, 3>>* dijet_sets)
 		{
 			std::vector<std::pair<Jet*, Jet*>> dijet_pairs;

@@ -25,6 +25,64 @@
 #include <map>
 std::vector<TDirectory*> file_dir_top;
 std::vector<std::array<TDirectory*,4>> lower_dirs;	
+
+void PlotTruthandData(TH1F* h_truth_eec, TH1F* h_data_eec, std::string type, int n_events, int cut=10)
+{
+	TCanvas* c1=new TCanvas();
+	TPad* p1=new TPad("p1", "p1", 0, 0.35, 1, 1);
+	TPad* p2=new TPad("p2", "p2", 0, 0, 1, 0.33);
+	p1->cd();
+	TLegend* l1=new TLegend();
+	TLegend* l2=new TLegend();
+	h_truth_eec->GetXaxis()->SetRangeUser(0, 5);
+	h_data_eec->GetXaxis()->SetRangeUser(0, 5);
+	l1->SetFillStyle(0);
+	l1->SetFillColor(0);
+	l1->SetBorderSize(0);
+	l2->SetFillStyle(0);
+	l2->SetFillColor(0);
+	l2->SetBorderSize(0);
+	l1->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
+	l1->AddEntry("", "Pythia8 p+p", "");
+	l1->AddEntry("", "#sqrt{s} = 200 GeV", "");
+	l1->AddEntry("", Form("%d events", n_events), "");	
+	l1->AddEntry("", Form("Average 2 Point Energy correlator %s", type.c_str()), "");
+	l1->AddEntry("", "p_{T}^{lead} #geq 12 GeV", "");
+	l1->AddEntry("", "p_{T}^{subleading} #geq 7 GeV", "");
+//	l1->AddEntry("", "|#Delta #varphi | #geq #frac{7 #pi}{8}", "");
+//	l1->AddEntry("", "|#eta|_{jet} #leq 0.7", "");
+	l1->AddEntry("", "|#eta|_{comp} #leq 1.1", "");
+	l1->SetTextSize(0.03f);
+	l2->SetTextSize(0.03f);
+	TH1F* h_rat=(TH1F*)h_data_eec->Clone();
+	h_rat->Divide(h_truth_eec);
+	h_truth_eec->SetLineColor(kPink+9);
+	h_truth_eec->SetMarkerColor(kPink+9);
+	h_truth_eec->Draw();
+	h_data_eec->SetLineColor(kCyan);
+	h_data_eec->SetMarkerColor(kCyan);
+	h_data_eec->SetMarkerStyle(22);
+	h_data_eec->Draw("same");
+	l2->AddEntry(h_data_eec, "Sum of Calorimeters, Pythia8 + GEANT4 + Noise, E > 60 MeV");
+	l2->AddEntry(h_truth_eec, Form("Pythia8 Truth Particles, E > %d MeV", cut));
+	p1->SetLogy();
+	l1->Draw();
+	l2->Draw();
+	c1->cd();
+	p1->Draw();
+	p2->cd();
+	h_rat->SetLineColor(kViolet);
+	h_rat->SetMarkerColor(kViolet);
+	h_rat->Draw();
+	l2->AddEntry(h_rat, "Reconstructed / Truth");
+	c1->cd();
+	p2->Draw();
+	return;	
+}
+
+
+
+
 void LoadInRegionPlots(TDirectory* botdir, std::vector<std::vector<TH1F*>*>* RegionPlots)
 {
 	int Calo=0;

@@ -20,16 +20,16 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	n_evts=0;
 	this->pedestalData=pedestal;
 	//if(pedestal){
-		this->ohcal_min=0.001;
+		this->ohcal_min=0.014;
 		this->emcal_min=0.062;
-		this->ihcal_min=0.001;
-		this->all_min=0.06;
+		this->ihcal_min=0.004;
+		this->all_min=0.1;
 	//}
 	thresh_mins[0]=all_min;
 	thresh_mins[1]=emcal_min;
 	thresh_mins[2]=ihcal_min;
 	thresh_mins[3]=ohcal_min;
-	thresh_mins[4]=0.06;
+	thresh_mins[4]=0.1;
 	MethodHistograms* fc, *fe, *fi, *fo, *tc, *te, *ti, *to, *ac, *ae, *ai, *ao, *trc, *tre, *tri, *tro;
 //set bin widths to tower size
 	float allcal_thresh=1000*all_min;
@@ -103,7 +103,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	this->jetMinpT=jet_min_pT;
 	this->algo="Tower";
 	this->radius="r04";
-	this->eventCut=new DijetEventCuts();
+	this->eventCut=new DijetEventCuts(12., 7., 0.7, PI*0.75, 1.);
 	this->which_variable=vari;
 	this->output_file_name="Large_RL_ENC_def_"+algo+"_dijets_anti_kT_"+radius+"-"+std::to_string(nRun)+"-"+std::to_string(nSegment)+".root";
 	DijetQA=new TTree("DijetQA", "Dijet Event QA");
@@ -125,7 +125,17 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	EEC->Branch("R_i", 	 &m_ri);
 
 	EEC->Branch("3_pt",      &m_e3c /*, "region/C:calo/C:r_l/F:e3c/F"*/);
-
+	
+	h_total_E=new TH1F("h_total_E", "Total Energy in all calorimeters, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
+	h_ohcal_E=new TH1F("h_ohcal_E", "Total Energy in ohcal, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
+	h_ihcal_E=new TH1F("h_ihcal_E", "Total Energy in ihcal, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
+	h_emcal_E=new TH1F("h_emcal_E", "Total Energy in emcal, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
+	h_truth_E=new TH1F("h_truth_E", "Total Energy Truth Particles, _{tow} #geq %d MeV; E [GeV]; N_{events}", 200, -0.5, 199.5);
+	h_total_E_c=new TH1F("h_total_E_c", Form("Total Energy in all calorimeters, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)allcal_thresh), 200, -0.5, 199.5);
+	h_ohcal_E_c=new TH1F("h_ohcal_E_c", Form("Total Energy in ohcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)ohcal_thresh), 200, -0.5, 199.5);
+	h_ihcal_E_c=new TH1F("h_ihcal_E_c", Form("Total Energy in ihcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)ihcal_thresh), 200, -0.5, 199.5);
+	h_emcal_E_c=new TH1F("h_emcal_E_c", Form("Total Energy in emcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)emcal_thresh), 200, -0.5, 199.5);
+	h_truth_E_c=new TH1F("h_truth_E_c", "Total Energy Truth Particles, E_{particle} #geq 100 MeV; E [GeV]; N_{events}", 200, -0.5, 199.5);
 	emcal_occup=new TH1F("emcal_occup", "Occupancy in the emcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
 	ihcal_occup=new TH1F("ihcal_occup", "Occupancy in the ihcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
 	ohcal_occup=new TH1F("ohcal_occup", "Occupancy in the ohcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
@@ -142,6 +152,16 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	E_IE=new TH2F("E_IE", "Radial Energy Distribution of jets as a function of jet energy; E [GeV]; #sum E_{i} R^{2}/E_{j}; N_{jets}", 100, -0.5, 99.5, 100, -0.05, 1.45);
 	badE_IE=new TH2F("badE_IE", "Radial Energy Distribution of jets as a function of jet energy failing dijet cuts; E [GeV]; #sum E_{i} R^{2}/E_{j}; N_{jets}", 100, -0.5, 99.5, 100, -0.05, 1.45);
 	goodE_IE=new TH2F("goodE_IE", "Radial Energy Distribution of jets as a function of jet energy passing dijet cuts; E [GeV]; #sum E_{i} R^{2}/E_{j}; N_{jets}", 100, -0.5, 99.5, 100, -0.05, 1.45);
+	h_E_truth=new TH1F("h_E_truth", "Truth Particle Energy; E [GeV]; N_{particles}", 5000, -0.005, 49.95);
+	h_pt_truth=new TH1F("h_pt_truth", "Truth Particle Transverse Momentum; p_{T} [GeV]; N_{particles}", 5000, -0.005, 49.95);
+	h_phi_truth=new TH1F("h_phi_truth", "Truth Particle #varphi position; #varphi; N_{particles}", 256, 0, 2*PI);
+	h_eta_truth=new TH1F("h_eta_truth", "Truth Particle #eta position; #eta; N_{particles}", 384, -4.4, 4.4);
+	h_E_reco=new TH1F("h_E_reco", "Truth Particle Energy; E [GeV]; N_{particles}", 5000, -0.005, 49.95);
+	h_pt_reco=new TH1F("h_pt_reco", "Truth Particle Transverse Momentum; p_{T} [GeV]; N_{particles}", 5000, -0.005, 49.95);
+	h_phi_reco=new TH1F("h_phi_reco", "Truth Particle #varphi position; #varphi; N_{particles}", 256, 0, 2*PI);
+	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 384, -4.4, 4.4);
+	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 64, -PI, PI, 48, -2.2, 2.2); 	
+	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 64, -PI, PI, 48, -2.2, 2.2); 	
 	MinpTComp=0.01; //10 MeV cut on tower/components
 	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
 		std::string Calo_name;
@@ -494,7 +514,9 @@ void LargeRLENC::addTower(int n, TowerInfoContainer* energies, RawTowerGeomConta
 //	std::cout<<"energy is " <<tower->get_energy()<<std::endl;
 	std::array<float, 3> center {etacenter, phicenter, r};
 
-	if(td != RawTowerDefs::CEMC && (td != RawTowerDefs::HCALOUT && this->pedestalData)) towers->insert(std::make_pair(center, tower->get_energy()));
+	if(td != RawTowerDefs::CEMC && !this->pedestalData){
+		towers->insert(std::make_pair(center, tower->get_energy()));
+	}
 	else if (td == RawTowerDefs::HCALOUT && this->pedestalData) towers->insert(std::make_pair(center, tower->get_energy()/100.));
 
 	else if(td==RawTowerDefs::CEMC){
@@ -643,11 +665,15 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	int emcal_oc=0; //allow for occupancy to be calculated seperate from the other bits
 	float emcal_energy=0., ihcal_energy=0., ohcal_energy=0., total_energy=0., ohcal_rat=0.;
 	std::map<std::array<float, 3>, float> ihcal_towers, emcal_towers, ohcal_towers, truth_pts; //these are just to collect the non-zero towers to decrease the processing time 
+	float e1=0, e2=0, e3=0, e4=0;
 	for(int n=0; n<(int) emcal_tower_energy->size(); n++){
 		if(! emcal_tower_energy->get_tower_at_channel(n)->get_isGood()) continue;
 		float energy=emcal_tower_energy->get_tower_at_channel(n)->get_energy();
-		if(energy > emcal_min )//put zero supression into effect
+		e1+=energy;
+		if(energy > emcal_min ){//put zero supression into effect
 			addTower(n, emcal_tower_energy, emcal_geom, &emcal_towers, RawTowerDefs::CEMC   );
+			e1+=energy;
+		}
 		if(energy > emcal_min) emcal_oc++;
 		emcal_energy+=energy;
 	}
@@ -655,18 +681,22 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		if(n >= (int)ihcal_tower_energy->size()) continue;
 		if(! ihcal_tower_energy->get_tower_at_channel(n)->get_isGood()) continue;
 		float energy=ihcal_tower_energy->get_tower_at_channel(n)->get_energy();
-		if(energy > ihcal_min) //zero suppression is at 10 MeV in IHCAL
+		if(energy > ihcal_min){ //zero suppression is at 10 MeV in IHCAL
 			addTower(n, ihcal_tower_energy, ihcal_geom, &ihcal_towers, RawTowerDefs::HCALIN  );
+			e2+=energy;
+		}
 		ihcal_energy+=energy;
 	}
 	for(int n=0; n<(int) ohcal_tower_energy->size(); n++){
 		if(! ohcal_tower_energy->get_tower_at_channel(n)->get_isGood()) continue;
 		float energy=ohcal_tower_energy->get_tower_at_channel(n)->get_energy();
-		if(energy > ohcal_min ) //10 MeV cutoff 
+		if(energy > ohcal_min ){ //10 MeV cutoff 
 			addTower(n, ohcal_tower_energy, ohcal_geom, &ohcal_towers, RawTowerDefs::HCALOUT );
+			e3+=energy;	
+		}
 		ohcal_energy+=energy;
 	}
-	
+	float truth_energy=0, e5=0;
 	if(!isRealData && !pedestalData){
 		auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
 		if(hepmc_gen_event){
@@ -681,14 +711,21 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 							if((*iter))
 							{
 								if(!(*iter)->end_vertex() && (*iter)->status() == 1){
+									if(abs((*iter)->pdg_id()) >= 12 && abs((*iter)->pdg_id()) <= 16) continue;
 									float px=(*iter)->momentum().px();
 									float py=(*iter)->momentum().py();
 									float pz=(*iter)->momentum().pz();
 									float E=(*iter)->momentum().e();
-									float phi=atan2(py, px);
+									float phi=atan2(py, px)+PI;
 									float eta=atanh(px/(std::sqrt(px*px+py*py+pz*pz)));
 									float r=1.;
-									if(std::abs(eta) > 1.1) continue;
+									truth_energy+=E;
+									h_E_truth->Fill(E);
+									h_pt_truth->Fill(std::sqrt(pow(px,2) + pow(py, 2)));
+									h_phi_truth->Fill(phi);
+									h_eta_truth->Fill(eta);
+									if(std::abs(eta) > 1.1 || E < 0.1 ) continue;
+									e5+=E;
 									std::array<float, 3> loc {eta, phi, r};
 									truth_pts[loc]=E;
 
@@ -737,6 +774,16 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		
 	isDijet=eventCut->passesTheCut(jets, ohcal_jet_rat, emcal_jet_rat, ohcal_rat, vertex, jet_ie);	
 	if(!isDijet || !triggered_event){ //stores some data about the bad cuts to look for any arrising structure
+		std::cout<<eventCut->getIsDijet()<<std::endl;
+		eventCut->dumpStatus();
+		if(jets->size() > 0){
+			int l=0;
+			for(auto j:*jets){
+				l++;
+				if(l==4) break;
+				std::cout<<"phi of jets " <<j->get_phi() <<std::endl;
+			}
+		}
 		ohcal_rat_occup->Fill(ohcal_rat, ohcal_occupancy);
 		if(ohcal_rat > 0.9){
 		       	for(auto p:ohcal_towers)ohcal_bad_hits->Fill(p.first[0], p.first[1], p.second);
@@ -752,15 +799,17 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	       	return Fun4AllReturnCodes::EVENT_OK;
 	}
 	else{
+		
 		i1=0;
+		
 		for(auto j:*jets){
 			if(jet_ie.at(i1) > 0 )goodIE->Fill(jet_ie.at(i1));
 			if(jet_ie.at(i1) > 0 )goodE_IE->Fill(j->get_e(), jet_ie.at(i1));
 			i1++;
 		}
-		float lead_phi=eventCut->getLeadPhi();
+		
 		eventCut->getDijets(jets, &m_dijets);
-
+		
 		m_vertex=vertex;
 		m_etotal=total_energy;
 		m_eemcal=emcal_energy;
@@ -768,7 +817,52 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		m_eohcal=ohcal_energy;
 		m_philead=eventCut->getLeadPhi();
 		m_etalead=eventCut->getLeadEta();
-
+		
+		e4=e1+e2+e3;
+		
+		h_total_E->Fill(total_energy);
+		h_total_E_c->Fill(e4);
+		h_ohcal_E->Fill(ohcal_energy);
+		h_ohcal_E_c->Fill(e3);
+		h_ihcal_E->Fill(ihcal_energy);
+		h_ihcal_E_c->Fill(e2);
+		h_emcal_E->Fill(emcal_energy);
+		h_emcal_E_c->Fill(e1);
+		h_truth_E->Fill(truth_energy);
+		h_truth_E_c->Fill(e5);
+		
+		for(auto l:truth_pts){
+			float dphi = l.first.at(1) - m_philead;
+			if(dphi > PI ) dphi+=-2*PI;
+			else if(dphi < -PI) dphi+=2*PI;
+			float deta = l.first.at(0) - m_etalead;
+			h_jet_truth->Fill(dphi, deta, l.second);
+		}
+		
+		std::map<std::array<float, 3>, float>allcal;
+		for(auto t:emcal_towers) allcal[t.first]=t.second;
+		for(auto t:ihcal_towers){
+			if(allcal.find(t.first) != allcal.end()) allcal[t.first]+=t.second;
+			else allcal[t.first]=t.second;
+		}
+		
+		for(auto t:ohcal_towers){
+			if(allcal.find(t.first) != allcal.end()) allcal[t.first]+=t.second;
+			else allcal[t.first]=t.second;
+		}
+		std::cout<<"AllCal has size " <<allcal.size() <<std::endl;
+		for(auto l:allcal){
+			float dphi = l.first.at(1) - m_philead;
+			if(dphi > PI ) dphi+=-2*PI;
+			else if(dphi < -PI) dphi+=2*PI;
+			float deta = l.first.at(0) - m_etalead;
+			h_jet_reco->Fill(dphi, deta, l.second);
+			h_E_reco->Fill(l.second);
+			h_phi_reco->Fill(l.first.at(1));
+			h_eta_reco->Fill(l.first.at(0));
+		}
+		
+			
 		int i=0;
 		for(auto j:*jets){
 			if(!j) continue;
@@ -778,10 +872,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			Region_vector[0][3]->pt->Fill(j->get_pt()*(ohcal_jet_rat.at(i)));
 			i++;
 		}
+		
 		if(isDijet) n_with_jets++;
 		//this is running the actual analysis
-		LargeRLENC::CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, jetMinpT, which_variable, vertex, lead_phi);
-		if(!isRealData && !pedestalData) LargeRLENC::TruthRegion(truth_pts, jetMinpT, which_variable, vertex, lead_phi); 
+		LargeRLENC::CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, jetMinpT, which_variable, vertex, m_philead);
+		if(!isRealData && !pedestalData) LargeRLENC::TruthRegion(truth_pts, jetMinpT, which_variable, vertex, m_philead); 
+		
 		DijetQA->Fill();
 	}
 	return Fun4AllReturnCodes::EVENT_OK;
@@ -960,7 +1056,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 	
 	//Processs the calorimeter data into my analysis class
 	//Do the vertex shift and add it into the output 
-	std::cout<<"Incoming prefiltered towers : " <<cal.size() <<std::endl;
+	std::cout<<"Incoming prefiltered towers : " <<cal.size()  <<" Calorimeter Number " <<which_calo <<std::endl;
 	if(cal.size() == 0 ) return; 
 	while(i !=cal.end()){
 		auto j=i->first;
@@ -1345,9 +1441,29 @@ void LargeRLENC::Print(const std::string &what) const
 	E_IE->Write();
 	badE_IE->Write();
 	goodE_IE->Write();
+	h_eta_truth->Write(); 
+	h_phi_truth->Write();
+	h_E_truth->Write();
+	h_pt_truth->Write();
+	h_jet_truth->Write();
+	h_eta_reco->Write(); 
+	h_phi_reco->Write();
+	h_E_reco->Write();
+	h_pt_reco->Write();
+	h_jet_reco->Write();
+	h_total_E->Write();
+	h_total_E_c->Write();
+	h_emcal_E->Write();
+	h_emcal_E_c->Write();
+	h_ihcal_E->Write();
+	h_ihcal_E_c->Write();
+	h_ohcal_E->Write();
+	h_ohcal_E_c->Write();
+	h_truth_E->Write();
+	h_truth_E_c->Write();
 	eventCut->JetCuts->Write();
 	std::vector<TDirectory*> region_dirs;
-	std::cout<<__LINE__<<std::endl;
+	
 	auto FullCal=Region_vector.at(0);
 	auto TowardRegion=Region_vector.at(1);
 	auto AwayRegion=Region_vector.at(2);
@@ -1356,7 +1472,7 @@ void LargeRLENC::Print(const std::string &what) const
 	TDirectory* dir_towrd=f1->mkdir("Towards_Region");
 	TDirectory* dir_away=f1->mkdir("Away_Region");
 	TDirectory* dir_trans=f1->mkdir("Transverse_Region");
-	std::cout<<__LINE__<<std::endl;
+	
 	std::vector<TDirectory*> tds {dir_full, dir_towrd, dir_away, dir_trans};
 	if(!isRealData && !pedestalData)
 	{
@@ -1376,7 +1492,7 @@ void LargeRLENC::Print(const std::string &what) const
 		}
 	}	
 		dir_full->cd();
-		std::cout<<__LINE__<<std::endl;
+		
 		for(auto hv:FullCal){
 			for( auto h:hv->histsvector){
 				try{
@@ -1393,7 +1509,7 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->pt->Write();
 		}
 		dir_trans->cd();
-		std::cout<<__LINE__<<std::endl;
+		
 		for(auto hv:TransverseRegion){
 			for( auto h:hv->histsvector)if(h) h->Write();	
 			hv->R_pt->Write();
@@ -1405,7 +1521,7 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->pt->Write();
 		}
 		dir_away->cd();
-		std::cout<<__LINE__<<std::endl;
+		
 		for(auto hv:AwayRegion){
 			for( auto h:hv->histsvector)if(h) h->Write();
 			hv->R_pt->Write();
@@ -1417,7 +1533,7 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->pt->Write();
 		}
 		dir_towrd->cd();
-		std::cout<<__LINE__<<std::endl;
+		
 		for(auto hv:TowardRegion){	
 	//		for( auto h:hv->histsvector)if(h) h->Write(); //this stopped working for some reason
 			hv->R_pt->Write();
@@ -1430,10 +1546,10 @@ void LargeRLENC::Print(const std::string &what) const
 			}
 		
 		
-	std::cout<<__LINE__<<std::endl;
+	
 	f1->cd();
 	f1->Write();
-	std::cout<<__LINE__<<std::endl;
+	
 
 	f1->Close();
 	return;	
