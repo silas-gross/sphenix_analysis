@@ -243,11 +243,11 @@ class LargeRLENC : public SubsysReco
 	TH1F* h_pt_reco;
 	TH2F* h_jet_reco;
 	TH2F* h_jet_truth;
-	TH1F* h_total_E, *h_total_E_c;	
-	TH1F* h_truth_E, *h_truth_E_c;	
-	TH1F* h_ohcal_E, *h_ohcal_E_c;	
-	TH1F* h_ihcal_E, *h_ihcal_E_c;	
-	TH1F* h_emcal_E, *h_emcal_E_c;	
-
+	TH1F* h_total_E, *h_total_E_c, *h_total_E_dc;	
+	TH1F* h_truth_E, *h_truth_E_c, *h_truth_E_dc;	
+	TH1F* h_ohcal_E, *h_ohcal_E_c, *h_ohcal_E_dc;	
+	TH1F* h_ihcal_E, *h_ihcal_E_c, *h_ihcal_E_dc;	
+	TH1F* h_emcal_E, *h_emcal_E_c, *h_emcal_E_dc;	
+	TH1F* h_jet_pt;
 };
 #endif // LARGERLENC_H

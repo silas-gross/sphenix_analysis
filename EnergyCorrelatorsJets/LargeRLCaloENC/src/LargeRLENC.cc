@@ -28,7 +28,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	thresh_mins[1]=emcal_min;
 	thresh_mins[2]=ihcal_min;
 	thresh_mins[3]=ohcal_min;
-	thresh_mins[4]=0.1;
+	thresh_mins[4]=1.;
 	MethodHistograms* fc, *fe, *fi, *fo, *tc, *te, *ti, *to, *ac, *ae, *ai, *ao, *trc, *tre, *tri, *tro;
 //set bin widths to tower size
 	float allcal_thresh=1000*all_min;
@@ -125,16 +125,21 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 
 	EEC->Branch("3_pt",      &m_e3c /*, "region/C:calo/C:r_l/F:e3c/F"*/);
 	
-	h_total_E=new TH1F("h_total_E", "Total Energy in all calorimeters, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
-	h_ohcal_E=new TH1F("h_ohcal_E", "Total Energy in ohcal, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
-	h_ihcal_E=new TH1F("h_ihcal_E", "Total Energy in ihcal, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
-	h_emcal_E=new TH1F("h_emcal_E", "Total Energy in emcal, no cuts; E [GeV]; N_{events}", 200, -0.5, 199.5);
-	h_truth_E=new TH1F("h_truth_E", "Total Energy Truth Particles, _{tow} #geq %d MeV; E [GeV]; N_{events}", 200, -0.5, 199.5);
-	h_total_E_c=new TH1F("h_total_E_c", Form("Total Energy in all calorimeters, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)allcal_thresh), 200, -0.5, 199.5);
-	h_ohcal_E_c=new TH1F("h_ohcal_E_c", Form("Total Energy in ohcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)ohcal_thresh), 200, -0.5, 199.5);
-	h_ihcal_E_c=new TH1F("h_ihcal_E_c", Form("Total Energy in ihcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)ihcal_thresh), 200, -0.5, 199.5);
-	h_emcal_E_c=new TH1F("h_emcal_E_c", Form("Total Energy in emcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)emcal_thresh), 200, -0.5, 199.5);
-	h_truth_E_c=new TH1F("h_truth_E_c", "Total Energy Truth Particles, E_{particle} #geq 100 MeV; E [GeV]; N_{events}", 200, -0.5, 199.5);
+	h_total_E=new TH1F("h_total_E", "Total Energy in all calorimeters, no cuts; E [GeV]; N_{events}", 300, -0.5, 299.5);
+	h_ohcal_E=new TH1F("h_ohcal_E", "Total Energy in ohcal, no cuts; E [GeV]; N_{events}", 300, -0.5, 299.5);
+	h_ihcal_E=new TH1F("h_ihcal_E", "Total Energy in ihcal, no cuts; E [GeV]; N_{events}", 300, -0.5, 299.5);
+	h_emcal_E=new TH1F("h_emcal_E", "Total Energy in emcal, no cuts; E [GeV]; N_{events}", 300, -0.5, 299.5);
+	h_truth_E=new TH1F("h_truth_E", "Total Energy Truth Particles, _{tow} #geq %d MeV; E [GeV]; N_{events}", 300, -0.5, 299.5);
+	h_total_E_c=new TH1F("h_total_E_c", Form("Total Energy in all calorimeters, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)allcal_thresh), 300, -0.5, 299.5);
+	h_ohcal_E_c=new TH1F("h_ohcal_E_c", Form("Total Energy in ohcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)ohcal_thresh), 300, -0.5, 299.5);
+	h_ihcal_E_c=new TH1F("h_ihcal_E_c", Form("Total Energy in ihcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)ihcal_thresh), 300, -0.5, 299.5);
+	h_emcal_E_c=new TH1F("h_emcal_E_c", Form("Total Energy in emcal, E_{tow} #geq %d MeV; E [GeV]; N_{events}", (int)emcal_thresh), 300, -0.5, 299.5);
+	h_truth_E_c=new TH1F("h_truth_E_c", "Total Energy Truth Particles, E_{particle} #geq 1 GeV; E [GeV]; N_{events}", 300, -0.5, 299.5);
+	h_total_E_dc=new TH1F("h_total_E_dc", Form("E_{true} - E_{cut} in all calorimeters, E_{tow} #geq %d MeV; #Delta E[GeV]; N_{events}", (int)allcal_thresh), 300, -0.5, 299.5);
+	h_ohcal_E_dc=new TH1F("h_ohcal_E_dc", Form("E_{true} - E_{cut} in ohcal, E_{tow} #geq %d MeV; #Delta E[GeV]; N_{events}", (int)ohcal_thresh), 300, -0.5, 299.5);
+	h_ihcal_E_dc=new TH1F("h_ihcal_E_dc", Form("E_{true} - E_{cut} in ihcal, E_{tow} #geq %d MeV; #Delta E[GeV]; N_{events}", (int)ihcal_thresh), 300, -0.5, 299.5);
+	h_emcal_E_dc=new TH1F("h_emcal_E_dc", Form("E_{true} - E_{cut} in emcal, E_{tow} #geq %d MeV; #Delta E[GeV]; N_{events}", (int)emcal_thresh), 300, -0.5, 299.5);
+	h_truth_E_dc=new TH1F("h_truth_E_dc", "E_{true} - E_{cut} Truth Particles, E_{particle} #geq 1 GeV; #Delta E[GeV]; N_{events}", 300, -0.5, 299.5);
 	emcal_occup=new TH1F("emcal_occup", "Occupancy in the emcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
 	ihcal_occup=new TH1F("ihcal_occup", "Occupancy in the ihcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
 	ohcal_occup=new TH1F("ohcal_occup", "Occupancy in the ohcal in individual runs; Percent of Towers; N_{evts}", 100, -0.05, 99.5);
@@ -161,7 +166,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 384, -4.4, 4.4);
 	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -1.5*PI, 1.5*PI, 100, -2.2, 2.2); 	
 	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -1.5*PI, 1.5*PI, 100, -2.2, 2.2); 	
-	//h_jet_pt=new TH1F("h_jet_pt", "Jet pt for all jets", 1000, -0.5, 99.5);
+	h_jet_pt=new TH1F("h_jet_pt", "Jet pt for all jets", 1000, -0.5, 99.5);
 	MinpTComp=0.01; //10 MeV cut on tower/components
 	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
 		std::string Calo_name;
@@ -680,9 +685,9 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		std::cout<<"Jet Container empty, skipping event" <<std::endl;
 		return Fun4AllReturnCodes::EVENT_OK;
 	}
-/*	else{
+	else{
 		for(auto j:*jets) h_jet_pt->Fill(j->get_pt());
-	}*/
+	}
 	std::array<float, 3> vertex={0.,0.,0.}; //set the initial vertex to origin 
 	try{
 		GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
@@ -896,7 +901,11 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		h_emcal_E_c->Fill(e1);
 		h_truth_E->Fill(truth_energy);
 		h_truth_E_c->Fill(e5);
-		
+		h_total_E_dc->Fill(total_energy-e4);	
+		h_ohcal_E_dc->Fill(ohcal_energy-e3);	
+		h_ihcal_E_dc->Fill(ihcal_energy-e2);	
+		h_emcal_E_dc->Fill(emcal_energy-e1);	
+		h_truth_E_dc->Fill(truth_energy-e5);	
 		for(auto l:truth_pts){
 			float dphi = l.first.at(1) - m_philead;
 			if(dphi > PI ) dphi+=-2*PI;
@@ -1519,14 +1528,19 @@ void LargeRLENC::Print(const std::string &what) const
 	h_jet_reco->Write();
 	h_total_E->Write();
 	h_total_E_c->Write();
+	h_total_E_dc->Write();
 	h_emcal_E->Write();
 	h_emcal_E_c->Write();
+	h_emcal_E_dc->Write();
 	h_ihcal_E->Write();
 	h_ihcal_E_c->Write();
+	h_ihcal_E_dc->Write();
 	h_ohcal_E->Write();
 	h_ohcal_E_c->Write();
+	h_ohcal_E_dc->Write();
 	h_truth_E->Write();
 	h_truth_E_c->Write();
+	h_truth_E_dc->Write();
 	eventCut->JetCuts->Write();
 	std::vector<TDirectory*> region_dirs;
 	
