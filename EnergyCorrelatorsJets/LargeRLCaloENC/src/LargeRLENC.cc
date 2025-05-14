@@ -5,9 +5,8 @@
 //			Author: Skaydi Grossberndt						//
 //			Depends on: Calorimeter Tower ENC 					//
 //			First Commit date: 18 Oct 2024						//
-//			Most recent Commit: 17 Apr 2025						//
-//			version: v5 single threshold value as derived from the values 	 	//
-
+//			Most recent Commit: 14 May 2025						//
+//			version: v5.5 investegating truth behavior 		 	 	//
 //												//
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -160,8 +159,9 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	h_pt_reco=new TH1F("h_pt_reco", "Truth Particle Transverse Momentum; p_{T} [GeV]; N_{particles}", 5000, -0.005, 49.95);
 	h_phi_reco=new TH1F("h_phi_reco", "Truth Particle #varphi position; #varphi; N_{particles}", 256, 0, 2*PI);
 	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 384, -4.4, 4.4);
-	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 64, -PI, PI, 48, -2.2, 2.2); 	
-	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 64, -PI, PI, 48, -2.2, 2.2); 	
+	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -1.5*PI, 1.5*PI, 100, -2.2, 2.2); 	
+	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -1.5*PI, 1.5*PI, 100, -2.2, 2.2); 	
+	//h_jet_pt=new TH1F("h_jet_pt", "Jet pt for all jets", 1000, -0.5, 99.5);
 	MinpTComp=0.01; //10 MeV cut on tower/components
 	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
 		std::string Calo_name;
@@ -199,7 +199,7 @@ bool LargeRLENC::triggerCut(bool use_em, PHCompositeNode* topNode)
 	return good_trigger;
 }
 		
-JetContainerv1* LargeRLENC::getJets(std::string input, std::string radius, std::array<float, 3> vertex, float ohcal_rat, PHCompositeNode* topNode)
+JetContainerv1* LargeRLENC::getJets(std::string input, std::string radius, PHCompositeNode* topNode)
 {
 	//This is just running the Fastjet reco 
 	JetContainerv1* fastjetCont=new JetContainerv1();
@@ -231,6 +231,51 @@ JetContainerv1* LargeRLENC::getJets(std::string input, std::string radius, std::
 		std::cout<<"The tower jet input has n many objects " <<psjets.size() <<std::endl;
 		for(auto p:psjets) jet_objs.push_back(fastjet::PseudoJet(p->get_px(), p->get_py(), p->get_pz(), p->get_e()));
 	}
+	else if(input.find("ruth") != std::string::npos)
+	{
+		auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
+		if(hepmc_gen_event){
+			for( PHHepMCGenEventMap::ConstIter evtIter=hepmc_gen_event->begin(); evtIter != hepmc_gen_event->end(); ++evtIter)
+			{
+				PHHepMCGenEvent* hpev=evtIter->second;
+				if(hpev){
+					HepMC::GenEvent* ev=hpev->getEvent();	
+					if(ev)
+					{
+						for(HepMC::GenEvent::particle_const_iterator iter=ev->particles_begin(); iter !=ev->particles_end(); ++iter){
+							if((*iter))
+							{
+								if(!(*iter)->end_vertex() && (*iter)->status() == 1){
+									if(abs((*iter)->pdg_id()) >= 12 && abs((*iter)->pdg_id()) <= 16) continue;
+									float px=(*iter)->momentum().px();
+									float py=(*iter)->momentum().py();
+									float pz=(*iter)->momentum().pz();
+									float E=(*iter)->momentum().e();
+									jet_objs.push_back(fastjet::PseudoJet(px, py, pz, E));
+
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		/*PHG4TruthInfoContainer *truthinfo=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+		if(truthinfo){
+			PHG4TruthInfoContainer::ConstRange range = truthinfo->GetPrimaryParticleRange();
+			for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter)
+			{ 
+				PHG4Particle *part = iter->second;
+				if(abs(part->get_pid()) >=12 && abs(part->get_pid()) <=16) continue;
+				float E = part->get_e();
+				float px = part->get_px();
+				float py = part->get_py();
+				float pz = part->get_pz();								
+				jet_objs.push_back(fastjet::PseudoJet(px, py, pz, E));
+			}
+		}*/
+	}
+		
 	else{
 		std::cout<<"Could not recognize input method" <<std::endl;
 	}
@@ -246,7 +291,7 @@ JetContainerv1* LargeRLENC::getJets(std::string input, std::string radius, std::
 		jet->set_e( j.e() );
 
 		for(auto cmp:j.constituents()){
-			jet->insert_comp(Jet::SRC::HCALOUT_CLUSTER, cmp.user_index());
+			jet->insert_comp(Jet::SRC::PARTICLE, cmp.user_index());
 		}
 	}
 	return fastjetCont;
@@ -600,7 +645,10 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		std::cout<<"Lookup table has size: " <<this->emcal_lookup_table.size() <<std::endl;
 	}
 	try{
-		if(!isRealData) jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Truth_r04"); //look for the r_04 truth jets
+		if(!isRealData){
+			 jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Truth_r04"); //look for the r_04 truth jets
+			if(jets->size() == 0 ) jets=getJets("Truth", radius, topNode);
+		}
 		else{
 			std::string recoJetName="AntiKt_"+algo+radius+"_Sub1";
 			jets = findNode::getClass<JetContainerv1>(topNode, recoJetName); //check for already reconstructed jets
@@ -632,6 +680,9 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		std::cout<<"Jet Container empty, skipping event" <<std::endl;
 		return Fun4AllReturnCodes::EVENT_OK;
 	}
+/*	else{
+		for(auto j:*jets) h_jet_pt->Fill(j->get_pt());
+	}*/
 	std::array<float, 3> vertex={0.,0.,0.}; //set the initial vertex to origin 
 	try{
 		GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
@@ -698,6 +749,25 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	}
 	float truth_energy=0, e5=0;
 	if(!isRealData && !pedestalData){
+		PHG4TruthInfoContainer *truthinfo=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+		if(truthinfo){
+			PHG4TruthInfoContainer::ConstRange range = truthinfo->GetPrimaryParticleRange();
+			for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter)
+			{ 
+				PHG4Particle *part = iter->second;
+				float E = part->get_e();
+				float px = part->get_px();
+				float py = part->get_py();
+				float pz = part->get_pz();								
+				float phi=atan2(py, px)+PI;
+				float eta=atanh(px/(std::sqrt(px*px+py*py+pz*pz)));
+				h_E_truth->Fill(E);
+				h_pt_truth->Fill(std::sqrt(pow(px,2) + pow(py, 2)));
+				h_phi_truth->Fill(phi);
+				h_eta_truth->Fill(eta);
+			}
+		}
+			
 		auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
 		if(hepmc_gen_event){
 			for( PHHepMCGenEventMap::ConstIter evtIter=hepmc_gen_event->begin(); evtIter != hepmc_gen_event->end(); ++evtIter)
@@ -711,7 +781,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 							if((*iter))
 							{
 								if(!(*iter)->end_vertex() && (*iter)->status() == 1){
-									if(abs((*iter)->pdg_id()) >= 12 && abs((*iter)->pdg_id()) <= 16) continue;
+									if(abs((*iter)->pdg_id()) >= 11 && abs((*iter)->pdg_id()) <= 16) continue;
 									float px=(*iter)->momentum().px();
 									float py=(*iter)->momentum().py();
 									float pz=(*iter)->momentum().pz();
@@ -720,10 +790,6 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 									float eta=atanh(px/(std::sqrt(px*px+py*py+pz*pz)));
 									float r=1.;
 									truth_energy+=E;
-									h_E_truth->Fill(E);
-									h_pt_truth->Fill(std::sqrt(pow(px,2) + pow(py, 2)));
-									h_phi_truth->Fill(phi);
-									h_eta_truth->Fill(eta);
 									if(std::abs(eta) > 1.1 || E < 0.1 ) continue;
 									e5+=E;
 									std::array<float, 3> loc {eta, phi, r};

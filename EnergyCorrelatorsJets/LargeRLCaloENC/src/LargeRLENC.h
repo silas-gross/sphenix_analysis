@@ -182,7 +182,7 @@ class LargeRLENC : public SubsysReco
 
 	std::array<float,3> HadronicEnergyBalence(Jet*, float, PHCompositeNode*);
 	std::vector<std::array<float,3>> getJetEnergyRatios(JetContainerv1*, float, PHCompositeNode*);	
-	JetContainerv1* getJets(std::string, std::string, std::array<float, 3>, float ohcal_rat, PHCompositeNode*);
+	JetContainerv1* getJets(std::string, std::string, PHCompositeNode*);
 	void TruthRegion (std::map<std::array<float, 3>, float> , float,  std::string, std::array<float, 3>, float);
 
 	void CaloRegion(std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, float, std::string, std::array<float, 3>, float);

@@ -32,8 +32,8 @@ void PlotTruthandData(TH1F* h_truth_eec, TH1F* h_data_eec, std::string type, int
 	TPad* p1=new TPad("p1", "p1", 0, 0.35, 1, 1);
 	TPad* p2=new TPad("p2", "p2", 0, 0, 1, 0.33);
 	p1->cd();
-	TLegend* l1=new TLegend();
-	TLegend* l2=new TLegend();
+	TLegend* l1=new TLegend(0.7, 0.5, 1, 1);
+	TLegend* l2=new TLegend(0.7, 0.1, 1, 0.4);
 	h_truth_eec->GetXaxis()->SetRangeUser(0, 5);
 	h_data_eec->GetXaxis()->SetRangeUser(0, 5);
 	l1->SetFillStyle(0);
@@ -63,7 +63,7 @@ void PlotTruthandData(TH1F* h_truth_eec, TH1F* h_data_eec, std::string type, int
 	h_data_eec->SetMarkerColor(kCyan);
 	h_data_eec->SetMarkerStyle(22);
 	h_data_eec->Draw("same");
-	l2->AddEntry(h_data_eec, "Sum of Calorimeters, Pythia8 + GEANT4 + Noise, E > 60 MeV");
+	l2->AddEntry(h_data_eec, "#splitline{Sum of Calorimeters}{ Pythia8 + GEANT4 + Noise, E > 100 MeV}");
 	l2->AddEntry(h_truth_eec, Form("Pythia8 Truth Particles, E > %d MeV", cut));
 	p1->SetLogy();
 	l1->Draw();
