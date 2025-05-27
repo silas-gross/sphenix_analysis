@@ -232,6 +232,7 @@ class LargeRLENC : public SubsysReco
 	float emcal_min; //50 MeV
 	float ihcal_min; //7.5 MeV
 	float all_min; //65 MeV
+	float truth_min;
 	//all these are conservative vals 
 	TH1F* h_eta_truth; 
 	TH1F* h_phi_truth;

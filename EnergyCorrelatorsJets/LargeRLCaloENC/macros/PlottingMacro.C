@@ -25,7 +25,166 @@
 #include <map>
 std::vector<TDirectory*> file_dir_top;
 std::vector<std::array<TDirectory*,4>> lower_dirs;	
-
+void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=1.0, std::string truth_unit="GeV", float total_cut=.5, float em_cut=.5, float ih_cut=1., float oh_cut=1.  )
+{
+	f1->cd();
+	auto event_cat=(TDirectory*)f1->Get("event_categorization");
+	event_cat->cd();
+	TCanvas* c1=new TCanvas("total_energy", "total_energy");
+	TCanvas* c2=new TCanvas("cut_energy", "cut_energy");
+	TCanvas* c3=new TCanvas("delta_energy", "delta_energy");
+	//truth energy plots
+	TH1F* h_tr_to=(TH1F*)event_cat->Get("h_truth_E");
+	TH1F* h_tr_c=(TH1F*)event_cat->Get("h_truth_E_c");
+	TH1F* h_tr_dc=(TH1F*)event_cat->Get("h_truth_E_dc");
+	//total reco energy 	
+	TH1F* h_to_to=(TH1F*)event_cat->Get("h_total_E");
+	TH1F* h_to_c=(TH1F*)event_cat->Get("h_total_E_c");
+	TH1F* h_to_dc=(TH1F*)event_cat->Get("h_total_E_dc");
+	//emcal reco energy 
+	TH1F* h_em_to=(TH1F*)event_cat->Get("h_emcal_E");
+	TH1F* h_em_c=(TH1F*)event_cat->Get("h_emcal_E_c");
+	TH1F* h_em_dc=(TH1F*)event_cat->Get("h_emcal_E_dc");
+	//ihcal reco 
+	TH1F* h_ih_to=(TH1F*)event_cat->Get("h_ihcal_E");
+	TH1F* h_ih_c=(TH1F*)event_cat->Get("h_ihcal_E_c");
+	TH1F* h_ih_dc=(TH1F*)event_cat->Get("h_ihcal_E_dc");
+	//ohcal reco
+	TH1F* h_oh_to=(TH1F*)event_cat->Get("h_ohcal_E");
+	TH1F* h_oh_c=(TH1F*)event_cat->Get("h_ohcal_E_c");
+	TH1F* h_oh_dc=(TH1F*)event_cat->Get("h_ohcal_E_dc");
+	//put all the plots into a map of vectors for easier access
+	std::map<std::string, std::vector<TH1F*>*> plot_map;
+	std::vector<TH1F*>* TV=new std::vector<TH1F*>;
+	std::vector<TH1F*>* RV=new std::vector<TH1F*>;
+	std::vector<TH1F*>* EV=new std::vector<TH1F*>;
+	std::vector<TH1F*>* IV=new std::vector<TH1F*>;
+	std::vector<TH1F*>* OV=new std::vector<TH1F*>;
+	//load the Truth 
+	TV->push_back(h_tr_to);
+	TV->push_back(h_tr_c);
+	TV->push_back(h_tr_dc);
+	//load the Reco 
+	RV->push_back(h_to_to);
+	RV->push_back(h_to_c);
+	RV->push_back(h_to_dc);
+	//load the EMCAL 
+	EV->push_back(h_em_to);
+	EV->push_back(h_em_c);
+	EV->push_back(h_em_dc);
+	//load the IHCAL 
+	IV->push_back(h_ih_to);
+	IV->push_back(h_ih_c);
+	IV->push_back(h_ih_dc);
+	//load the OHCAL 
+	OV->push_back(h_oh_to);
+	OV->push_back(h_oh_c);
+	OV->push_back(h_oh_dc);
+	//load into the map 
+	plot_map["truth"]=TV;
+	plot_map["reco"]=RV;
+	plot_map["emcal"]=EV;
+	plot_map["ihcal"]=IV;
+	plot_map["ohcal"]=OV;
+	//color map for the plots 
+	std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ohcal", TColor::GetColor(252,244,52)}, {"ihcal", TColor::GetColor(61,165,66)}};
+	//set the range to show the full energy 
+	float max_e=0, max_ec=0, max_edc=0;
+	for(auto v:plot_map)
+	{
+		for(auto h:*(v.second)){
+//			h->GetXaxis()->SetRangeUser(-0.5, 210);
+			h->SetLineColor(color_map[v.first]);
+			h->SetMarkerColor(color_map[v.first]);
+		}
+	}
+	for(auto v:plot_map)
+	{
+		float tme=v.second->at(0)->GetMaximum();
+		float tmec=v.second->at(1)->GetMaximum();
+		float tmedc=v.second->at(2)->GetMaximum();
+		if(tme > max_e) max_e = 1.05*tme;
+		if(tmec > max_ec) max_ec= 1.05*tmec;
+		if(tmedc > max_edc) max_edc = 1.05*tmedc;
+	} 
+	for(auto v:plot_map)
+	{
+		c1->cd();
+		v.second->at(0)->GetYaxis()->SetRangeUser(1, max_e);
+		v.second->at(0)->Draw("same");
+		c2->cd();
+		v.second->at(1)->GetYaxis()->SetRangeUser(1, max_ec);
+		v.second->at(1)->Draw("same");
+		c3->cd();
+		v.second->at(2)->GetYaxis()->SetRangeUser(1, max_edc);
+		v.second->at(2)->Draw("same");
+	}
+	c1->SetLogy();
+	c2->SetLogy();
+	c3->SetLogy();
+	TLegend* ll1=new TLegend(0.7, 0.7, 0.9, 0.9);
+	TLegend* ll2=new TLegend(0.7, 0.7, 0.9, 0.9);
+	TLegend* ll3=new TLegend(0.7, 0.7, 0.9, 0.9);
+	TLegend* l1= new TLegend(0.7, 0.2, 0.9, 0.6);
+	TLegend* l2= new TLegend(0.7, 0.2, 0.9, 0.6);
+	TLegend* l3= new TLegend(0.7, 0.2, 0.9, 0.6);
+	std::vector<TLegend*>* ls=new std::vector<TLegend*>;
+	ls->push_back(ll1);
+	ls->push_back(ll2);
+	ls->push_back(ll3);
+	ls->push_back(l1);
+	ls->push_back(l2);
+	ls->push_back(l3);
+	for(auto l:*ls){
+		l->SetFillStyle(0);
+		l->SetFillColor(0);
+		l->SetBorderSize(0);
+		l->SetTextSize(0.03f);
+	}
+	for(int i=0; i<(int)ls->size(); i++)
+	{
+		int j=i%3;
+		if(i<3){
+			ls->at(i)->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
+			ls->at(i)->AddEntry("", Form("%s p+p #sqrt{s}=200 GeV", gen.c_str()), "");
+			ls->at(i)->AddEntry("", "Reco with GEANT4 + Noise", "");
+			if(i==0) ls->at(i)->AddEntry("", "Sum of Component Energy, All Components","");
+			if(i==1) ls->at(i)->AddEntry("", "Sum of Component Energy, E_{c} #geq E_{min}","");
+			if(i==2) ls->at(i)->AddEntry("", "Per event difference between total and cut energy","");
+		}
+		else if(i>=3 && j!= 1)
+		{
+			ls->at(i)->AddEntry(plot_map["truth"]->at(j), "Truth Particles");
+			ls->at(i)->AddEntry(plot_map["reco"]->at(j), "All Calorimeters Summed");
+			ls->at(i)->AddEntry(plot_map["emcal"]->at(j), "Electromagnetic Calorimeter"); 
+			ls->at(i)->AddEntry(plot_map["ihcal"]->at(j), "Inner Hadronic Calorimeter");
+			ls->at(i)->AddEntry(plot_map["ohcal"]->at(j), "Outer Hadronic Calorimeter");
+		}
+		else if(j==1) 
+		{
+			ls->at(i)->AddEntry(plot_map["truth"]->at(j), Form("Truth Particles, E_{min} = %.2g %s", truth_cut, truth_unit.c_str()));
+			ls->at(i)->AddEntry(plot_map["reco"]->at(j), Form("All Calorimeters Summed, E_{min} = %.2g GeV", total_cut));
+			ls->at(i)->AddEntry(plot_map["emcal"]->at(j), Form("Electromagnetic Calorimeter, E_{min} = %.2g GeV", em_cut)); 
+			ls->at(i)->AddEntry(plot_map["ihcal"]->at(j), Form("Inner Hadronic Calorimeter, E_{min} = %.2g GeV",  ih_cut));
+			ls->at(i)->AddEntry(plot_map["ohcal"]->at(j), Form("Outer Hadronic Calorimeter, E_{min} = %.2g GeV",  oh_cut));
+		}
+		if(j==0){
+			c1->cd();
+			ls->at(i)->Draw();	
+		}
+		else if(j==1){
+			c2->cd();
+			ls->at(i)->Draw();
+		}
+		else if(j==2)
+		{
+			c3->cd();
+			ls->at(i)->Draw();
+		}
+	}
+	return;		
+}
+	
 void PlotTruthandData(TH1F* h_truth_eec, TH1F* h_data_eec, std::string type, int n_events, int cut=10)
 {
 	TCanvas* c1=new TCanvas();
