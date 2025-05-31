@@ -5,8 +5,8 @@
 //			Author: Skaydi Grossberndt						//
 //			Depends on: Calorimeter Tower ENC 					//
 //			First Commit date: 18 Oct 2024						//
-//			Most recent Commit: 14 May 2025						//
-//			version: v5.5 investegating truth behavior 		 	 	//
+//			Most recent Commit: 29 May 2025						//
+//			version: v6 fixing normalization, adding disc corr	 	 	//
 //												//
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -19,11 +19,11 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	n_evts=0;
 	this->pedestalData=pedestal;
 	//if(pedestal){
-		this->ohcal_min=.5;
+		this->ohcal_min=.4;
 		this->emcal_min=.1;
-		this->ihcal_min=.5;
-		this->all_min=.5;
-		this->truth_min=.5;
+		this->ihcal_min=.4;
+		this->all_min=.1;
+		this->truth_min=.0;
 	//}
 	thresh_mins[0]=all_min;
 	thresh_mins[1]=emcal_min;
@@ -64,11 +64,11 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	tri=new MethodHistograms("Transverse_Region_IHCAL"+ihcal_thresh_s, 1.5*PI, 0.1);
 	tro=new MethodHistograms("Transverse_Region_OHCAL"+ohcal_thresh_s, 1.5*PI, 0.1); //Transverse_Region OHCAL has R ~ 3.83 (delta eta ~ 2.2, delta phi ~pi)
 	if(!pedestalData && !data){
-		MethodHistograms* fc1=new MethodHistograms("Truth_Full_CAL"+allcal_thresh_s, 1.5*PI, 0.1); 
+		MethodHistograms* fc1=new MethodHistograms("Truth_Full_CAL"+truth_thresh_s, 1.5*PI, 0.1); 
 	
-		MethodHistograms* tc1=new MethodHistograms("Truth_Towards_Region_CAL"+allcal_thresh_s, 1.5*PI, 0.1);
+		MethodHistograms* tc1=new MethodHistograms("Truth_Towards_Region_CAL"+truth_thresh_s, 1.5*PI, 0.1);
 
-		MethodHistograms* ac1=new MethodHistograms("Truth_Away_Region_CAL"+allcal_thresh_s, 1.5*PI , 0.1);
+		MethodHistograms* ac1=new MethodHistograms("Truth_Away_Region_CAL"+truth_thresh_s, 1.5*PI , 0.1);
 	
 		MethodHistograms* trc1=new MethodHistograms("Truth_Transverse_Region_CAL"+allcal_thresh_s, 1.5*PI, 0.1);
 		std::vector<std::vector<MethodHistograms*>> Region_truth {std::vector<MethodHistograms*>{fc1}, std::vector<MethodHistograms*>{tc1}, std::vector<MethodHistograms*>{ac1}, std::vector<MethodHistograms*>{trc1}};
@@ -729,7 +729,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		if(! emcal_tower_energy->get_tower_at_channel(n)->get_isGood()) continue;
 		float energy=emcal_tower_energy->get_tower_at_channel(n)->get_energy();
 		emcal_energy+=energy;
-		if(energy > 0.0625*emcal_min ){//put zero supression into effect
+		if(energy > emcal_min ){//put zero supression into effect
 			addTower(n, emcal_tower_energy, emcal_geom, &emcal_towers, RawTowerDefs::CEMC   );
 			e1+=energy;
 		}
@@ -797,7 +797,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 									float eta=atanh(pz/E);
 									float r=1.;
 									truth_energy+=E;
-									if(std::abs(eta) > 1.1 || E < truth_min ) continue;
+									if(std::abs(eta) > 1.1 /*|| E < truth_min*/ ) continue;
 									e5+=E;
 									std::array<float, 3> loc {eta, phi, r};
 									truth_pts[loc]=E;
@@ -890,9 +890,21 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		m_eohcal=ohcal_energy;
 		m_philead=eventCut->getLeadPhi();
 		m_etalead=eventCut->getLeadEta();
+		std::map<std::array<float, 3>, float>allcal;
+		for(auto t:emcal_towers) allcal[t.first]=t.second;
+		for(auto t:ihcal_towers){
+			if(allcal.find(t.first) != allcal.end()) allcal[t.first]+=t.second;
+			else allcal[t.first]=t.second;
+		}
 		
-		e4=e1+e2+e3;
+		for(auto t:ohcal_towers){
+			if(allcal.find(t.first) != allcal.end()) allcal[t.first]+=t.second;
+			else allcal[t.first]=t.second;
+		}
 		
+		for(auto a:allcal)
+			if(a.second > all_min) 
+				e4+=a.second;
 		h_total_E->Fill(total_energy);
 		h_total_E_c->Fill(e4);
 		h_ohcal_E->Fill(ohcal_energy);
@@ -920,19 +932,9 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			h_jet_truth->Fill(dphi, deta, l.second);
 		}
 		
-		std::map<std::array<float, 3>, float>allcal;
-		for(auto t:emcal_towers) allcal[t.first]=t.second;
-		for(auto t:ihcal_towers){
-			if(allcal.find(t.first) != allcal.end()) allcal[t.first]+=t.second;
-			else allcal[t.first]=t.second;
-		}
-		
-		for(auto t:ohcal_towers){
-			if(allcal.find(t.first) != allcal.end()) allcal[t.first]+=t.second;
-			else allcal[t.first]=t.second;
-		}
 		std::cout<<"AllCal has size " <<allcal.size() <<std::endl;
 		for(auto l:allcal){
+			if(l.second < all_min) continue;
 			float dphi = l.first.at(1) - m_philead;
 			if(dphi > PI ) dphi+=-2*PI;
 			else if(dphi < -PI) dphi+=2*PI;
@@ -1131,7 +1133,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 	float base_thresh=thresh_mins[which_calo];
 	auto i=cal.begin();
 	std::vector<StrippedDownTower*> strippedCalo;
-	if(which_calo == LargeRLENC::Calorimeter::EMCAL) base_thresh=base_thresh*16.; //correct for the fact that the emcal has ~16 actual towers going to a single tower object
+//	if(which_calo == LargeRLENC::Calorimeter::EMCAL) base_thresh=base_thresh*16.; //correct for the fact that the emcal has ~16 actual towers going to a single tower object
 	std::array<float, 4> e_region { 0., 0., 0., 0. };
 	
 	
@@ -1271,7 +1273,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			TowerOutput* TR=Tow->RegionOutput;
 			int region_shift=region;
 			if(region_shift > 3 ) region_shift=3;
-			TF->Normalize(e_region[region_shift]);
+			TF->Normalize(e_region[0]);
 			TR->Normalize(e_region[region_shift]);
 			auto Hists=Truth_Region_vector[region_shift][0];
 			auto FullHists=Truth_Region_vector[0][0];
@@ -1279,8 +1281,12 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 				for(int i=0; i<(int)TF->RL.size(); i++){
 					FullHists->R->Fill(TF->RL.at(i));
 					FullHists->E2C->Fill(TF->RL.at(i), TF->E2C.at(i));
+					FullHists->E2C_rs->Fill(std::pow(TF->RL.at(i), 2), TF->E2C.at(i));
 					if((int) TF->E3C.size() <= i ) continue; 
-						else FullHists->E3C->Fill(TF->RL.at(i), TF->E3C.at(i));
+					else{
+						FullHists->E3C->Fill(TF->RL.at(i), TF->E3C.at(i));
+						FullHists->E3C_rs->Fill(std::pow(TF->RL.at(i), 2), TF->E3C.at(i));
+					}
 				}
 			}
 			if((int)TR->RL.size() > 0 ){
@@ -1313,24 +1319,32 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		TowerOutput* R=Tow->RegionOutput;
 		int region_shift=region;
 		if(region_shift > 3 ) region_shift=3;
-		//F->Normalize(e_region[region_shift]);
-		//R->Normalize(e_region[region_shift]);
+		F->Normalize(e_region[0]);
+		R->Normalize(e_region[region_shift]);
 		auto Hists=Region_vector[region_shift][which_calo];
 		auto FullHists=Region_vector[0][which_calo];
 		if((int)F->RL.size() > 0 ){
 			for(int i=0; i<(int)F->RL.size(); i++){
 				FullHists->R->Fill(F->RL.at(i));
-				FullHists->E2C->Fill(F->RL.at(i), F->E2C.at(i)/std::pow(e_region[region_shift],2));
+				FullHists->E2C->Fill(F->RL.at(i), F->E2C.at(i)/*/std::pow(e_region[region_shift],2)*/);
+				FullHists->E2C_rs->Fill(std::pow(F->RL.at(i), 2), F->E2C.at(i));
 				if((int) F->E3C.size() <= i ) continue; 
-				else FullHists->E3C->Fill(F->RL.at(i), F->E3C.at(i));
+				else{
+					FullHists->E3C->Fill(F->RL.at(i), F->E3C.at(i));
+					FullHists->E3C_rs->Fill(std::pow(F->RL.at(i), 2), F->E3C.at(i));
 				}
+			}
 		}
 		if((int)R->RL.size() > 0 ){
 			for(int i=0; i<(int)R->RL.size(); i++){
 				Hists->R->Fill(R->RL.at(i));
 				Hists->E2C->Fill(R->RL.at(i), R->E2C.at(i));
+				Hists->E2C_rs->Fill(std::pow(R->RL.at(i), 2), R->E2C.at(i));
 				if((int) R->E3C.size() <= i ) continue; 
-				else Hists->E3C->Fill(R->RL.at(i), R->E3C.at(i));
+				else{
+					Hists->E3C->Fill(R->RL.at(i), R->E3C.at(i));
+					Hists->E3C_rs->Fill(std::pow(R->RL.at(i), 2), R->E3C.at(i));
+				}
 			}
 		}	
 	}
@@ -1570,6 +1584,8 @@ void LargeRLENC::Print(const std::string &what) const
 				hv->R_pt->Write();
 				hv->E2C->Write();
 				hv->E3C->Write();
+				hv->E2C_rs->Write();
+				hv->E3C_rs->Write();
 				hv->R->Write();
 				hv->N->Write();
 				hv->E->Write();
@@ -1589,6 +1605,8 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->R_pt->Write();
 			hv->E2C->Write();
 			hv->E3C->Write();
+			hv->E2C_rs->Write();
+			hv->E3C_rs->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();
@@ -1601,6 +1619,8 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->R_pt->Write();
 			hv->E2C->Write();
 			hv->E3C->Write();
+			hv->E2C_rs->Write();
+			hv->E3C_rs->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();
@@ -1613,6 +1633,8 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->R_pt->Write();
 			hv->E2C->Write();
 			hv->E3C->Write();
+			hv->E2C_rs->Write();
+			hv->E3C_rs->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();
@@ -1625,6 +1647,8 @@ void LargeRLENC::Print(const std::string &what) const
 			hv->R_pt->Write();
 			hv->E2C->Write();
 			hv->E3C->Write();
+			hv->E2C_rs->Write();
+			hv->E3C_rs->Write();
 			hv->R->Write();
 			hv->N->Write();
 			hv->E->Write();

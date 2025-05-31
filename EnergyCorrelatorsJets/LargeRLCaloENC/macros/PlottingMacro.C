@@ -14,6 +14,7 @@
 #include <TPad.h>
 #include <TDirectory.h>
 #include <TFitResult.h>
+#include <TList.h>
 
 //c++ includes
 #include <string>
@@ -23,8 +24,145 @@
 #include <sstream>
 #include <math.h>
 #include <map>
-std::vector<TDirectory*> file_dir_top;
-std::vector<std::array<TDirectory*,4>> lower_dirs;	
+#include <sstream>
+std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ohcal", TColor::GetColor(252,244,52)}, {"ihcal", TColor::GetColor(61,165,66)}};
+float GetCutValue(std::string name)
+{
+	std::stringstream temp_name(name);
+	std::string sub_name;
+	float value=0.;
+	while(std::getline(temp_name, sub_name, '_'))
+	{
+		try{
+			value=std::stof(sub_name);
+		}
+		catch(std::exception& e){
+			continue;
+		}
+	}
+	value=value/1000.;
+	return value;
+}
+
+void PlotFullEC(TFile* f1, std::string gen="Pythia8")
+{
+	//Comparing the Correlators across truth/each calo
+	f1->cd();
+	auto full=(TDirectory*)f1->Get("Full_Calorimeter");
+	full->cd();
+	TCanvas* c1=new TCanvas("e3c", "e3c");
+	TCanvas* c2=new TCanvas("e2c", "e2c");
+	TCanvas* c3=new TCanvas("R_pair", "R_pain");
+	std::array<TCanvas*, 3>* cs=new std::array<TCanvas*, 3>;
+	cs->at(0)=c1;
+	cs->at(1)=c2;
+	cs->at(2)=c3;
+	std::array<std::array<TH1F*, 5>*, 3>* hs=new std::array<std::array<TH1F*, 5>*, 3>;
+	std::array<std::array<float, 5>, 3> cuts;
+	for(int i=0; i<3; i++) hs->at(i)=new std::array<TH1F*, 5>; 
+	TList* list_of_keys=full->GetListOfKeys();
+	TIter liter(list_of_keys);
+	while(auto key=(TKey*)liter())
+	{
+		//Pick up the histograms 
+		std::string name=key->GetName();
+		int type=-1, calo=-1;
+		//determine which type
+		if(name.find("e2c") != std::string::npos	) type = 0;
+		else if (name.find("e3c") != std::string::npos	) type = 1;
+		else if (name.find("R")!= std::string::npos 
+			&& name.find("pt") == std::string::npos	) type = 2;
+		else type=-1;
+		//determine which calo 
+		if(name.find("Truth") != std::string::npos) calo=0;
+		else if(name.find("EMCAL") != std::string::npos) calo=2;
+		else if(name.find("IHCAL") != std::string::npos) calo=3;
+		else if(name.find("OHCAL") != std::string::npos) calo=4;
+		else if(name.find("CAL")   != std::string::npos) calo=1;
+		else calo=-1;
+		//add to the approriate array
+		if(type != -1 && calo != -1){
+			hs->at(type)->at(calo) = (TH1F*)full->Get(name.c_str());
+			cuts[type][calo]=GetCutValue(name);
+		}
+	}
+	for(int i = 0; i<(int)cs->size(); i++)
+	{
+		auto c=cs->at(i);
+		auto ha=hs->at(i);
+		auto ct=cuts.at(i);
+		c->cd();
+		TPad* p1=new TPad("p1", "p1", 0, 0.35, 1, 1);
+		TPad* p2=new TPad("p2", "p2", 0, 0, 1, 0.33);
+		float max=0;
+		for(auto h:*ha)if(h->GetMaximum() > max) max=h->GetMaximum();
+		max=2*max;
+		TLegend* l1=new TLegend(0.7, 0.7, 1, 0.95);
+		l1->SetFillStyle(0);
+		l1->SetFillColor(0);
+		l1->SetBorderSize(0);
+		l1->SetTextSize(0.04f);
+		l1->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
+		l1->AddEntry("", "p + p  #sqrt{s}= 200 GeV", "");
+		l1->AddEntry("", "Pythia8 + GEANT4 + Noise", "");
+		l1->AddEntry("", gen.c_str(), "");
+		l1->AddEntry("", "Event Shape over Dijet-type events", "");
+		std::string plotted_var="";
+		if(i==0) plotted_var="2 point Energy Correlator";
+		else if(i==1) plotted_var="Integrated 3 point Energy Correlator";
+		else if(i==2) plotted_var="Angular seperation between consituent pairs";
+		l1->AddEntry("", plotted_var.c_str(), ""); 
+		TLegend* l=new TLegend(0.5, 0.5, 1, 0.7);
+		l->SetFillStyle(0);
+		l->SetFillColor(0);
+		l->SetBorderSize(0);
+		l->SetTextSize(0.02f);
+		l->SetNColumns(2);
+		for(int j=0; j<(int)ha->size(); j++)
+		{
+			p1->cd();
+			auto h=ha->at(j);
+			std::string v="";
+			if(j==0) v="truth";
+			if(j==1) v="reco";
+			if(j==2) v="emcal";
+			if(j==3) v="ihcal";
+			if(j==4) v="ohcal";
+			h->SetLineColor(color_map[v]);
+			h->SetMarkerColor(color_map[v]);	
+			TH1F* hc=(TH1F*)h->Clone();
+			hc->SetMarkerStyle(22);
+			hc->Divide(ha->at(0));
+			hc->SetYTitle("Reco / Truth");
+			h->GetYaxis()->SetRangeUser(0.1, max);
+			h->Draw("same");
+			std::string which_calo="";
+			if(j==0) which_calo="Truth Particles";
+			if(j==1) which_calo="Combined Calorimeters";
+			if(j==2) which_calo="EMCAL";
+			if(j==3) which_calo="IHCAL";
+			if(j==4) which_calo="OHCAL";
+			l->AddEntry(h, Form("%s, E_{consituent} #geq %.2g GeV", which_calo.c_str(), ct[j]));
+			if(j==0) l->AddEntry("", "", "");
+			else l->AddEntry(hc, Form("%s / Truth", which_calo.c_str()));
+			c->cd();
+			p1->Draw();
+			p2->cd();
+			if(j!=0) hc->Draw("same");
+			c->cd();
+			p2->Draw();
+		}
+		p1->SetLogy();
+		p1->cd();
+		l->Draw();
+		l1->Draw();
+//		p2->SetLogy();
+	}
+	return;
+}
+			
+			
+		
 void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=1.0, std::string truth_unit="GeV", float total_cut=.5, float em_cut=.5, float ih_cut=1., float oh_cut=1.  )
 {
 	f1->cd();
@@ -87,7 +225,6 @@ void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=
 	plot_map["ihcal"]=IV;
 	plot_map["ohcal"]=OV;
 	//color map for the plots 
-	std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ohcal", TColor::GetColor(252,244,52)}, {"ihcal", TColor::GetColor(61,165,66)}};
 	//set the range to show the full energy 
 	float max_e=0, max_ec=0, max_edc=0;
 	for(auto v:plot_map)
@@ -152,7 +289,7 @@ void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=
 			if(i==1) ls->at(i)->AddEntry("", "Sum of Component Energy, E_{c} #geq E_{min}","");
 			if(i==2) ls->at(i)->AddEntry("", "Per event difference between total and cut energy","");
 		}
-		else if(i>=3 && j!= 1)
+		else if(i>=3 && j==0)
 		{
 			ls->at(i)->AddEntry(plot_map["truth"]->at(j), "Truth Particles");
 			ls->at(i)->AddEntry(plot_map["reco"]->at(j), "All Calorimeters Summed");
@@ -160,7 +297,7 @@ void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=
 			ls->at(i)->AddEntry(plot_map["ihcal"]->at(j), "Inner Hadronic Calorimeter");
 			ls->at(i)->AddEntry(plot_map["ohcal"]->at(j), "Outer Hadronic Calorimeter");
 		}
-		else if(j==1) 
+		else if(j>=1) 
 		{
 			ls->at(i)->AddEntry(plot_map["truth"]->at(j), Form("Truth Particles, E_{min} = %.2g %s", truth_cut, truth_unit.c_str()));
 			ls->at(i)->AddEntry(plot_map["reco"]->at(j), Form("All Calorimeters Summed, E_{min} = %.2g GeV", total_cut));
@@ -317,243 +454,7 @@ std::array<std::vector<std::vector<std::string>>,4> GetPlotLabels(std::array<std
 	}
 	return plt_lbs;
 }
-void LoadInPlots(int threshold_index, std::array<std::vector<std::vector<TH1F*>*>*, 4>* RegPlts){
-		//std::cout<<__LINE__<<std::endl;
-	TH1F* CEMC_FullEnergy=NULL, *CEMC_FullE2C=NULL, *CEMC_FullE3C=NULL, *CEMC_FullR=NULL, *CEMC_FullN=NULL;
-	TH1F* CEMC_TowardsEnergy=NULL, *CEMC_TowardsE2C=NULL, *CEMC_TowardsE3C=NULL, *CEMC_TowardsR=NULL, *CEMC_TowardsN=NULL;
-	TH1F* CEMC_AwayEnergy=NULL, *CEMC_AwayE2C=NULL, *CEMC_AwayE3C=NULL, *CEMC_AwayR=NULL, *CEMC_AwayN=NULL;
-	TH1F* CEMC_TransEnergy=NULL, *CEMC_TransE2C=NULL, *CEMC_TransE3C=NULL, *CEMC_TransR=NULL, *CEMC_TransN=NULL;
-	
-	TH1F* OHCAL_FullEnergy=NULL, *OHCAL_FullE2C=NULL, *OHCAL_FullE3C=NULL, *OHCAL_FullR=NULL, *OHCAL_FullN=NULL;
-	TH1F* OHCAL_TowardsEnergy=NULL, *OHCAL_TowardsE2C=NULL, *OHCAL_TowardsE3C=NULL, *OHCAL_TowardsR=NULL, *OHCAL_TowardsN=NULL;
-	TH1F* OHCAL_AwayEnergy=NULL, *OHCAL_AwayE2C=NULL, *OHCAL_AwayE3C=NULL, *OHCAL_AwayR=NULL, *OHCAL_AwayN=NULL;
-	TH1F* OHCAL_TransEnergy=NULL, *OHCAL_TransE2C=NULL, *OHCAL_TransE3C=NULL, *OHCAL_TransR=NULL, *OHCAL_TransN=NULL;
-	
-	TH1F* IHCAL_FullEnergy=NULL, *IHCAL_FullE2C=NULL, *IHCAL_FullE3C=NULL, *IHCAL_FullR=NULL, *IHCAL_FullN=NULL;
-	TH1F* IHCAL_TowardsEnergy=NULL, *IHCAL_TowardsE2C=NULL, *IHCAL_TowardsE3C=NULL, *IHCAL_TowardsR=NULL, *IHCAL_TowardsN=NULL;
-	TH1F* IHCAL_AwayEnergy=NULL, *IHCAL_AwayE2C=NULL, *IHCAL_AwayE3C=NULL, *IHCAL_AwayR=NULL, *IHCAL_AwayN=NULL;
-	TH1F* IHCAL_TransEnergy=NULL, *IHCAL_TransE2C=NULL, *IHCAL_TransE3C=NULL, *IHCAL_TransR=NULL, *IHCAL_TransN=NULL;
-	
-	std::vector<TH1F*>* FullEnergy=new std::vector<TH1F*>{}, *FullE2C=new std::vector<TH1F*>{}, *FullE3C=new std::vector<TH1F*>{}, *FullR=new std::vector<TH1F*>{}, *FullN=new std::vector<TH1F*>{};
-	std::vector<TH1F*>* TowardsEnergy=new std::vector<TH1F*>{}, *TowardsE2C=new std::vector<TH1F*>{}, *TowardsE3C=new std::vector<TH1F*>{}, *TowardsR=new std::vector<TH1F*>{}, *TowardsN=new std::vector<TH1F*>{};
-	std::vector<TH1F*>* AwayEnergy=new std::vector<TH1F*>{}, *AwayE2C=new std::vector<TH1F*>{}, *AwayE3C=new std::vector<TH1F*>{}, *AwayR=new std::vector<TH1F*>{}, *AwayN=new std::vector<TH1F*>{};
-	std::vector<TH1F*>* TransEnergy=new std::vector<TH1F*>{}, *TransE2C=new std::vector<TH1F*>{}, *TransE3C=new std::vector<TH1F*>{}, *TransR=new std::vector<TH1F*>{}, *TransN=new std::vector<TH1F*>{};
-		//std::cout<<__LINE__<<std::endl;
-	
-	std::vector<std::vector<TH1F*>*>* Full, *Away, *Towards, *Trans;
-	
-	FullEnergy->push_back(CEMC_FullEnergy);
-	FullEnergy->push_back(IHCAL_FullEnergy);
-	FullEnergy->push_back(OHCAL_FullEnergy);
 
-	FullE2C->push_back(CEMC_FullE2C);
-	FullE2C->push_back(IHCAL_FullE2C);
-	FullE2C->push_back(OHCAL_FullE2C);
-	
-	FullE3C->push_back(CEMC_FullE3C);
-	FullE3C->push_back(IHCAL_FullE3C);
-	FullE3C->push_back(OHCAL_FullE3C);
-	
-	FullR->push_back(CEMC_FullR);
-	FullR->push_back(IHCAL_FullR);
-	FullR->push_back(OHCAL_FullR);
-	
-	FullN->push_back(CEMC_FullN);
-	FullN->push_back(IHCAL_FullN);
-	FullN->push_back(OHCAL_FullN);
-		//std::cout<<__LINE__<<std::endl;
-	
-	Full=new std::vector<std::vector<TH1F*>*> {FullEnergy, FullE2C, FullE3C, FullR, FullN};
-	
-	TowardsEnergy->push_back(CEMC_TowardsEnergy);
-	TowardsEnergy->push_back(IHCAL_TowardsEnergy);
-	TowardsEnergy->push_back(OHCAL_TowardsEnergy);
-
-	TowardsE2C->push_back(CEMC_TowardsE2C);
-	TowardsE2C->push_back(IHCAL_TowardsE2C);
-	TowardsE2C->push_back(OHCAL_TowardsE2C);
-	
-	TowardsE3C->push_back(CEMC_TowardsE3C);
-	TowardsE3C->push_back(IHCAL_TowardsE3C);
-	TowardsE3C->push_back(OHCAL_TowardsE3C);
-	
-	TowardsR->push_back(CEMC_TowardsR);
-	TowardsR->push_back(IHCAL_TowardsR);
-	TowardsR->push_back(OHCAL_TowardsR);
-	
-	TowardsN->push_back(CEMC_TowardsN);
-	TowardsN->push_back(IHCAL_TowardsN);
-	TowardsN->push_back(OHCAL_TowardsN);
-		//std::cout<<__LINE__<<std::endl;
-	
-	Towards=new std::vector<std::vector<TH1F*>*> {TowardsEnergy, TowardsE2C, TowardsE3C, TowardsR, TowardsN};
-	
-	AwayEnergy->push_back(CEMC_AwayEnergy);
-	AwayEnergy->push_back(IHCAL_AwayEnergy);
-	AwayEnergy->push_back(OHCAL_AwayEnergy);
-
-	AwayE2C->push_back(CEMC_AwayE2C);
-	AwayE2C->push_back(IHCAL_AwayE2C);
-	AwayE2C->push_back(OHCAL_AwayE2C);
-	
-	AwayE3C->push_back(CEMC_AwayE3C);
-	AwayE3C->push_back(IHCAL_AwayE3C);
-	AwayE3C->push_back(OHCAL_AwayE3C);
-	
-	AwayR->push_back(CEMC_AwayR);
-	AwayR->push_back(IHCAL_AwayR);
-	AwayR->push_back(OHCAL_AwayR);
-	
-	AwayN->push_back(CEMC_AwayN);
-	AwayN->push_back(IHCAL_AwayN);
-	AwayN->push_back(OHCAL_AwayN);
-		//std::cout<<__LINE__<<std::endl;
-	
-	Away=new std::vector<std::vector<TH1F*>*> {AwayEnergy, AwayE2C, AwayE3C, AwayR, AwayN};
-	
-	TransEnergy->push_back(CEMC_TransEnergy);
-	TransEnergy->push_back(IHCAL_TransEnergy);
-	TransEnergy->push_back(OHCAL_TransEnergy);
-
-	TransE2C->push_back(CEMC_TransE2C);
-	TransE2C->push_back(IHCAL_TransE2C);
-	TransE2C->push_back(OHCAL_TransE2C);
-	
-	TransE3C->push_back(CEMC_TransE3C);
-	TransE3C->push_back(IHCAL_TransE3C);
-	TransE3C->push_back(OHCAL_TransE3C);
-	
-	TransR->push_back(CEMC_TransR);
-	TransR->push_back(IHCAL_TransR);
-	TransR->push_back(OHCAL_TransR);
-	
-	TransN->push_back(CEMC_TransN);
-	TransN->push_back(IHCAL_TransN);
-	TransN->push_back(OHCAL_TransN);
-	
-	Trans=new std::vector<std::vector<TH1F*>*> {TransEnergy, TransE2C, TransE3C, TransR, TransN};
-	
-		//std::cout<<__LINE__<<std::endl;
-	TDirectory* topdir=file_dir_top[threshold_index];
-	topdir->cd();
-	for(int i=0; i<(int)lower_dirs[threshold_index].size(); i++){
-		//std::cout<<__LINE__<<std::endl;
-		TDirectory* botdir=lower_dirs[threshold_index][i];
-		botdir->cd();
-		//std::cout<<__LINE__<<std::endl;
-		std::string dir_name=botdir->GetName();
-		//std::cout<<__LINE__<<std::endl;
-		std::vector<std::vector<TH1F*>*>* rp;
-		//std::cout<<__LINE__<<std::endl;
-		if(dir_name.find("Full") != std::string::npos) rp=Full;
-		else if(dir_name.find("Towards") != std::string::npos ) rp=Towards;	
-		else if(dir_name.find("Trans") != std::string::npos ) rp=Trans;	
-		else if(dir_name.find("Away") != std::string::npos ) rp=Away;	
-		//std::cout<<__LINE__<<std::endl;
-		LoadInRegionPlots(botdir, rp);
-		//std::cout<<__LINE__<<std::endl;
-	}
-	RegPlts->at(0)=Full;
-	RegPlts->at(1)=Towards; 
-	RegPlts->at(2)=Away;
-	RegPlts->at(3)=Trans;
-		//std::cout<<__LINE__<<std::endl;
-	return;
-}
-
-std::array<std::vector<std::vector<TH1F*>*>*, 4> DrawOneThreshold(TFile* datafile, std::array<std::vector<TPad*>*, 4>* p1, std::array<std::vector<TLegend*>*, 4>* l1, int threshold_index, /*choose which of the set of indicies we use, rather thas spefcific value*/ int style)
-{
-	//p1 is {full, towards, away} {E, E2C, E3C, R, N}
-		//std::cout<<__LINE__<<std::endl;
-	std::array<std::vector<std::vector<TH1F*>*>*, 4> RegPlts {};
-	LoadInPlots(threshold_index, &RegPlts);
-	//Plots are structured as {full, towards, away, transverse} and one level down {E, E2C, E3C, R, N} then {EMCAL, IHCAL, OHCAL}
-		//std::cout<<__LINE__<<std::endl;
-	int offset=0;
-	std::string run_type="";
-	if(style==0) run_type="Pedestal";
-	if(style==1) run_type="Pulser";
-	if(style==2) run_type="LED";
-	std::array<std::vector<std::vector<std::string>>, 4> plot_label;
-		//std::cout<<__LINE__<<std::endl;
-	plot_label=GetPlotLabels(RegPlts);
-		//std::cout<<__LINE__<<std::endl;
-	if(threshold_index == 3 ) offset = 6;
-	else if (threshold_index > 3) offset = 9; //keep the marker shapes distinguisable
-	else if (threshold_index > 5) offset= 17;
-		//std::cout<<__LINE__<<std::endl;
-	for(int i=0; i<(int) p1->size(); i++){
-		std::cout<<p1->size() <<std::endl;
-		for(int j=0; j<(int)p1->at(i)->size(); j++)
-		{
-			if(!p1->at(i)->at(j)) continue;
-			p1->at(i)->at(j)->cd();
-			if(! RegPlts[i]->at(j)) continue;
-			bool need_to_cont=false;
-			for(int k=0; k<(int) RegPlts[i]->at(j)->size(); k++) 
-				if(!RegPlts[i]->at(j)->at(k))
-					need_to_cont=true;
-			if(need_to_cont) continue;
-			if(style== 0){
-				RegPlts[i]->at(j)->at(0)->SetLineColor(kGreen);
-				RegPlts[i]->at(j)->at(0)->SetMarkerColor(kGreen);
-			}
-			if(style== 1){
-				RegPlts[i]->at(j)->at(0)->SetLineColor(kTeal+3);
-				RegPlts[i]->at(j)->at(0)->SetMarkerColor(kTeal+3);
-			}
-			if(style== 2){
-				RegPlts[i]->at(j)->at(0)->SetLineColor(kBlack);
-				RegPlts[i]->at(j)->at(0)->SetMarkerColor(kBlack);
-			}
-			RegPlts[i]->at(j)->at(0)->SetMarkerStyle(20+threshold_index+offset);
-			RegPlts[i]->at(j)->at(0)->SetMarkerSize(1.5f);
-			RegPlts[i]->at(j)->at(0)->Draw("same");
-			l1->at(i)->at(j)->AddEntry(RegPlts[i]->at(j)->at(0), Form("%s  %s ", run_type.c_str(), plot_label[i][j][0].c_str()));
-
-			if(style== 0 ) {
-				RegPlts[i]->at(j)->at(1)->SetLineColor(kPink+9);
-				RegPlts[i]->at(j)->at(1)->SetMarkerColor(kPink+9);
-			}
-			if(style== 1 ) {
-				RegPlts[i]->at(j)->at(1)->SetLineColor(kOrange+7);
-				RegPlts[i]->at(j)->at(1)->SetMarkerColor(kOrange+7);
-			}
-			if(style== 2 ) {
-				RegPlts[i]->at(j)->at(1)->SetLineColor(kRed);
-				RegPlts[i]->at(j)->at(1)->SetMarkerColor(kRed);
-			}
-			
-			RegPlts[i]->at(j)->at(1)->SetMarkerStyle(20+threshold_index+offset);
-			RegPlts[i]->at(j)->at(2)->SetMarkerSize(1.5f);
-			RegPlts[i]->at(j)->at(1)->Draw("same");
-			l1->at(i)->at(j)->AddEntry(RegPlts[i]->at(j)->at(0), Form("%s %s", run_type.c_str(), plot_label[i][j][0].c_str()));
-			if(style == 0){
-				RegPlts[i]->at(j)->at(2)->SetLineColor(kCyan);
-				RegPlts[i]->at(j)->at(2)->SetMarkerColor(kCyan);
-			}
-			if(style == 1){
-				RegPlts[i]->at(j)->at(2)->SetLineColor(kBlue);
-				RegPlts[i]->at(j)->at(2)->SetMarkerColor(kBlue);
-			}
-			if(style == 2){
-				RegPlts[i]->at(j)->at(2)->SetLineColor(kViolet+1);
-				RegPlts[i]->at(j)->at(2)->SetMarkerColor(kViolet+1);
-			}
-			RegPlts[i]->at(j)->at(2)->SetMarkerStyle(20+threshold_index+offset);
-			RegPlts[i]->at(j)->at(2)->SetMarkerSize(1.5f);
-			RegPlts[i]->at(j)->at(2)->Draw("same");
-			l1->at(i)->at(j)->AddEntry(RegPlts[i]->at(j)->at(0), Form("%s %s", run_type.c_str(), plot_label[i][j][0].c_str()));
-		}
-	}
-		//std::cout<<__LINE__<<std::endl;
-	
-	return RegPlts;
-}
-/*int CompareRegions(std::map <int, TH1F*> calo_hist, std::string calo, std::string 
-{
-	return 1;
-}*/
 void PlotRatios(std::vector<std::map<std::string, std::array<std::vector<std::vector<TH1F*>*>*, 4>>> Thrs, std::array<std::vector<TPad*>*,4>* prat, std::array<std::vector<TLegend*>*, 4>* Lt)
 {
 	//compare the pulser and LED to pedestal in all thresholds
@@ -642,7 +543,7 @@ void PlotRatios(std::vector<std::map<std::string, std::array<std::vector<std::ve
 {
 	
 }*/
-int LocalRunThresholdScan(TFile* Pedestal_data, int ped_run, TFile* Pulser_data, int pulse_run, TFile* LED_data=NULL, int led_run = 0, bool include_led=false)
+/*int LocalRunThresholdScan(TFile* Pedestal_data, int ped_run, TFile* Pulser_data, int pulse_run, TFile* LED_data=NULL, int led_run = 0, bool include_led=false)
 {
 	SetsPhenixStyle();
 	Pedestal_data->cd();
@@ -769,7 +670,7 @@ int LocalRunThresholdScan(TFile* Pedestal_data, int ped_run, TFile* Pulser_data,
 		}
 	}
 	return 0;
-}
+}*/
 int EnergyDistr(TFile* f1, int run_num, std::string type)
 {
 	SetsPhenixStyle();
