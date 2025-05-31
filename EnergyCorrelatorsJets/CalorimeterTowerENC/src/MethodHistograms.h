@@ -4,11 +4,15 @@
 #include <TH1.h>
 #include <string>
 #include <vector>
+#include <math.h>
+
 struct MethodHistograms{
 	MethodHistograms(std::string vers, float max=0.85, float bin=0.): typelabel(vers), maxR(max), binwidth(bin){
 		if(binwidth > 0 ) nbins=maxR/binwidth;
 		E2C=new TH1F(Form("e2c_%s", typelabel.c_str()), Form("2 point energy correlator measured from %s; R_{L}; #frac{ d #varepsilon_{2} }{d R_{L}}", typelabel.c_str()),nbins, -0.05, maxR); 
 		E3C=new TH1F(Form("e3c_%s", typelabel.c_str()), Form("3 point energy correlator measured from %s; R_{L}; #frac{ d #varepsilon_{3} }{d R_{L}}", typelabel.c_str()), nbins, -0.05, maxR); 
+		E2C_rs=new TH1F(Form("e2c_rs_%s", typelabel.c_str()), Form("2 point energy correlator measured from %s; R_{L}^{2}; #frac{ d #varepsilon_{2} }{d R_{L}^{2}}", typelabel.c_str()),nbins, -0.05, std::pow(maxR,2)); 
+		E3C_rs=new TH1F(Form("e3c_rs_%s", typelabel.c_str()), Form("3 point energy correlator measured from %s; R_{L}^{2}; #frac{ d #varepsilon_{3} }{d R_{L}^{2}}", typelabel.c_str()), nbins, -0.05, std::pow(maxR,2)); 
 		E2C_pt=new TH1F(Form("e2c_%s_jetpt", typelabel.c_str()), Form("2 point energy correlator measured from %s; R_{L}; #frac{ d #varepsilon_{2} }{d R_{L}}", typelabel.c_str()), nbins, -0.05, maxR); 
 		E3C_pt=new TH1F(Form("e3c_%s_jetpt", typelabel.c_str()), Form("3 point energy correlator measured from %s; R_{L}; #frac{ d #varepsilon_{3} }{d R_{L}}", typelabel.c_str()), nbins, -0.05, maxR); 
 		R=new TH1F(Form("R_%s", typelabel.c_str()), Form("#Delta R_{12} between compotents in jet from %s; #Delta R_{12}; < N >", typelabel.c_str()), nbins, -0.05, maxR);
@@ -22,7 +26,7 @@ struct MethodHistograms{
 	float maxR=0.85;
 	float binwidth=0.;
 	int nbins=(maxR)/0.85*60; //set 60 bins for the 0.4 jet
-	TH1F  *E2C=nullptr, *E3C=nullptr, *E2C_pt=nullptr, *E3C_pt=nullptr, *R=nullptr, *R_geom=nullptr, *E=nullptr, *N=nullptr, *pt=nullptr;
+	TH1F  *E2C=nullptr, *E3C=nullptr, *E2C_pt=nullptr, *E3C_pt=nullptr, *E2C_rs=nullptr, *E3C_rs=nullptr, *R=nullptr, *R_geom=nullptr, *E=nullptr, *N=nullptr, *pt=nullptr;
 	TH2F* R_pt=nullptr;
 	std::vector<TH1F*> histsvector {E2C, E3C,E2C_pt, E3C_pt, R,R_geom, E, N, pt};
 };
