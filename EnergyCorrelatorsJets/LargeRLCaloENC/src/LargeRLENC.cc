@@ -19,10 +19,10 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	n_evts=0;
 	this->pedestalData=pedestal;
 	//if(pedestal){
-		this->ohcal_min=.4;
-		this->emcal_min=.1;
-		this->ihcal_min=.4;
-		this->all_min=.1;
+		this->ohcal_min=.39;
+		this->emcal_min=.09;
+		this->ihcal_min=.39;
+		this->all_min=.09;
 		this->truth_min=.0;
 	//}
 	thresh_mins[0]=all_min;
@@ -161,12 +161,12 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	goodE_IE=new TH2F("goodE_IE", "Radial Energy Distribution of jets as a function of jet energy passing dijet cuts; E [GeV]; #sum E_{i} R^{2}/E_{j}; N_{jets}", 100, -0.5, 99.5, 100, -0.05, 1.45);
 	h_E_truth=new TH1F("h_E_truth", "Truth Particle Energy; E [GeV]; N_{particles}", 5000, -0.005, 49.95);
 	h_pt_truth=new TH1F("h_pt_truth", "Truth Particle Transverse Momentum; p_{T} [GeV]; N_{particles}", 5000, -0.005, 49.95);
-	h_phi_truth=new TH1F("h_phi_truth", "Truth Particle #varphi position; #varphi; N_{particles}", 256, 0, 2*PI);
-	h_eta_truth=new TH1F("h_eta_truth", "Truth Particle #eta position; #eta; N_{particles}", 384, -4.4, 4.4);
+	h_phi_truth=new TH1F("h_phi_truth", "Truth Particle #varphi position; #varphi; N_{particles}", 64, -PI, PI);
+	h_eta_truth=new TH1F("h_eta_truth", "Truth Particle #eta position; #eta; N_{particles}", 96, -2.2, 2.2);
 	h_E_reco=new TH1F("h_E_reco", "Truth Particle Energy; E [GeV]; N_{particles}", 5000, -0.005, 49.95);
 	h_pt_reco=new TH1F("h_pt_reco", "Truth Particle Transverse Momentum; p_{T} [GeV]; N_{particles}", 5000, -0.005, 49.95);
-	h_phi_reco=new TH1F("h_phi_reco", "Truth Particle #varphi position; #varphi; N_{particles}", 256, 0, 2*PI);
-	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 384, -4.4, 4.4);
+	h_phi_reco=new TH1F("h_phi_reco", "Truth Particle #varphi position; #varphi; N_{particles}", 64, -PI, PI);
+	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 96, -2.2, 2.2);
 	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
 	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
 	h_jet_pt=new TH1F("h_jet_pt", "Jet pt for all jets", 1000, -0.5, 99.5);

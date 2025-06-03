@@ -50,9 +50,9 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 	f1->cd();
 	auto full=(TDirectory*)f1->Get("Full_Calorimeter");
 	full->cd();
-	TCanvas* c1=new TCanvas("e3c", "e3c");
-	TCanvas* c2=new TCanvas("e2c", "e2c");
-	TCanvas* c3=new TCanvas("R_pair", "R_pain");
+	TCanvas* c1=new TCanvas("e2c", "e2c");
+	TCanvas* c2=new TCanvas("e3c", "e3c");
+	TCanvas* c3=new TCanvas("R_pair", "R_pair");
 	std::array<TCanvas*, 3>* cs=new std::array<TCanvas*, 3>;
 	cs->at(0)=c1;
 	cs->at(1)=c2;
@@ -66,6 +66,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 	{
 		//Pick up the histograms 
 		std::string name=key->GetName();
+		if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;
@@ -101,7 +102,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 		l1->SetFillStyle(0);
 		l1->SetFillColor(0);
 		l1->SetBorderSize(0);
-		l1->SetTextSize(0.04f);
+		l1->SetTextSize(0.03f);
 		l1->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
 		l1->AddEntry("", "p + p  #sqrt{s}= 200 GeV", "");
 		l1->AddEntry("", "Pythia8 + GEANT4 + Noise", "");
@@ -112,7 +113,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 		else if(i==1) plotted_var="Integrated 3 point Energy Correlator";
 		else if(i==2) plotted_var="Angular seperation between consituent pairs";
 		l1->AddEntry("", plotted_var.c_str(), ""); 
-		TLegend* l=new TLegend(0.5, 0.5, 1, 0.7);
+		TLegend* l=new TLegend(0.7, 0.5, 1, 0.7);
 		l->SetFillStyle(0);
 		l->SetFillColor(0);
 		l->SetBorderSize(0);
@@ -156,7 +157,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 		p1->cd();
 		l->Draw();
 		l1->Draw();
-//		p2->SetLogy();
+		p2->SetLogy();
 	}
 	return;
 }
