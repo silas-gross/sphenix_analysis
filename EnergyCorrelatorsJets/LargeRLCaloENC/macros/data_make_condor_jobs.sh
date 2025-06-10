@@ -22,7 +22,8 @@ for i in $(seq 0 ${nFile}); do
 	fname="condor_files/data_condor_run_"$nRunraw$"_segment_"$i".job"
 	data=`sed "${j}q;d" $filename` 	 
 	datafitting=`sed "${j}q;d" $filenamefitting`
-	datatrigger=`sed "${j}q;d" $filenametrigger`
+	datatrigger="none"
+#	datatrigger=`sed "${j}q;d" $filenametrigger`
 	datajet=`sed "${j}q;d" $filenamejet`
 	truthf="none"
 	truthj="none"
@@ -37,7 +38,7 @@ for i in $(seq 0 ${nFile}); do
 	echo "Log  		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/data_condor_${nRunraw}_${i}.log" >> $fname
 	echo "Initialdir  	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/root_output_threshold_scan" >> $fname
 	echo "PeriodicHold 	= (NumJobStarts>=1 && JobStatus == 1)" >>$fname
-	echo "accounting_group = group_phenix.u " >> $fname
+	echo "accounting_group = group_sphenix.user " >> $fname
 	echo "accounting_group_user = sgross " >> $fname
 	echo "request_memory = 4096MB " >> $fname
 	echo "Priority = 90 ">> $fname

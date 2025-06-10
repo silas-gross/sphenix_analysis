@@ -114,17 +114,17 @@ class TowerOutput
 		
 		void Normalize(float energy)
 		{
-			for(auto e2c: this->E2C)
+			for(int i=0; i<(int)this->E2C.size(); i++)
 			{
-				e2c=e2c*(float)std::pow(energy,-2);
+				E2C[i]=E2C[i]*(float)std::pow(energy,-2);
 			}
-			for(auto e3c: this->E3C)
+			for(int i=0; i<(int)this->E3C.size(); i++)
 			{
-				e3c=e3c*(float)std::pow(energy, -3);
+				E3C[i]=E3C[i]*(float)std::pow(energy, -3);
 			}
-			for(auto e3c: this->E3C_full_shape)
+			for(int i=0; i<(int)this->E3C_full_shape.size(); i++)
 			{
-				e3c=e3c*(float)std::pow(energy, -3);
+				E3C_full_shape[i]=E3C_full_shape[i]*(float)std::pow(energy, -3);
 			}
 			return;
 		}

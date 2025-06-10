@@ -1,0 +1,14 @@
+Universe 	        = vanilla 
+Executable 	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/RunLargeRLENC.sh 
+Arguments         = DST_CALO_run2pp_ana468_2024p012_v001-00053860-00000.root DST_CALOFITTING_run2pp_ana468_2024p012_v001-00053860-00000.root none DST_JET_run2pp_ana468_2024p012_v001-00053860-00000.root none none none none none 0 
+Output  	        = /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/data_condor_53860_0.out 
+Error 		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/data_condor_53860_0.err 
+Log  		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/data_condor_53860_0.log
+Initialdir  	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/root_output_threshold_scan
+PeriodicHold 	= (NumJobStarts>=1 && JobStatus == 1)
+accounting_group = group_sphenix.user 
+accounting_group_user = sgross 
+request_memory = 4096MB 
+Priority = 90 
+job_lease_duration = 3600
+Queue 1

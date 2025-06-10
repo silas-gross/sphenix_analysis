@@ -1,0 +1,1 @@
+Fatal in <TROOT::InitInterpreter>: cannot load library /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/lib/libRIO.so: undefined symbol: _ZTI15TVirtualMapFile

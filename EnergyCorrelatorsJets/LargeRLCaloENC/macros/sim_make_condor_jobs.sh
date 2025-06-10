@@ -26,7 +26,7 @@ for i in $(seq 0 ${nFile}); do
 	echo "Log  		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_10.log" >> $fname
 	echo "Initialdir  	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/root_output_10" >> $fname
 	echo "PeriodicHold 	= (NumJobStarts>=1 && JobStatus == 1)" >>$fname
-	echo "accounting_group = group_phenix.u " >> $fname
+	echo "accounting_group = group_sphenix.user " >> $fname
 	echo "accounting_group_user = sgross " >> $fname
 	echo "request_memory = 128 GB " >> $fname
 	echo "Priority = 90 ">> $fname

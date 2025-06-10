@@ -66,7 +66,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 	{
 		//Pick up the histograms 
 		std::string name=key->GetName();
-		if(name.find("rs") != std::string::npos) continue;
+//		if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;

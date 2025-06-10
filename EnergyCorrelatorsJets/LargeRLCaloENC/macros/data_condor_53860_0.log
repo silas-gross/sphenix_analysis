@@ -1,0 +1,68 @@
+000 (71540.000.000) 2025-06-09 14:19:26 Job submitted from host: <130.199.48.165:9618?addrs=[2620-0-210-a002--165]-9618+130.199.48.165-9618&alias=sphnxuser01.sdcc.bnl.gov&noUDP&sock=schedd_4017867_486f>
+...
+001 (71540.000.000) 2025-06-09 14:21:21 Job executing on host: <130.199.200.86:9618?addrs=[2620-0-210-9075--86]-9618+130.199.200.86-9618&alias=sphnx1406.sdcc.bnl.gov&noUDP&sock=startd_15117_706c>
+	SlotName: slot1_63@sphnx1406.sdcc.bnl.gov
+	CondorScratchDir = "/home/condor/local/sphnx/execute/dir_3946749"
+	Cpus = 1
+	Disk = 7363
+	Memory = 4096
+	xferslots = 0
+...
+006 (71540.000.000) 2025-06-09 14:21:26 Image size of job updated: 220
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+005 (71540.000.000) 2025-06-09 14:21:26 Job terminated.
+	(1) Normal termination (return value 1)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	0  -  Run Bytes Sent By Job
+	0  -  Run Bytes Received By Job
+	0  -  Total Bytes Sent By Job
+	0  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0        1         1 
+	   Disk (KB)            :        2        2      7363 
+	   Memory (MB)          :        0     4096      4096 
+	   TimeExecute (s)      :        5                    
+	   TimeSlotBusy (s)     :        5                    
+	   xferslots            :                           0 
+
+	Job terminated of its own accord at 2025-06-09T18:21:26Z with exit-code 1.
+...
+000 (71543.000.000) 2025-06-09 14:26:44 Job submitted from host: <130.199.48.165:9618?addrs=[2620-0-210-a002--165]-9618+130.199.48.165-9618&alias=sphnxuser01.sdcc.bnl.gov&noUDP&sock=schedd_4017867_486f>
+...
+001 (71543.000.000) 2025-06-09 14:27:21 Job executing on host: <130.199.153.217:9618?addrs=[2620-0-210-9065--217]-9618+130.199.153.217-9618&alias=sphnx1297.sdcc.bnl.gov&noUDP&sock=startd_7218_815f>
+	SlotName: slot1_14@sphnx1297.sdcc.bnl.gov
+	CondorScratchDir = "/home/condor/local/sphnx/execute/dir_2576080"
+	Cpus = 1
+	Disk = 7365
+	Memory = 4096
+	xferslots = 0
+...
+006 (71543.000.000) 2025-06-09 14:27:26 Image size of job updated: 16
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+005 (71543.000.000) 2025-06-09 14:27:26 Job terminated.
+	(1) Normal termination (return value 1)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	0  -  Run Bytes Sent By Job
+	0  -  Run Bytes Received By Job
+	0  -  Total Bytes Sent By Job
+	0  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0        1         1 
+	   Disk (KB)            :        2        2      7365 
+	   Memory (MB)          :        0     4096      4096 
+	   TimeExecute (s)      :        5                    
+	   TimeSlotBusy (s)     :        5                    
+	   xferslots            :                           0 
+
+	Job terminated of its own accord at 2025-06-09T18:27:26Z with exit-code 1.
+...

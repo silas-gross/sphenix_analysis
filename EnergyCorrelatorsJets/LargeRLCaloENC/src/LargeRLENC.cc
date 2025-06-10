@@ -19,10 +19,10 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	n_evts=0;
 	this->pedestalData=pedestal;
 	//if(pedestal){
-		this->ohcal_min=.39;
-		this->emcal_min=.09;
-		this->ihcal_min=.39;
-		this->all_min=.09;
+		this->ohcal_min=.75;
+		this->emcal_min=.1;
+		this->ihcal_min=.75;
+		this->all_min=.1;
 		this->truth_min=.0;
 	//}
 	thresh_mins[0]=all_min;
@@ -1326,7 +1326,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		if((int)F->RL.size() > 0 ){
 			for(int i=0; i<(int)F->RL.size(); i++){
 				FullHists->R->Fill(F->RL.at(i));
-				FullHists->E2C->Fill(F->RL.at(i), F->E2C.at(i)/*/std::pow(e_region[region_shift],2)*/);
+				FullHists->E2C->Fill(F->RL.at(i), F->E2C.at(i));
 				FullHists->E2C_rs->Fill(std::pow(F->RL.at(i), 2), F->E2C.at(i));
 				if((int) F->E3C.size() <= i ) continue; 
 				else{
