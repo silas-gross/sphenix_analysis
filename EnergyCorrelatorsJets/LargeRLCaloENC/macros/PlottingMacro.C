@@ -25,7 +25,7 @@
 #include <math.h>
 #include <map>
 #include <sstream>
-std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ohcal", TColor::GetColor(252,244,52)}, {"ihcal", TColor::GetColor(61,165,66)}};
+std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ihcal", TColor::GetColor(252,244,52)}, {"ohcal", TColor::GetColor(61,165,66)}};
 float GetCutValue(std::string name)
 {
 	std::stringstream temp_name(name);
@@ -66,7 +66,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 	{
 		//Pick up the histograms 
 		std::string name=key->GetName();
-//		if(name.find("rs") != std::string::npos) continue;
+		if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;
@@ -121,6 +121,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 		l->SetNColumns(2);
 		for(int j=0; j<(int)ha->size(); j++)
 		{
+			if(j==3) continue;
 			p1->cd();
 			auto h=ha->at(j);
 			std::string v="";
@@ -135,6 +136,8 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 			hc->SetMarkerStyle(22);
 			hc->Divide(ha->at(0));
 			hc->SetYTitle("Reco / Truth");
+			hc->GetYaxis()->SetTitleSize(0.05f);
+			hc->GetXaxis()->SetTitleSize(0.05f);
 			h->GetYaxis()->SetRangeUser(0.1, max);
 			h->Draw("same");
 			std::string which_calo="";
@@ -241,9 +244,9 @@ void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=
 		float tme=v.second->at(0)->GetMaximum();
 		float tmec=v.second->at(1)->GetMaximum();
 		float tmedc=v.second->at(2)->GetMaximum();
-		if(tme > max_e) max_e = 1.05*tme;
-		if(tmec > max_ec) max_ec= 1.05*tmec;
-		if(tmedc > max_edc) max_edc = 1.05*tmedc;
+		if(tme > max_e) max_e = 1.15*tme;
+		if(tmec > max_ec) max_ec= 1.15*tmec;
+		if(tmedc > max_edc) max_edc = 1.15*tmedc;
 	} 
 	for(auto v:plot_map)
 	{
@@ -300,7 +303,7 @@ void EnergyDiffThresholds(TFile* f1, std::string gen="Pythia8", float truth_cut=
 		}
 		else if(j>=1) 
 		{
-			ls->at(i)->AddEntry(plot_map["truth"]->at(j), Form("Truth Particles, E_{min} = %.2g %s", truth_cut, truth_unit.c_str()));
+			ls->at(i)->AddEntry(plot_map["truth"]->at(j), Form("Truth Particles,|#eta|<1.1, E_{min} = %.2g %s", truth_cut, truth_unit.c_str()));
 			ls->at(i)->AddEntry(plot_map["reco"]->at(j), Form("All Calorimeters Summed, E_{min} = %.2g GeV", total_cut));
 			ls->at(i)->AddEntry(plot_map["emcal"]->at(j), Form("Electromagnetic Calorimeter, E_{min} = %.2g GeV", em_cut)); 
 			ls->at(i)->AddEntry(plot_map["ihcal"]->at(j), Form("Inner Hadronic Calorimeter, E_{min} = %.2g GeV",  ih_cut));

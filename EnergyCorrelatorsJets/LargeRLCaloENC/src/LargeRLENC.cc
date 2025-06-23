@@ -19,11 +19,11 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	n_evts=0;
 	this->pedestalData=pedestal;
 	//if(pedestal){
-		this->ohcal_min=.75;
+		this->ohcal_min=.65;
 		this->emcal_min=.1;
-		this->ihcal_min=.75;
+		this->ihcal_min=.65;
 		this->all_min=.1;
-		this->truth_min=.0;
+		this->truth_min=0;
 	//}
 	thresh_mins[0]=all_min;
 	thresh_mins[1]=emcal_min;
@@ -655,7 +655,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	try{
 		if(!isRealData){
 			 jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Truth_r04"); //look for the r_04 truth jets
-			if(jets->size() == 0 ) jets=getJets("Truth", radius, topNode);
+		//	if(jets->size() == 0 ) jets=getJets("Truth", radius, topNode);
 		}
 		else{
 			std::string recoJetName="AntiKt_"+algo+radius+"_Sub1";

@@ -28,11 +28,14 @@
 
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libcalo_io.so)
+R__LOAD_LIBRARY(libfun4all.so)
+R__LOAD_LIBRARY(libcalo_io.so)
 R__LOAD_LIBRARY(libffamodules.so)
 R__LOAD_LIBRARY(libLargeRLENC.so)
 R__LOAD_LIBRARY(libdummy.so)
 R__LOAD_LIBRARY(libjetbase.so)
 R__LOAD_LIBRARY(libjetbackground.so)
+
 std::pair<std::string, std::string> fix_calo_fitting_dst_names(int dst_numb, std::string data_fitting_dst_name){
 	int first_file_num=dst_numb*2;
 	int snd_file_num = first_file_num+1;
@@ -133,7 +136,7 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 		rc->set_StringFlag("CDB_GLOBALTAG", "MDC2");
 		rc->set_uint64Flag("TIMESTAMP", run_number);
 		CDBInterface::instance() -> Verbosity(0);
-	//	Process_Calo_Calib();
+		Process_Calo_Calib();
 	}
 		
 	bool nojets=true, retower_needed=true;
