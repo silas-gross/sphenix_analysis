@@ -28,8 +28,6 @@
 
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libcalo_io.so)
-R__LOAD_LIBRARY(libfun4all.so)
-R__LOAD_LIBRARY(libcalo_io.so)
 R__LOAD_LIBRARY(libffamodules.so)
 R__LOAD_LIBRARY(libLargeRLENC.so)
 R__LOAD_LIBRARY(libdummy.so)
