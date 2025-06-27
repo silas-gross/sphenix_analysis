@@ -103,7 +103,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	this->nRun=n_run;
 	this->nSegment=n_segment;
 	this->jetMinpT=jet_min_pT;
-	this->algo="Tower";
+	this->algo="unsubtracted";
 	this->radius="r04";
 	this->eventCut=new DijetEventCuts(12., 7., 0.7, PI*0.75, 1.);
 	this->which_variable=vari;
@@ -658,7 +658,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		//	if(jets->size() == 0 ) jets=getJets("Truth", radius, topNode);
 		}
 		else{
-			std::string recoJetName="AntiKt_"+algo+radius+"_Sub1";
+			std::string recoJetName="AntiKt_"+algo+radius;
 			jets = findNode::getClass<JetContainerv1>(topNode, recoJetName); //check for already reconstructed jets
 			if(!jets || jets->size() == 0 ){
 				jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Tower_r04_Sub1"); //explicit backup check
