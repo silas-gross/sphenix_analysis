@@ -661,15 +661,15 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			std::string recoJetName="AntiKt_"+algo+radius;
 			jets = findNode::getClass<JetContainerv1>(topNode, recoJetName); //check for already reconstructed jets
 			if(!jets || jets->size() == 0 ){
-				jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Tower_r04_Sub1"); //explicit backup check
-				std::cout<<"Jet container for tower sub1 has size: " <<jets->size() <<std::endl;
+				jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_unsubtracted_r04");
+				std::cout<<"Jet container for tower unsub has size: " <<jets->size() <<std::endl;
 				if(!jets || jets->size() == 0){
 					jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_TowerInfo_r04");
 					if(jets) std::cout<<"Jet container for towerinfo has size: " <<jets->size() <<std::endl;
 				}
 				if(!jets || jets->size() == 0){
-					jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_unsubtracted_r04");
-					if(jets) std::cout<<"Jet container for unsub has size: " <<jets->size() <<std::endl;
+					jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Tower_r04_Sub1"); //explicit backup check
+					if(jets) std::cout<<"Jet container for subtracted has size: " <<jets->size() <<std::endl;
 				}
 				//try every possible style
 			}
@@ -679,7 +679,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 	}
 	catch(std::exception& e){ std::cout<<"Did not find a jet container object, will attempt to reconstruct the jets" <<std::endl;}
-//	if(jets==NULL || !foundJetConts) jets=getJets("Tower", radius, vertex, ohcal_rat, topNode); //if needed will go back to this
+//	if(jets==NULL || jets->size() == 0 ) jets=getJets("Tower", radius, topNode); //if needed will go back to this
 	if(!jets){
 		std::cout<<"Didn't find any jets, skipping event" <<std::endl;
 		return Fun4AllReturnCodes::EVENT_OK;
