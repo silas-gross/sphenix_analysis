@@ -199,10 +199,11 @@ class LargeRLENC : public SubsysReco
 	void MakeEMCALRetowerMap(RawTowerGeomContainer_Cylinderv1* em_geom, TowerInfoContainer* emcal, RawTowerGeomContainer_Cylinderv1* h_geom, TowerInfoContainer* hcal );
 	std::array<float, 5> Thresholds;	
 	std::map<int, std::pair<float, float>> emcal_lookup_table;
+	std::array<std::map<std::array<float, 3>, float>, 3> makeTowerClusters(std::array<float, 3>, PHCompositeNode*);
  private:
 	std::string algo, radius, output_file_name;
 	std::string ohcal_energy_towers="TOWERINFO_CALIB_HCALOUT", ihcal_energy_towers="TOWERINFO_CALIB_HCALIN", emcal_energy_towers="TOWERINFO_CALIB_CEMC";
-  	bool isRealData, pedestalData;
+  	bool isRealData, pedestalData, clusters=false;
 	int nRun, nSegment, m_Njets, n_evts, n_with_jets=0;
 
 	float jetMinpT, MinpTComp;
@@ -233,6 +234,7 @@ class LargeRLENC : public SubsysReco
 	float ihcal_min; //7.5 MeV
 	float all_min; //65 MeV
 	float truth_min;
+	bool doClusters = false;
 	//all these are conservative vals 
 	TH1F* h_eta_truth; 
 	TH1F* h_phi_truth;

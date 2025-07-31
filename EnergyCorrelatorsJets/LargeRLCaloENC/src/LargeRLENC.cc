@@ -17,6 +17,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 {
 
 	n_evts=0;
+	this->doClusters = true;
 	this->pedestalData=pedestal;
 	//if(pedestal){
 		this->ohcal_min=.65;
@@ -594,6 +595,42 @@ void LargeRLENC::addTower(int n, TowerInfoContainer* energies, RawTowerGeomConta
 	}
 	return;
 }
+
+std::array<std::map<std::array<float, 3>, float>, 3> LargeRLENC::makeTowerClusters(std::array<float,3> vtx, PHCompositeNode* topNode)
+{
+	//turn the clusters into a tower filter
+	auto topoClusters = findNode::getClass<RawClusterContiner>(topNode, "TOPOCLUSTER_ALLCALO");
+	auto cm = topoclusters->getClustersMap();
+	int m_cluster_n = 0;
+	std::map<std::array<float, 3>, float> emcal_e, ihcal_e, ohcal_e; 
+	std::map<int, float> cluster_e, cluster_phi, cluster_eta; 
+	std::map<int, int> cluster_multipl;
+	for(auto entry: cm) 
+	{
+		RawCluster* cluster = entry.second;
+		CLHEP::Hep3Vector origin (vtx[0], vtx[1], vtx[2]);
+		cluster_e[m_cluster_n]=cluster->get_energy();
+		cluster_eta[m_cluster_n]= cluster->GetPseduorapidity(*cluster, origin);
+		cluster_phi[m_cluster_n] = cluster->GetAzimuthalAngle(*cluster, origin);
+		cluster_multipl[m_cluster_n] = cluster->GetNTowers();
+		float r = cluster->get_r();
+		for(const auto& [tower_id, tower_e] : cluster->get_tower_map())
+		{
+			int calo_n = static_cast<int> (RawTowerDefs::decode_caloid(tower_id));
+			float phi = RawTowerDefs::decode_index2(tower_id);
+			float eta = RawTowerDefs::decode_index1(tower_id);
+			std::array<float, 3> tow {eta, phi, r};
+			if(calo_n == 0) emcal_e[tow]=tower_e;
+		     	//not sure about the ids, is this emcal???
+			else if (calo_n == 1) ihcal_e[tow]=tower_e;
+			else if (calo_n == 2) ohcal_e[tow]=tower_e;
+			else continue;
+		}
+	}
+	std::array<std::map<std::array<float, 3>, float>, 3> towers {emcal_e, ihcal_e, ohcal_e};
+	return towers;
+}
+
 void LargeRLENC::MakeEMCALRetowerMap(RawTowerGeomContainer_Cylinderv1* em_geom, TowerInfoContainer* emcal, RawTowerGeomContainer_Cylinderv1* h_geom, TowerInfoContainer* hcal )
 {
 	em_geom->set_calorimeter_id(RawTowerDefs::CEMC);
@@ -724,6 +761,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	int emcal_oc=0; //allow for occupancy to be calculated seperate from the other bits
 	float emcal_energy=0., ihcal_energy=0., ohcal_energy=0., total_energy=0., ohcal_rat=0.;
 	std::map<std::array<float, 3>, float> ihcal_towers, emcal_towers, ohcal_towers, truth_pts; //these are just to collect the non-zero towers to decrease the processing time 
+	std::map<std::array<float, 3>, float> ihcal_cl, emcal_cl, ohcal_cl, cl; //these are just to collect the non-zero towers to decrease the processing time 
 	float e1=0, e2=0, e3=0, e4=0;
 	for(int n=0; n<(int) emcal_tower_energy->size(); n++){
 		if(! emcal_tower_energy->get_tower_at_channel(n)->get_isGood()) continue;
@@ -810,7 +848,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			}
 		}
 	}	
-
+	[emcal_cl, ihcal_cl, ohcal_cl, cl]=makeTowerClusters(vertex,topNode);
 	total_energy=emcal_energy+ihcal_energy+ohcal_energy;
 	ohcal_rat=ohcal_energy/(float)total_energy; //take the ratio at the whole calo as that is the region of interest
 	float emcal_occupancy=emcal_oc/((float)emcal_tower_energy->size())*100.;
@@ -958,9 +996,9 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		
 		if(isDijet) n_with_jets++;
 		//this is running the actual analysis
-		LargeRLENC::CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, jetMinpT, which_variable, vertex, m_philead);
+		if(!doClusters) LargeRLENC::CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, jetMinpT, which_variable, vertex, m_philead);
 		if(!isRealData && !pedestalData) LargeRLENC::TruthRegion(truth_pts, jetMinpT, which_variable, vertex, m_philead); 
-		
+		if(doClusters) LargeRLENC::CaloRegion(emcal_cl, ihcal_cl, ohcal_cl, jetMinpT, which_variable, m_vertex, m_philead);
 		DijetQA->Fill();
 	}
 	return Fun4AllReturnCodes::EVENT_OK;
