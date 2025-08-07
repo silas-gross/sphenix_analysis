@@ -13,7 +13,7 @@ for i in $(seq 0 ${nFile}); do
 	fname="condor_files/condor_segment_"$i"_10.job"
 	data="none" 	 
 	truthf=`sed "${j}q;d" dst_truth_10.list`
-	truthfr=`sed "${j}q;d" dst_truth_reco_10.list`
+	truthfr=`sed "${j}q;d" g4hits_10.list`
 	truthj=`sed "${j}q;d" dst_truth_jet_10.list`
 	caloclusterf=`sed "${j}q;d" dst_calo_cluster_10.list`
 	globalf=`sed "${j}q;d" dst_global_10.list`
@@ -28,7 +28,7 @@ for i in $(seq 0 ${nFile}); do
 	echo "PeriodicHold 	= (NumJobStarts>=1 && JobStatus == 1)" >>$fname
 	echo "accounting_group = group_sphenix.user " >> $fname
 	echo "accounting_group_user = sgross " >> $fname
-	echo "request_memory = 128 GB " >> $fname
+	echo "request_memory = 8 GB " >> $fname
 	echo "Priority = 90 ">> $fname
 	echo "job_lease_duration = 3600" >> $fname
 	echo "Queue 1" >> $fname 

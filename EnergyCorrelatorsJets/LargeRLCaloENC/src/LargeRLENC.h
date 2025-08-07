@@ -23,7 +23,10 @@
 #include <calobase/TowerInfov1.h>
 #include <calobase/TowerInfo.h>
 #include <calobase/RawTowerDefs.h>
+#include <calobase/RawCluster.h>
+#include <calobase/RawClusterUtility.h>
 #include <calobase/RawTowerContainer.h>
+#include <calobase/RawClusterContainer.h>
 #include <calobase/RawTowerGeomContainer.h>
 #include <calobase/RawTowerGeomContainer_Cylinderv1.h>
 
@@ -183,11 +186,11 @@ class LargeRLENC : public SubsysReco
 	std::array<float,3> HadronicEnergyBalence(Jet*, float, PHCompositeNode*);
 	std::vector<std::array<float,3>> getJetEnergyRatios(JetContainerv1*, float, PHCompositeNode*);	
 	JetContainerv1* getJets(std::string, std::string, PHCompositeNode*);
-	void TruthRegion (std::map<std::array<float, 3>, float> , float,  std::string, std::array<float, 3>, float);
+	void TruthRegion (std::map<std::array<float, 3>, float> , float,  std::string, std::array<float, 3>, float, float);
 
-	void CaloRegion(std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, float, std::string, std::array<float, 3>, float);
+	void CaloRegion(std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, std::map<std::array<float, 3>, float>, float, std::string, std::array<float, 3>, float, float);
 
-	void SingleCaloENC( std::map<std::array<float, 3>, float>, float, std::array<float, 3>, bool, bool, std::map<int, std::pair<float, float>>, LargeRLENC::Calorimeter);
+	void SingleCaloENC( std::map<std::array<float, 3>, float>, float, std::array<float, 3>, bool, bool, std::map<int, std::pair<float, float>>, LargeRLENC::Calorimeter, float);
 	
 	void CalculateENC(StrippedDownTower*, std::vector<StrippedDownTower>, bool, bool);
 
@@ -199,7 +202,7 @@ class LargeRLENC : public SubsysReco
 	void MakeEMCALRetowerMap(RawTowerGeomContainer_Cylinderv1* em_geom, TowerInfoContainer* emcal, RawTowerGeomContainer_Cylinderv1* h_geom, TowerInfoContainer* hcal );
 	std::array<float, 5> Thresholds;	
 	std::map<int, std::pair<float, float>> emcal_lookup_table;
-	std::array<std::map<std::array<float, 3>, float>, 3> makeTowerClusters(std::array<float, 3>, PHCompositeNode*);
+	std::array<std::map<std::array<float, 3>, float>, 4> makeTowerClusters(std::array<float, 3>, PHCompositeNode*);
  private:
 	std::string algo, radius, output_file_name;
 	std::string ohcal_energy_towers="TOWERINFO_CALIB_HCALOUT", ihcal_energy_towers="TOWERINFO_CALIB_HCALIN", emcal_energy_towers="TOWERINFO_CALIB_CEMC";
@@ -252,5 +255,6 @@ class LargeRLENC : public SubsysReco
 	TH1F* h_ihcal_E, *h_ihcal_E_c, *h_ihcal_E_dc;	
 	TH1F* h_emcal_E, *h_emcal_E_c, *h_emcal_E_dc;	
 	TH1F* h_jet_pt;
+	TH1I* h_n_ohcal_clusters, *h_n_emcal_clusters, *h_n_cal_clusters;
 };
 #endif // LARGERLENC_H

@@ -147,6 +147,8 @@ class DijetEventCuts{
 		}
 		float getLeadPhi(){ return leadphi;}
 		float getLeadEta(){ return leadeta;}
+		float getLeadPt(){ return m_lpt;}
+		float getSubleadPt(){ return m_slpt;}
 		bool  getIsDijet(){ return m_isdijet;}
 		void dumpStatus(){
 			if(passesCut){

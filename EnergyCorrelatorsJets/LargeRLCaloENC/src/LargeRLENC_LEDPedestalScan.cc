@@ -213,7 +213,7 @@ int LEDPedestalScan::process_event(PHCompositeNode* topNode)
 			else continue;
 		}
 	}	
-	encCalc->CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, 0.05, "E",  vertex, lead_phi);
+	encCalc->CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, 0.05, "E",  vertex, lead_phi, 1.);
 	}
 	return Fun4AllReturnCodes::EVENT_OK;
 }

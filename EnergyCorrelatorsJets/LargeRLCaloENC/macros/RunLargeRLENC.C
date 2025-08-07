@@ -22,6 +22,7 @@
 #include <jetbackground/RetowerCEMC.h>
 #include <largerlenc/LargeRLENC_LEDPedestalScan.h>
 #include <phool/recoConsts.h>
+#include <caloreco/RawClusterBuilderTopo.h>
 #include <TFile.h>
 #include <TTree.h>
 #include <fstream>
@@ -59,7 +60,7 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	int run_number=0, segment=0, n_evts=std::stoi(n_evt);
 //	std::string run_str="", segn_str="", substr="";
 	bool data=true;
-
+	bool cluster=false;
 	se->Verbosity(0);
 	if(data_dst.find("none") != std::string::npos) data=false;
 	if(data){
@@ -138,6 +139,23 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	}
 		
 	bool nojets=true, retower_needed=true;
+	if(cluster)
+	{
+		RawClusterBuilderTopo* ClusterBuilder = new RawClusterBuilderTopo("HcalRawClusterBuilderTopo");
+		ClusterBuilder->Verbosity(0);
+		ClusterBuilder->set_nodename("TOPOCLUSTER_ALLCALO");
+		ClusterBuilder->set_enable_HCal(true);
+		ClusterBuilder->set_enable_EMCal(true);
+		ClusterBuilder->set_noise(0.0053, 0.0351, 0.0684); // 3sigma of pedestal noise
+		ClusterBuilder->set_significance(4.0, 2.0, 1.0);
+		ClusterBuilder->allow_corner_neighbor(true);
+		ClusterBuilder->set_do_split(true);
+		ClusterBuilder->set_minE_local_max(1.0, 2.0, 0.5);
+		ClusterBuilder->set_R_shower(0.025);
+		ClusterBuilder->set_use_only_good_towers(true);
+		ClusterBuilder->set_absE(true);
+		se->registerSubsystem(ClusterBuilder);
+	}	
 /*	if(data){ //check if the jet objects have already been constructed and retowering needed
 
 		TFile* f1=new TFile(data_dst.c_str(), "READ");
