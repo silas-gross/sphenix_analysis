@@ -11,17 +11,18 @@ using namespace std;
 
 
 //____________________________________________________________________________..
-triggercountmodule::triggercountmodule(const std::string &filename, int rn, int segn, int maxseg, int debug, const std::string &name):
+triggercountmodule::triggercountmodule(const std::string &filename, int rn, int segn, int maxseg, int debug, const std::string &name, int clt):
   SubsysReco(name)//).c_str())
 {
   _rn = rn;
   _filename = filename;
   _name = name;
-  _outfile = new TFile(filename.c_str(), "RECREATE");
+
   _tree = new TTree("_tree","a tree to count events");
   _debug = debug;
   _nseg = segn;
   _lastseg = maxseg;
+  _clt = clt;
 }
 
 //____________________________________________________________________________..
@@ -43,14 +44,20 @@ int triggercountmodule::Init(PHCompositeNode *topNode)
   _tree->Branch("endScal",_endScal,"endScal[64]/l");
   _tree->Branch("nevt",&_evtn,"nevt/l");
   _tree->Branch("avgPS",_avgPS,"avgPS[64]/D");
-  _tree->Branch("trigCounts",_trigCounts,"trigCounts[3][64]/l");
-  _tree->Branch("eMBDlive",_eMBDlive,"eMBDlive[3]/D");
+  _tree->Branch("trigCounts",_trigCounts,"trigCounts[6][64]/l");
+  _tree->Branch("eMBDlive",_eMBDlive,"eMBDlive[5]/D");
   _tree->Branch("startBCO",&_startBCO,"startBCO/l");
   _tree->Branch("endBCO",&_endBCO,"endBCO/l");
   _tree->Branch("nBunch",&_nBunch,"nBunch/I");
-  
-  _mbzhist = new TH1D("mbzhist","",300,-150,150);
+  _tree->Branch("startRaw",_startRaw,"startRaw[64]/l");
+  _tree->Branch("endRaw",_endRaw,"endRaw[64]/l");
+  _mbzhist = new TH1D("mbzhist","",600,-300,300);
   _bunchHist = new TH1D("bunchHist","",121,0,121);
+  if(_debug > 0)
+    {
+      cout << "Printing tree: " << endl;
+      _tree->Print();
+    }
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -86,19 +93,43 @@ int triggercountmodule::process_event(PHCompositeNode *topNode)
 	  _startLive[i] = gl1->lValue(i,1);
 	  if(_debug > 2) cout << gl1->lValue(i,1) << endl;
 	  _startScal[i] = gl1->lValue(i,2);
+	  _startRaw[i] = gl1->lValue(i,0);
+	  _prevcheck[0] = gl1->lValue(18,0);
+	  _prevcheck[1] = gl1->lValue(22,0);
+	  _prevcheck[2] = gl1->lValue(18,1);
+	  _prevcheck[3] = gl1->lValue(22,1);
 	}
     }
   //cout << _evtn << endl;
-  ++_evtn;
+
   _endBCO = gl1->lValue(0,"BCO");
   for(int i=0; i<64; ++i)
     {
       _endLive[i] = gl1->lValue(i,1);
       if(_debug > 2) cout << "end" << gl1->lValue(i,1) << endl;
       _endScal[i] = gl1->lValue(i,2);
+      _endRaw[i] = gl1->lValue(i,0);
+    }
+
+  float ld18 = _endLive[18] - _prevcheck[2];
+  float ld22 = _endLive[22] - _prevcheck[3];
+  float rd18 = _endRaw[18] - _prevcheck[0];
+  float rd22 = _endRaw[22] - _prevcheck[1];
+
+  float lt18 = ld18/rd18;
+  float lt22 = ld22/rd22;
+
+  _isblt = 0;
+  if(_evtn != 0 && _clt)
+    {
+      if(lt18 < 0.1 || lt22 < 0.1)
+	{
+	  _isblt = 1;
+	}
     }
   
   if(_debug > 1) cout << "Getting gl1 trigger vector from: " << gl1 << endl;
+  ++_evtn;
   long long unsigned int _trigvec = gl1->getScaledVector();
 
   int ismbtrig = (_trigvec >> 10) & 1;
@@ -109,11 +140,6 @@ int triggercountmodule::process_event(PHCompositeNode *topNode)
 
   if(gvtxmap)
     {
-      if(gvtxmap->empty())
-        {
-          if(_debug > 0) cout << "gvtxmap empty - aborting event." << endl;
-          return Fun4AllReturnCodes::ABORTEVENT;
-        }
       GlobalVertex* gvtx = gvtxmap->begin()->second;
       if(gvtx)
         {
@@ -130,26 +156,29 @@ int triggercountmodule::process_event(PHCompositeNode *topNode)
                 }
             }
         }
-      else
-        {
-          if(_debug > 0) cout << "gvtx is NULL! Aborting event." << endl;
-          return Fun4AllReturnCodes::ABORTEVENT;
-        }
     }
   
-  int zthresh[3] = {30,60,200};
+  int zthresh[5] = {30,60,200,10,1000};
 
 
 
-  for(int i=0; i<3; ++i)
+  for(int i=0; i<5; ++i)
     {
       if(abs(zvtx) < zthresh[i] && !std::isnan(zvtx))
 	{
 	  for(int j=0; j<64; ++j)
 	    {
-	      if((_trigvec >> j) & 1) _trigCounts[i][j]++;
+	      if((_trigvec >> j) & 1)
+		{
+		  if(!_isblt) _trigCounts[i][j]++;
+		}
 	    }
 	}
+    }
+
+  for(int j=0; j<64; ++j)
+    {
+      if(((_trigvec >> j) & 1) && !_isblt) _trigCounts[5][j]++;
     }
 
   if(!ismbtrig)
@@ -163,9 +192,9 @@ int triggercountmodule::process_event(PHCompositeNode *topNode)
       if(_debug > 0) cout << "zvtx is NAN after attempting to grab it. ABORT EVENT!" << endl;
       return Fun4AllReturnCodes::ABORTEVENT;
     }
-  if(abs(zvtx) > 150)
+  if(abs(zvtx) > 300)
     {
-      if(_debug > 2) cout << "zvtx > 150. zvtx: " << zvtx << endl;
+      if(_debug > 2) cout << "zvtx > 300. zvtx: " << zvtx << endl;
       return Fun4AllReturnCodes::ABORTEVENT;
     }
 
@@ -202,7 +231,7 @@ int triggercountmodule::End(PHCompositeNode *topNode)
       std::cout << "triggercountmodule::End(PHCompositeNode *topNode) This is the End..." << std::endl;
     }
   //cout << _evtn << endl;
-  if(_nseg != _lastseg && _evtn < 99000)
+  if(_nseg != _lastseg && _evtn < 49500)
     {
       _badFlag = 1;
     }
@@ -213,7 +242,7 @@ int triggercountmodule::End(PHCompositeNode *topNode)
       else _avgPS[i] = ((float)(_endLive[i]-_startLive[i]))/(_endScal[i]-_startScal[i]);
       if(_debug > 2) cout << "realend" << _endLive[i] << endl;
     }
-  for(int i=0; i<3; ++i)
+  for(int i=0; i<5; ++i)
     {
       _eMBDlive[i] = _avgPS[10]*_trigCounts[i][10];
     }
@@ -227,10 +256,11 @@ int triggercountmodule::End(PHCompositeNode *topNode)
 	  _nBunch++;
 	}
     }
-
+  _outfile = new TFile(_filename.c_str(), "RECREATE");
   _outfile->cd();
   _bunchHist->Write();
   _mbzhist->Write();
+  if(_debug > 0) _tree->Print();
   _tree->Fill();
   _tree->Write();
   _outfile->Write();
