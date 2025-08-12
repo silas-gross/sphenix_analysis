@@ -17,7 +17,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 {
 
 	n_evts=0;
-	this->doClusters = false;
+	this->doClusters = true;
 	this->pedestalData=pedestal;
 	//if(pedestal){
 		this->ohcal_min=.65;
@@ -616,7 +616,7 @@ std::array<std::map<std::array<float, 3>, float>, 4> LargeRLENC::makeTowerCluste
 	auto topoClusters = findNode::getClass<RawClusterContainer>(topNode, "TOPOCLUSTER_ALLCALO");
 	auto cm = topoClusters->getClustersMap();
 	//int m_cluster_n = 0;
-	std::map<std::array<float, 3>, float> emcal_e, ihcal_e, ohcal_e, cluster_e; 
+	std::map<std::array<float, 3>, float> emcal_e {}, ihcal_e {}, ohcal_e {}, cluster_e {}; 
 	//std::map<int, float> cluster_e, cluster_phi, cluster_eta; 
 	//std::map<int, int> cluster_multipl;
 	for(auto entry: cm) 
@@ -661,14 +661,18 @@ std::array<std::map<std::array<float, 3>, float>, 4> LargeRLENC::makeTowerCluste
 				tow[0]=ohcal_geom->get_etacenter(ieta);
 				tow[1]=ohcal_geom->get_phicenter(iphi);
 				tow[2]=ohcal_geom->get_radius();
-			       	 ohcal_e[tow]=tower_e;
+			       	ohcal_e[tow]=tower_e;
 			}
 			else continue;
 		}
 		h_n_ohcal_clusters->Fill(ohcal_cluster);
 		h_n_emcal_clusters->Fill(emcal_cluster);
 	}
-	std::array<std::map<std::array<float, 3>, float>, 4> towers {emcal_e, ihcal_e, ohcal_e, cluster_e};
+	std::array<std::map<std::array<float, 3>, float>, 4> towers;
+       	towers[0]=emcal_e;
+       	towers[1]=ihcal_e;
+       	towers[2]= ohcal_e;
+        towers[3]=cluster_e;
 	return towers;
 }
 

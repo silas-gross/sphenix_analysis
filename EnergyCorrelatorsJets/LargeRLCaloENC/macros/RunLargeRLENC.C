@@ -60,7 +60,7 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	int run_number=0, segment=0, n_evts=std::stoi(n_evt);
 //	std::string run_str="", segn_str="", substr="";
 	bool data=true;
-	bool cluster=false;
+	bool cluster=true;
 	se->Verbosity(0);
 	if(data_dst.find("none") != std::string::npos) data=false;
 	if(data){
