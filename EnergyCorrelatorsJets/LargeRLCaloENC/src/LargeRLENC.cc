@@ -5,19 +5,19 @@
 //			Author: Skaydi Grossberndt						//
 //			Depends on: Calorimeter Tower ENC 					//
 //			First Commit date: 18 Oct 2024						//
-//			Most recent Commit: 29 May 2025						//
-//			version: v6 fixing normalization, adding disc corr	 	 	//
+//			Most recent Commit: 22 Sept 2025					//
+//			version: v7 added cluster support, npair norm and updated cuts 	 	//
 //												//
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "LargeRLENC.h"
 
 
-LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const float jet_min_pT/*=0*/, const bool data/*=false*/, const bool pedestal, std::fstream* ofs/*=nullptr*/, const std::string vari/*="E"*/, const std::string& name/* = "LargeRLENC"*/) 
+LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const float jet_min_pT/*=0*/, const bool data/*=false*/, const bool cluster/*=false*/, const bool pedestal, std::fstream* ofs/*=nullptr*/, const std::string vari/*="E"*/, const std::string& name/* = "LargeRLENC"*/) 
 {
 
 	n_evts=0;
-	this->doClusters = true;
+	this->doClusters = cluster;
 	this->pedestalData=pedestal;
 	//if(pedestal){
 		this->ohcal_min=.65;
@@ -70,14 +70,16 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	tre=new MethodHistograms("Transverse_Region_EMCAL"+emcal_thresh_s, 1.5*PI, 0.1);
 	tri=new MethodHistograms("Transverse_Region_IHCAL"+ihcal_thresh_s, 1.5*PI, 0.1);
 	tro=new MethodHistograms("Transverse_Region_OHCAL"+ohcal_thresh_s, 1.5*PI, 0.1); //Transverse_Region OHCAL has R ~ 3.83 (delta eta ~ 2.2, delta phi ~pi)
-	if(!pedestalData && !data){
-		MethodHistograms* fc1=new MethodHistograms("Truth_Full_CAL"+truth_thresh_s, 1.5*PI, 0.1); 
+	if(!pedestalData && (!data || !doClusters) ){
+		std::string tl="Truth";
+		if(doClusters) tl="Cluster_level";
+		MethodHistograms* fc1=new MethodHistograms(tl+"_Full_CAL"+truth_thresh_s, 1.5*PI, 0.1); 
 	
-		MethodHistograms* tc1=new MethodHistograms("Truth_Towards_Region_CAL"+truth_thresh_s, 1.5*PI, 0.1);
+		MethodHistograms* tc1=new MethodHistograms(tl+"_Towards_Region_CAL"+truth_thresh_s, 1.5*PI, 0.1);
 
-		MethodHistograms* ac1=new MethodHistograms("Truth_Away_Region_CAL"+truth_thresh_s, 1.5*PI , 0.1);
+		MethodHistograms* ac1=new MethodHistograms(tl+"_Away_Region_CAL"+truth_thresh_s, 1.5*PI , 0.1);
 	
-		MethodHistograms* trc1=new MethodHistograms("Truth_Transverse_Region_CAL"+allcal_thresh_s, 1.5*PI, 0.1);
+		MethodHistograms* trc1=new MethodHistograms(tl+"_Transverse_Region_CAL"+allcal_thresh_s, 1.5*PI, 0.1);
 		std::vector<std::vector<MethodHistograms*>> Region_truth {std::vector<MethodHistograms*>{fc1}, std::vector<MethodHistograms*>{tc1}, std::vector<MethodHistograms*>{ac1}, std::vector<MethodHistograms*>{trc1}};
 		this->Truth_Region_vector=Region_truth;	
 	}	
@@ -112,7 +114,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	this->jetMinpT=jet_min_pT;
 	this->algo="unsubtracted";
 	this->radius="r04";
-	this->eventCut=new DijetEventCuts(30., 20., 0.7, PI*0.75, 1.);
+	this->eventCut=new DijetEventCuts(20.9, 9.4, 0.7, PI*0.75, 1.); //using the cuts from the dijet p+p cuts in IAN/CONF for QM
 	this->which_variable=vari;
 	this->output_file_name="Large_RL_ENC_def_"+algo+"_dijets_anti_kT_"+radius+"-"+std::to_string(nRun)+"-"+std::to_string(nSegment)+".root";
 	if(doClusters)
@@ -377,6 +379,7 @@ std::array<float, 3> LargeRLENC::HadronicEnergyBalence(Jet* jet, float ohcal_ihc
 std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* jets, float ohcal_ihcal_ratio, PHCompositeNode* topNode)
 {
 	//get the energy ballence in each calorimeter for each jet
+	
 	std::vector<std::array<float, 3>> ohcal_ratio;
 	auto emcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
 	auto ihcal_tower_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
@@ -387,6 +390,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 	ohcal_geom->set_calorimeter_id(RawTowerDefs::HCALOUT);
 	ihcal_geom->set_calorimeter_id(RawTowerDefs::HCALIN);
 	emcal_geom->set_calorimeter_id(RawTowerDefs::CEMC);
+	
 	for(auto j: *jets)
 	{
 		if(!j) continue;
@@ -403,7 +407,9 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 			}	
 			if(  source==Jet::SRC::HEPMC_IMPORT || source > Jet::SRC::HCALOUT_TOWERINFO_SIM || source==Jet::SRC::HCALOUT_CLUSTER || source==Jet::SRC::HCALIN_CLUSTER)continue;
 			else{
+				
 				if(source==Jet::SRC::HCALOUT_TOWER|| source == Jet::SRC::HCALOUT_CLUSTER){
+	
 					unsigned int tower_id=iter.second;
 					float e=0.;
 					try{
@@ -412,13 +418,15 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 					catch(std::exception& e){std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER <<" despite actual source being " <<source <<" and tower id is " <<tower_id<<std::endl;}
 					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
 					allcal_energy+= e;
-					int phibin=ohcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=ohcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ohcal_tower_energy->encode_key(tower_id);
+					int phibin=ohcal_tower_energy->getTowerPhiBin(key);
+					int etabin=ohcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=ohcal_geom->get_phicenter(phibin);
 					float etacenter=ohcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
 				else if( source == Jet::SRC::HCALOUT_TOWER_SUB1  || source == Jet::SRC::HCALOUT_TOWERINFO_SUB1){
+	
 					unsigned int tower_id=iter.second;
 					ohcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALOUT_SUB1");
 					float e=0.;
@@ -433,38 +441,45 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
 				else if(source== Jet::SRC::HCALOUT_TOWERINFO || source == Jet::SRC::HCALOUT_TOWER_SUB1CS ){
+	
 					unsigned int tower_id=iter.second;
 					float e=ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
 					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
 					allcal_energy+= e;
-					int phibin=ohcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=ohcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ohcal_tower_energy->encode_key(tower_id);
+					int phibin=ohcal_tower_energy->getTowerPhiBin(key);
+					int etabin=ohcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=ohcal_geom->get_phicenter(phibin);
 					float etacenter=ohcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
 				else if(source== Jet::SRC::HCALOUT_TOWERINFO_SIM  || source==Jet::SRC::HCALOUT_TOWERINFO_EMBED ){
+	
 					unsigned int tower_id=iter.second;
 					float e=ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
 					ohcal_energy+= e;//functionally the same as below, I just want to make things readable
 					allcal_energy+= e;
-					int phibin=ohcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=ohcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ohcal_tower_energy->encode_key(tower_id);
+					int phibin=ohcal_tower_energy->getTowerPhiBin(key);
+					int etabin=ohcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=ohcal_geom->get_phicenter(phibin);
 					float etacenter=ohcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
 				else if(source== Jet::SRC::HCALIN_TOWER || source == Jet::SRC::HCALIN_CLUSTER  ){
+	
 					unsigned int tower_id=iter.second;
 					float e=ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
 					allcal_energy+= e;
-					int phibin=ihcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=ihcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ohcal_tower_energy->encode_key(tower_id);
+					int phibin=ihcal_tower_energy->getTowerPhiBin(key);
+					int etabin=ihcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=ihcal_geom->get_phicenter(phibin);
 					float etacenter=ihcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
 				else if( source == Jet::SRC::HCALIN_TOWER_SUB1 || source == Jet::SRC::HCALIN_TOWERINFO_SUB1){
+	
 					unsigned int tower_id=iter.second;
 					ihcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALIN_SUB1");
 					float e=0.;
@@ -478,20 +493,24 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
 				else if(source== Jet::SRC::HCALIN_TOWERINFO || source == Jet::SRC::HCALIN_TOWER_SUB1CS ){
+	
 					unsigned int tower_id=iter.second;
 					float e=ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					int phibin=ihcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=ihcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ihcal_tower_energy->encode_key(tower_id);
+					int phibin=ihcal_tower_energy->getTowerPhiBin(key);
+					int etabin=ihcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=ihcal_geom->get_phicenter(phibin);
 					float etacenter=ihcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 					allcal_energy+= e;
 				}
 				else if(source== Jet::SRC::HCALIN_TOWERINFO_SIM ||  source==Jet::SRC::HCALIN_TOWERINFO_EMBED ){
+	
 					unsigned int tower_id=iter.second;
 					float e=ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					int phibin=ihcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=ihcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ihcal_tower_energy->encode_key(tower_id);
+					int phibin=ihcal_tower_energy->getTowerPhiBin(key);
+					int etabin=ihcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=ihcal_geom->get_phicenter(phibin);
 					float etacenter=ihcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
@@ -501,8 +520,9 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 				else if(source== Jet::SRC::CEMC_TOWER || source == Jet::SRC::CEMC_CLUSTER ){
 					unsigned int tower_id=iter.second;
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					int phibin=emcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=emcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ihcal_tower_energy->encode_key(tower_id);
+					int phibin=emcal_tower_energy->getTowerPhiBin(key);
+					int etabin=emcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=emcal_geom->get_phicenter(phibin);
 					float etacenter=emcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
@@ -525,9 +545,10 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 				}
 				else if(source== Jet::SRC::CEMC_TOWERINFO || source == Jet::SRC::CEMC_TOWER_SUB1CS ){
 					unsigned int tower_id=iter.second;
+					auto key=ihcal_tower_energy->encode_key(tower_id);
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					int phibin=emcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=emcal_tower_energy->getTowerEtaBin(tower_id);
+					int phibin=emcal_tower_energy->getTowerPhiBin(key);
+					int etabin=emcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=emcal_geom->get_phicenter(phibin);
 					float etacenter=emcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
@@ -537,8 +558,9 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 				else if(source== Jet::SRC::CEMC_TOWERINFO_SIM ||  source==Jet::SRC::CEMC_TOWERINFO_EMBED ){
 					unsigned int tower_id=iter.second;
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
-					int phibin=emcal_tower_energy->getTowerPhiBin(tower_id);
-					int etabin=emcal_tower_energy->getTowerEtaBin(tower_id);
+					auto key=ihcal_tower_energy->encode_key(tower_id);
+					int phibin=emcal_tower_energy->getTowerPhiBin(key);
+					int etabin=emcal_tower_energy->getTowerEtaBin(key);
 					float phicenter=emcal_geom->get_phicenter(phibin);
 					float etacenter=emcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
@@ -547,6 +569,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 				}
 			}
 		}
+	
 		if(ohcal_energy == 0. || allcal_energy == 0. || emcal_energy == 0.)
 		{
 	//		std::cout<<"There is an issue getting an energy value, please check status?"<<ohcal_energy <<"   " <<allcal_energy <<std::endl;
@@ -560,6 +583,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 			emcal_energy=emcal_energy/allcal_energy;
 			ohcal_ratio.push_back({ohcal_energy, emcal_energy, i_e});
 		}
+	
 	}
 	return ohcal_ratio;
 }
@@ -585,20 +609,6 @@ void LargeRLENC::addTower(int n, TowerInfoContainer* energies, RawTowerGeomConta
 	else if (td == RawTowerDefs::HCALOUT && this->pedestalData) towers->insert(std::make_pair(center, tower->get_energy()/100.));
 
 	else if(td==RawTowerDefs::CEMC){
-		//retowering it by hand for right now to improve running speed 
-	/*	for(int j=0; j<24; j++){
-			float hcalbinval=((j+1)*1.1/12.)-1.1;
-			if(center[0] < hcalbinval){
-			 	center[0]=hcalbinval;
-			}
-			else break;
-		}
-		for(auto j=0; j<64; j++)
-		{
-			float hcalbinval=(j+1)*2*PI/64.;
-			if(center[1] < hcalbinval)  center[1]=hcalbinval;
-			else break;
-		}*/
 		center[0]=emcal_lookup_table[n].first;
 		center[1]=emcal_lookup_table[n].second;
 		if(towers->find(center) != towers->end()) towers->at(center)+=tower->get_energy();
@@ -633,6 +643,7 @@ std::array<std::map<std::array<float, 3>, float>, 4> LargeRLENC::makeTowerCluste
 		int ohcal_cluster=0, emcal_cluster=0;
 		float r = cluster->get_r();
 		cluster_e[std::array<float, 3> {cl_eta, cl_phi, r}]= cl_e;
+		
 		for(const auto& [tower_id, tower_e] : cluster->get_towermap())
 		{
 			RawTowerDefs::CalorimeterId calo_id = RawTowerDefs::decode_caloid(tower_id);
@@ -668,6 +679,7 @@ std::array<std::map<std::array<float, 3>, float>, 4> LargeRLENC::makeTowerCluste
 		h_n_ohcal_clusters->Fill(ohcal_cluster);
 		h_n_emcal_clusters->Fill(emcal_cluster);
 	}
+	
 	std::array<std::map<std::array<float, 3>, float>, 4> towers;
        	towers[0]=emcal_e;
        	towers[1]=ihcal_e;
@@ -773,6 +785,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	else{
 		for(auto j:*jets) h_jet_pt->Fill(j->get_pt());
 	}
+	
 	std::array<float, 3> vertex={0.,0.,0.}; //set the initial vertex to origin 
 	try{
 		GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
@@ -784,7 +797,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 
 				GlobalVertex* gl_vtx=nullptr;
 				for(auto vertex_iter:*vertexmap){
-					if(vertex_iter.first == GlobalVertex::VTXTYPE::MBD || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX_MBD ) 
+					if(vertex_iter.first == GlobalVertex::VTXTYPE::TRUTH || vertex_iter.first == GlobalVertex::VTXTYPE::MBD || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX_MBD ) 
 					{ 
 						gl_vtx=vertex_iter.second;
 					}
@@ -838,6 +851,8 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 	}
 	float truth_energy=0, e5=0;
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	
 	if(!isRealData && !pedestalData){
 		PHG4TruthInfoContainer *truthinfo=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
 		if(truthinfo){
@@ -901,6 +916,8 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		ohcal_cl = c[2];
 		cl = c[3];	
 	}
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	
 	total_energy=emcal_energy+ihcal_energy+ohcal_energy;
 	ohcal_rat=ohcal_energy/(float)total_energy; //take the ratio at the whole calo as that is the region of interest
 	float emcal_occupancy=emcal_oc/((float)emcal_tower_energy->size())*100.;
@@ -910,9 +927,13 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	ihcal_occup->Fill(ihcal_occupancy);
 	ohcal_occup->Fill(ohcal_occupancy);
 	ohcal_rat_h->Fill(ohcal_rat);
+	
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 
 	std::vector<float> ohcal_jet_rat, emcal_jet_rat, jet_ie;
 	std::vector<std::array<float, 3>> ohcal_jet_rat_and_ie=getJetEnergyRatios(jets, ohcal_energy/(float)ihcal_energy, topNode);
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	
 	for(auto h:ohcal_jet_rat_and_ie){
 		ohcal_jet_rat.push_back(h[0]);
 		emcal_jet_rat.push_back(h[1]);
@@ -934,11 +955,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 		catch(std::exception& e){std::cout<<"Could not find the trigger object" <<std::endl;}
 	}
-		
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;	
 	isDijet=eventCut->passesTheCut(jets, ohcal_jet_rat, emcal_jet_rat, ohcal_rat, vertex, jet_ie);	
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	if(!isDijet || !triggered_event){ //stores some data about the bad cuts to look for any arrising structure
-		std::cout<<eventCut->getIsDijet()<<std::endl;
-		eventCut->dumpStatus();
+		//std::cout<<eventCut->getIsDijet()<<std::endl;
+		//eventCut->dumpStatus();
 		if(jets->size() > 0){
 			int l=0;
 			for(auto j:*jets){
@@ -947,6 +969,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 				std::cout<<"phi of jets " <<j->get_phi() <<std::endl;
 			}
 		}
+	
 		ohcal_rat_occup->Fill(ohcal_rat, ohcal_occupancy);
 		if(ohcal_rat > 0.9){
 		       	for(auto p:ohcal_towers)ohcal_bad_hits->Fill(p.first[0], p.first[1], p.second);
@@ -959,6 +982,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			if(jet_ie.at(i1) > 0 )badE_IE->Fill(j->get_e(), jet_ie.at(i1));
 			i1++;
 		}
+	
 	       	return Fun4AllReturnCodes::EVENT_OK;
 	}
 	else{
@@ -971,6 +995,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			i1++;
 		}
 		
+	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 		eventCut->getDijets(jets, &m_dijets);
 		
 		m_vertex=vertex;
@@ -980,6 +1005,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		m_eohcal=ohcal_energy;
 		m_philead=eventCut->getLeadPhi();
 		m_etalead=eventCut->getLeadEta();
+	
 		float scale = 0.5 * ( eventCut->getLeadPt() + eventCut->getSubleadPt());
 		std::map<std::array<float, 3>, float>allcal;
 		for(auto t:emcal_towers) allcal[t.first]=t.second;
@@ -1052,7 +1078,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		if(!doClusters) LargeRLENC::CaloRegion(emcal_towers, ihcal_towers, ohcal_towers, jetMinpT, which_variable, vertex, m_philead, scale);
 		if(!isRealData && !pedestalData) LargeRLENC::TruthRegion(truth_pts, jetMinpT, which_variable, vertex, m_philead, scale); 
 		if(doClusters) LargeRLENC::CaloRegion(emcal_cl, ihcal_cl, ohcal_cl, jetMinpT, which_variable, m_vertex, m_philead, scale);
-		if(doClusters) LargeRLENC::TruthRegion(cl, jetMinpT, which_variable, vertex, m_philead, scale); 
+		if(doClusters ) LargeRLENC::TruthRegion(cl, jetMinpT, which_variable, vertex, m_philead, scale); 
 		DijetQA->Fill();
 	}
 	return Fun4AllReturnCodes::EVENT_OK;
@@ -1365,6 +1391,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			TowerOutput* TR=Tow->RegionOutput;
 			int region_shift=region;
 			if(region_shift > 3 ) region_shift=3;
+			//scale=1.;
 			TF->Normalize(scale);
 			TR->Normalize(scale);
 			auto Hists=Truth_Region_vector[region_shift][0];
@@ -1412,6 +1439,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		int region_shift=region;
 		if(region_shift > 3 ) region_shift=3;
 		std::cout<<"scale: " <<	scale <<std::endl;
+//		scale=1.;
 		F->Normalize(scale);
 		R->Normalize(scale);
 		auto Hists=Region_vector[region_shift][which_calo];
@@ -1516,7 +1544,7 @@ void LargeRLENC::CalculateENC(StrippedDownTower* tower1, std::vector<StrippedDow
 	for(int i = 0; i<(int) towerSet.size(); i++){
 		//run over all other towers
 		StrippedDownTower* tower2=&towerSet.at(i); 
-		float R_L=getR(tower1->eta, tower1->phi, tower2->eta, tower2->phi);
+		float R_L=getR(tower1->eta, tower1->phi, tower2->eta, tower2->phi, transverse);
 		float e2c=0.;
 		if(energy) e2c=(tower1->E) * (tower2->E);
 		else e2c=(tower1->E * ptoE) * (tower2->E * ptoE); //use a basic swap of momenta ratio for each calo
@@ -1528,8 +1556,8 @@ void LargeRLENC::CalculateENC(StrippedDownTower* tower1, std::vector<StrippedDow
 		if(i != (int) towerSet.size() - 1){
 			for(int j=i+1; j<(int) towerSet.size(); j++){
 				StrippedDownTower* tower3=&towerSet.at(j);
-				float R_13=getR(tower1->eta, tower1->phi, tower3->eta, tower3->phi);
-				float R_23=getR(tower2->eta, tower2->phi, tower3->eta, tower3->phi);
+				float R_13=getR(tower1->eta, tower1->phi, tower3->eta, tower3->phi, transverse);
+				float R_23=getR(tower2->eta, tower2->phi, tower3->eta, tower3->phi, transverse);
 				if(R_13 > R_L || R_23 > R_L ) continue;
 				else{
 					float Rs = std::min(R_13, R_23);
@@ -1591,12 +1619,13 @@ void LargeRLENC::JetEventObservablesBuilding(std::array<float, 3> central_tower,
 	}
 	return; 
 }
-float LargeRLENC::getR(float eta1, float phi1, float eta2, float phi2, bool print)
+float LargeRLENC::getR(float eta1, float phi1, float eta2, float phi2, bool transverse, bool print)
 {
 	float deta=eta1-eta2; 
 
 	float dphi=std::abs(phi1-phi2);
 	if(std::abs(dphi) > PI ) dphi+=-PI;
+	if(transverse) return std::sqrt(std::pow(dphi,2));
 	float rsq=std::pow(deta, 2)+ std::pow(dphi, 2);
 	if(print)std::cout<<" The value for R squared is square of "<<dphi <<" + square of " <<deta <<" = "<<rsq <<std::endl;
 	return std::sqrt(rsq);

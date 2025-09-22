@@ -112,21 +112,36 @@ class TowerOutput
 		}				
 
 		
-		void Normalize(float energy)
+		void Normalize(float energy, bool pair=false, float bin_width=0.1)
 		{
-			for(int i=0; i<(int)this->E2C.size(); i++)
-			{
-				E2C[i]=E2C[i]*(float)std::pow(energy,-2);
+			if(!pair){
+				for(int i=0; i<(int)this->E2C.size(); i++)
+				{
+					E2C[i]=E2C[i]*(float)std::pow(energy,-2);
+				}
+				for(int i=0; i<(int)this->E3C.size(); i++)
+				{
+					E3C[i]=E3C[i]*(float)std::pow(energy, -3);
+				}
+				for(int i=0; i<(int)this->E3C_full_shape.size(); i++)
+				{
+					E3C_full_shape[i]=E3C_full_shape[i]*(float)std::pow(energy, -3);
+				}
+				return;
 			}
-			for(int i=0; i<(int)this->E3C.size(); i++)
-			{
-				E3C[i]=E3C[i]*(float)std::pow(energy, -3);
+			else {
+				float integral_2pt=0., integral_3pt=0.;
+				for(auto i:E2C)
+					integral_2pt+=i;
+				for(auto i:E3C)
+					integral_3pt+=i;
+				for(int i=0; i<(int)this->E2C.size(); i++)
+					E2C[i]=1./(float)integral_2pt * 1./(float)bin_width * E2C[i];
+				for(int i=0; i<(int)this->E3C.size(); i++)
+					E3C[i]=1./(float)integral_3pt * 1./(float)bin_width * E3C[i];
+				for(int i=0; i<(int)this->E3C_full_shape.size(); i++)
+					E3C_full_shape[i]=1./(float)integral_3pt * 1./(float)bin_width * E3C_full_shape[i];
 			}
-			for(int i=0; i<(int)this->E3C_full_shape.size(); i++)
-			{
-				E3C_full_shape[i]=E3C_full_shape[i]*(float)std::pow(energy, -3);
-			}
-			return;
 		}
 	 	float threshold = 0.;
 		std::vector<float> RL; 

@@ -50,7 +50,7 @@ std::pair<std::string, std::string> fix_calo_fitting_dst_names(int dst_numb, std
 	return std::make_pair(s, s2);
 
 }
-int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="none", std::string data_trigger="none", std::string data_jet="none", std::string truthfile="none", std::string truthjetfile="none", std::string calotowersfile="none", std::string truthrecofile="none", std::string globalrecofile="none", std::string n_evt="0", std::string minpt="1.0", const std::string& dbtag="ProdA_2024")
+int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="none", std::string data_trigger="none", std::string data_jet="none", std::string truthfile="none", std::string truthjetfile="none", std::string calotowersfile="none", std::string truthrecofile="none", std::string globalrecofile="none", std::string cl="false", std::string n_evt="0", std::string minpt="1.0", const std::string& dbtag="ProdA_2024")
 {
 	std::cout<<"actually processing this thing" <<std::endl;
 	std::map<std::string, std::string> input_files {{data_dst, "data_calo_dst"}, {data_fitting_dst, "data_fitting"}, {data_trigger,/* "none",*/"data_trigger"}, {data_jet, "data_jet"}, {truthjetfile, "truthjet"}, {calotowersfile, "calotowers"}, {truthrecofile, "truthreco"}, {globalrecofile, "globalreco"}, {truthfile, "truth"}};
@@ -60,7 +60,7 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	int run_number=0, segment=0, n_evts=std::stoi(n_evt);
 //	std::string run_str="", segn_str="", substr="";
 	bool data=true;
-	bool cluster=true;
+	bool cluster= ( cl == "true" );
 	se->Verbosity(0);
 	if(data_dst.find("none") != std::string::npos) data=false;
 	if(data){
@@ -197,7 +197,7 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	std::cout<<"Loaded all subparts in, now loading in the analysis code" <<std::endl;
 //	std::string text_out_filename="/gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/Missing_pT_for_felix_run-"+std::to_string(run_number)+"-"+std::to_string(segment)+".csv";
 	//std::fstream* ofs=new std::fstream(text_out_filename);
-	LargeRLENC* rlenc=new LargeRLENC(run_number, segment, std::stof(minpt), data);
+	LargeRLENC* rlenc=new LargeRLENC(run_number, segment, std::stof(minpt), data, cluster);
 
 //	LEDPedestalScan* sc=new LEDPedestalScan(run_number, segment, false, false);
 	se->registerSubsystem(rlenc);
@@ -209,6 +209,6 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 //	sc->Print();
 
 	rlenc->Print();
-	return 0;
+return 0;
 }
 #endif		

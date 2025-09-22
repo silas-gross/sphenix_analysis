@@ -10,7 +10,7 @@ if [[ $nFile -eq 0 ]]; then
 fi 
 for i in $(seq 0 ${nFile}); do 
 	j=$(( i+1 ))
-	fname="condor_files/condor_segment_"$i"_30.job"
+	fname="condor_files/condor_segment_"$i"_30_cluster_"${cluster}".job"
 	data="none" 	 
 	truthf=`sed "${j}q;d" dst_truth_30.list`
 	truthfr=`sed "${j}q;d" dst_truth_reco_30.list`
@@ -21,9 +21,9 @@ for i in $(seq 0 ${nFile}); do
 	echo "Universe 	        = vanilla " > $fname
 	echo "Executable 	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/RunLargeRLENC.sh " >>$fname
 	echo "Arguments         = ${data} none none none ${truthf} ${truthj} ${caloclusterf} ${truthfr} ${globalf} ${nevts} ${minpt}" >> $fname 
-	echo "Output  	        = /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}.out " >> $fname
-	echo "Error 		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}.err " >> $fname
-	echo "Log  		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}.log" >> $fname
+	echo "Output  	        = /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_cluster_${cluster}.out " >> $fname
+	echo "Error 		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_cluster_${cluster}.err " >> $fname
+	echo "Log  		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_cluster_${cluster}.log" >> $fname
 	echo "Initialdir  	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/root_output_30" >> $fname
 	echo "PeriodicHold 	= (NumJobStarts>=1 && JobStatus == 1)" >>$fname
 	echo "accounting_group = group_sphenix.user " >> $fname

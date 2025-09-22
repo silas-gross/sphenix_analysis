@@ -61,7 +61,7 @@ class DijetEventCuts{
 			std::cout<<hcalratio<<std::endl;
 			if(hcalratio < 0 ) good=false;
 			if(hcalratio > 0.95 /* maxOHCAL*/) good=false;
-			if(abs(vertex[2]) > 30 ) good=false; //cut on z=30 vertex
+			if(abs(vertex[2]) > 60 ) good=false; //cut on z=60 cm vertex
 			m_zvtx=vertex[2];
 			float leadjetpt=0., subleadjetpt=0.;
 
@@ -107,10 +107,12 @@ class DijetEventCuts{
 			if( m_leadER > maxOHCAL ) good=false; 
 			for(auto j: *eventjets){
 				float phi=j->get_phi();
-				int index=0;
-
-				if(abs(phi-leadphi) > deltaphi && abs(phi-leadphi) <= PI+0.2){
-				       	subleadjet=j;
+				int index=0;	
+				float dphi = abs(phi-leadphi);
+				while (dphi > 2*PI) dphi+=-2*PI; 
+				if( dphi > deltaphi && dphi <= 2*PI - deltaphi){
+				if(j->get_pt() > subleadjetpt && j != leadjet ){      
+					subleadjet=j;
 					subleadjetpt=j->get_pt();
 					haspartner=true;
 
@@ -118,7 +120,9 @@ class DijetEventCuts{
 					subleadingenergyratio_E=emcal_ratio_jets.at(index);
 					m_isle=i_e.at(index);
 					
-				break;}
+					break;
+					}
+				}
 				index++;
 
 			}
@@ -136,7 +140,7 @@ class DijetEventCuts{
 			
 				
 			}
-			//if(subleadjetpt < subleadingpt || !haspartner) good=false;
+			if(subleadjetpt < subleadingpt || !haspartner) good=false;
 			passesCut=good;
 			m_isdijet=haspartner;
 			m_nJets=eventjets->size();
@@ -225,7 +229,7 @@ class DijetEventCuts{
 		float deltaphi=0.;
 		float maxOHCAL=0.;
 		bool isdijet=false;
-		bool negativeEnergy=false;
+		bool negativeEnergy=true;
 
 		bool passesCut=false;
 		int m_nJets=0;

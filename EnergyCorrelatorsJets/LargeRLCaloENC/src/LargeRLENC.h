@@ -127,7 +127,7 @@ class LargeRLENC : public SubsysReco
 		OHCAL, 
 		TRUTH
 	};
-  	LargeRLENC(const int n_run=0, const int n_segment=0, const float jet_min_pT=1.0, const bool data=false, const bool pedestal=false, std::fstream* ofs=nullptr, const std::string vari="E", const std::string &name = "LargeRLENC");
+  	LargeRLENC(const int n_run=0, const int n_segment=0, const float jet_min_pT=1.0, const bool data=false, const bool cluster=false, const bool pedestal=false, std::fstream* ofs=nullptr, const std::string vari="E", const std::string &name = "LargeRLENC");
 
 
   	~LargeRLENC() override {};
@@ -195,7 +195,7 @@ class LargeRLENC : public SubsysReco
 	void CalculateENC(StrippedDownTower*, std::vector<StrippedDownTower>, bool, bool);
 
 	void JetEventObservablesBuilding(std::array<float, 3>, std::map<std::array<float, 3>, float>, std::map<float, float>*);
-	float getR(float, float, float, float, bool print=false);
+	float getR(float, float, float, float, bool transverse=false, bool print=false);
 	bool triggerCut(bool, PHCompositeNode*);
 	void Merger(TowerOutput*, std::vector<TowerOutput*>, std::set<float>, std::set<std::array<float, 3>>);
 	DijetEventCuts* eventCut;	

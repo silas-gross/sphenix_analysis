@@ -43,7 +43,164 @@ float GetCutValue(std::string name)
 	value=value/1000.;
 	return value;
 }
-
+void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
+{
+	f_cl->cd();
+	auto full=(TDirectory*)f_cl->Get("Full_Calorimeter");
+	full->cd();
+	TCanvas* c1=new TCanvas("e2c", "e2c");
+	TCanvas* c2=new TCanvas("e3c", "e3c");
+	TCanvas* c3=new TCanvas("R_pair", "R_pair");
+	std::array<TCanvas*, 3>* cs=new std::array<TCanvas*, 3>;
+	cs->at(0)=c1;
+	cs->at(1)=c2;
+	cs->at(2)=c3;
+	std::array<std::array<TH1F*, 10>*, 3>* hs=new std::array<std::array<TH1F*, 10>*, 3>;
+	std::array<std::array<float, 10>, 3> cuts;
+	for(int i=0; i<3; i++) hs->at(i)=new std::array<TH1F*, 10>; 
+	TList* list_of_keys=full->GetListOfKeys();
+	TIter liter(list_of_keys);
+	while(auto key=(TKey*)liter())
+	{
+		//Pick up the histograms 
+		std::string name=key->GetName();
+		if(name.find("rs") != std::string::npos) continue;
+		int type=-1, calo=-1;
+		//determine which type
+		if(name.find("e2c") != std::string::npos	) type = 0;
+		else if (name.find("e3c") != std::string::npos	) type = 1;
+		else if (name.find("R")!= std::string::npos 
+			&& name.find("pt") == std::string::npos	) type = 2;
+		else type=-1;
+		//determine which calo 
+		if(name.find("Truth") != std::string::npos) calo=0;
+		else if(name.find("EMCAL") != std::string::npos) calo=2;
+		else if(name.find("IHCAL") != std::string::npos) calo=3;
+		else if(name.find("OHCAL") != std::string::npos) calo=4;
+		else if(name.find("CAL")   != std::string::npos) calo=1;
+		else calo=-1;
+		//add to the approriate array
+		if(type != -1 && calo != -1){
+			hs->at(type)->at(calo) = (TH1F*)full->Get(name.c_str());
+			cuts[type][calo]=GetCutValue(name);
+		}
+	}
+	f_tw->cd();
+	auto full_t=(TDirectory*)f_tw->Get("Full_Calorimeter");
+	full_t->cd();
+	TList* list_of_keys_t=full_t->GetListOfKeys();
+	TIter liter_t(list_of_keys_t);
+	while(auto key=(TKey*) liter_t())
+	{
+		std::string name=key->GetName();
+		if(name.find("rs") != std::string::npos) continue;
+		int type=-1, calo=-1;
+		//determine which type
+		if(name.find("e2c") != std::string::npos	) type = 0;
+		else if (name.find("e3c") != std::string::npos	) type = 1;
+		else if (name.find("R")!= std::string::npos 
+			&& name.find("pt") == std::string::npos	) type = 2;
+		else type=-1;
+		//determine which calo 
+		if(name.find("Truth") != std::string::npos) calo=0;
+		else if(name.find("EMCAL") != std::string::npos) calo=2;
+		else if(name.find("IHCAL") != std::string::npos) calo=3;
+		else if(name.find("OHCAL") != std::string::npos) calo=4;
+		else if(name.find("CAL")   != std::string::npos) calo=1;
+		else calo=-1;
+		//add to the approriate array
+		if(type != -1 && calo != -1){
+			hs->at(type)->at(calo+5) = (TH1F*)full_t->Get(name.c_str());
+			cuts[type][calo+5]=GetCutValue(name);
+		}
+	}
+		
+	for(int i = 0; i<(int)cs->size(); i++)
+	{
+		auto c=cs->at(i);
+		auto ha=hs->at(i);
+		auto ct=cuts.at(i);
+		c->cd();
+		TPad* p1=new TPad("p1", "p1", 0, 0.35, 1, 1);
+		TPad* p2=new TPad("p2", "p2", 0, 0, 1, 0.33);
+//		float max=0;
+//		for(auto h:*ha)if(h->GetMaximum() > max) max=h->GetMaximum();
+//		max=2*max;
+		TLegend* l1=new TLegend(0.7, 0.7, 1, 0.95);
+		l1->SetFillStyle(0);
+		l1->SetFillColor(0);
+		l1->SetBorderSize(0);
+		l1->SetTextSize(0.03f);
+		l1->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
+		l1->AddEntry("", "p + p  #sqrt{s}= 200 GeV", "");
+		l1->AddEntry("", Form("%s + GEANT4 + Noise", gen.c_str()), "");
+		l1->AddEntry("", gen.c_str(), "");
+		l1->AddEntry("", "Event Shape over Dijet-type events", "");
+		std::string plotted_var="";
+		if(i==0) plotted_var="2 point Energy Correlator";
+		else if(i==1) plotted_var="Integrated 3 point Energy Correlator";
+		else if(i==2) plotted_var="Angular seperation between consituent pairs";
+		l1->AddEntry("", plotted_var.c_str(), ""); 
+		TLegend* l=new TLegend(0.7, 0.5, 1, 0.7);
+		l->SetFillStyle(0);
+		l->SetFillColor(0);
+		l->SetBorderSize(0);
+		l->SetTextSize(0.02f);
+		l->SetNColumns(2);
+		for(int j=0; j<(int)ha->size(); j++)
+		{
+			if(j==3) continue;
+			p1->cd();
+			auto h=ha->at(j);
+			std::string v="";
+			if(j%5==0) v="truth";
+			if(j%5==1) v="reco";
+			if(j%5==2 || j==5) v="emcal";
+			if(j%5==3) v="ihcal";
+			if(j%5==4|| j==6) v="ohcal";
+			if(j > 4) h->SetMarkerStyle(21);
+			h->SetLineColor(color_map[v]);
+			h->SetMarkerColor(color_map[v]);	
+			TH1F* hc=(TH1F*)h->Clone();
+			hc->SetMarkerStyle(22);
+			if(j > 4) hc->SetMarkerStyle(25);
+			hc->Divide(ha->at(5));
+			hc->SetYTitle("Tower Cluster / Truth");
+			hc->GetYaxis()->SetTitleSize(0.05f);
+			hc->GetXaxis()->SetTitleSize(0.05f);
+//			h->GetYaxis()->SetRangeUser(0.1, max);
+			if(j%5 < 2) h->Draw("same");
+			std::string which_calo="";
+			if(j==0) which_calo="Clusters";
+			if(j==1) which_calo="All Calo Sum Towers from Clusters";
+			if(j==2) which_calo="EMCAL Towers from Clusters";
+			if(j==3) which_calo="IHCAL Towers from Clusters";
+			if(j==4) which_calo="OHCAL Towers from Clusters";
+			if(j==5) which_calo="Truth Particles";
+			if(j==6) which_calo="All Calo Sum Towers";
+			if(j==7) which_calo="EMCAL Towers";
+			if(j==8) which_calo="IHCAL Towers";
+			if(j==9) which_calo="OHCAL Towers";
+			std::cout<<which_calo<<std::endl;
+			if( j % 5 < 2) l->AddEntry(h, Form("%s"/*, E_{consituent} #geq %.2g GeV"*/, which_calo.c_str()/*, ct[j]*/));
+			if(j==5) l->AddEntry("", "", "");
+			else if( j%5 < 2)  l->AddEntry(hc, Form("%s / Truth", which_calo.c_str()));
+			c->cd();
+			p1->Draw();
+			p2->cd();
+			if(j!=5 && j%5 < 2) hc->Draw("same");
+			c->cd();
+			p2->Draw();
+		}
+		p1->SetLogy();
+		p1->cd();
+		l->Draw();
+		l1->Draw();
+		p2->SetLogy();
+	}
+	return;
+}
+	
 void PlotClusterEC(TFile* f1, std::string gen="Pythia8")
 {
 	//Comparing the Correlators across truth/each calo
@@ -105,7 +262,7 @@ void PlotClusterEC(TFile* f1, std::string gen="Pythia8")
 		l1->SetTextSize(0.03f);
 		l1->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
 		l1->AddEntry("", "p + p  #sqrt{s}= 200 GeV", "");
-		l1->AddEntry("", "Pythia8 + GEANT4 + Noise", "");
+		l1->AddEntry("", Form("%s + GEANT4 + Noise", gen.c_str()), "");
 		l1->AddEntry("", gen.c_str(), "");
 		l1->AddEntry("", "Event Shape over Dijet-type events", "");
 		std::string plotted_var="";
@@ -225,7 +382,7 @@ void PlotFullEC(TFile* f1, std::string gen="Pythia8")
 		l1->SetTextSize(0.03f);
 		l1->AddEntry("", "#it{#bf{sPHENIX}} Internal", "");
 		l1->AddEntry("", "p + p  #sqrt{s}= 200 GeV", "");
-		l1->AddEntry("", "Pythia8 + GEANT4 + Noise", "");
+		l1->AddEntry("", Form("%s + GEANT4 + Noise", gen.c_str()), "");
 		l1->AddEntry("", gen.c_str(), "");
 		l1->AddEntry("", "Event Shape over Dijet-type events", "");
 		std::string plotted_var="";
