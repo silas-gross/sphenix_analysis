@@ -1391,9 +1391,9 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			TowerOutput* TR=Tow->RegionOutput;
 			int region_shift=region;
 			if(region_shift > 3 ) region_shift=3;
-			//scale=1.;
-			TF->Normalize(scale);
-			TR->Normalize(scale);
+			scale=1.;
+			TF->Normalize(scale, true, 0.1);
+			TR->Normalize(scale, true, 0.1);
 			auto Hists=Truth_Region_vector[region_shift][0];
 			auto FullHists=Truth_Region_vector[0][0];
 			if((int)TF->RL.size() > 0 ){
@@ -1439,9 +1439,9 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		int region_shift=region;
 		if(region_shift > 3 ) region_shift=3;
 		std::cout<<"scale: " <<	scale <<std::endl;
-//		scale=1.;
-		F->Normalize(scale);
-		R->Normalize(scale);
+		scale=1.;
+		F->Normalize(scale, true, 0.1);
+		R->Normalize(scale, true, 0.1);
 		auto Hists=Region_vector[region_shift][which_calo];
 		auto FullHists=Region_vector[0][which_calo];
 		if((int)F->RL.size() > 0 ){
