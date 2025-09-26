@@ -35,6 +35,7 @@ int RunHerwigHepMCFilter(std::string filename="/sphenix/user/sgross/sphenix_herw
 	catch(std::exception& e){threshold=10.;}
 	Fun4AllServer* se=Fun4AllServer::instance();
 	std::string outfile=filename;
+	std::cout<<__LINE__<<std::endl;
 	outfile.insert(filename.find("-"),"_filtered");
 	Fun4AllHepMCInputManager *in =new Fun4AllHepMCInputManager("in");
 	Fun4AllHepMCOutputManager *out=new Fun4AllHepMCOutputManager("out", outfile);

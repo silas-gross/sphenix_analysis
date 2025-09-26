@@ -105,6 +105,7 @@ int HepMCJetTrigger::process_event(PHCompositeNode *topNode)
 	n_evts++;
   	if(this->set_event_limit == true){ //needed to keep all HepMC output at the same number of events
 		if(n_good >= this->goal_event_number) return Fun4AllReturnCodes::ABORTEVENT;
+		else n_tried++;
 	}
 	PHHepMCGenEventMap* phg=findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
 	if(!phg){
@@ -140,6 +141,7 @@ int HepMCJetTrigger::EndRun(const int runnumber)
 int HepMCJetTrigger::End(PHCompositeNode *topNode)
 {
   std::cout << "HepMCJetTrigger::End(PHCompositeNode *topNode) This is the End..." << std::endl;
+  std::cout<<"Number of events needed before minimum number of jets reached " <<n_tried <<std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
 }
 

@@ -64,6 +64,7 @@ class HepMCJetTrigger : public SubsysReco
   void Print(const std::string &what = "ALL") const override;
   int n_evts=0;
   int n_good=0;
+  int n_tried=0;
  private:
 	bool isGoodEvent(HepMC::GenEvent* e1);
 	std::vector<fastjet::PseudoJet> findAllJets(HepMC::GenEvent* e1);
