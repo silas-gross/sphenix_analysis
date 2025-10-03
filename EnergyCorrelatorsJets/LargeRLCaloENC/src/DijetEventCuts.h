@@ -24,8 +24,8 @@ class DijetEventCuts{
 	//maybe this gets some histos added for easier QA-ing of cut safety
 	public:
 		DijetEventCuts(float lpt=12., float slpt=7., float det=0.7, float dph=2.94,float maxpct=0.9, bool dj=true, bool ne=false, std::string radius="r04" ): 
-				leadingpt(lpt), 
-				subleadingpt(slpt), 
+				leading_pt_cut(lpt), 
+				subleading_pt_cut(slpt), 
 				etaedge(det), //keep full jet in calo
 				deltaphi(dph), //two hcal towers
 				maxOHCAL(maxpct),
@@ -68,6 +68,8 @@ class DijetEventCuts{
 			float leadingenergyratio=0., subleadingenergyratio=0.; //ohcal energy ratio
 			float leadingenergyratio_E=0., subleadingenergyratio_E=0.; //emcal energy ratio
 			bool haspartner=false;
+			m_hasnege=false;
+			m_isdijet=false;
 		       	Jet* leadjet=NULL, *subleadjet=NULL;
 			int index=0; //associate the jet with its energy ratios
 
@@ -82,24 +84,16 @@ class DijetEventCuts{
 					leadingenergyratio=ohcal_ratio_jets.at(index);
 					leadingenergyratio_E=emcal_ratio_jets.at(index);
 					m_ile=i_e.at(index);
-
-				       }
-				if(!negativeEnergy){
-					if(j->get_e() < 0){
-						m_hasnege=true;
-				       		good=false;
-					}
-					}
+				}
 
 				index++;
 
-				}
-			if(leadjetpt < leadingpt) good=false;
+			}
+			if(leadjetpt < leading_pt_cut) good=false;
 			if(!leadjet) good=false; 
 			else{
 			leadeta=leadjet->get_eta();
 			m_etal=leadeta;
-
 			m_leadER=leadingenergyratio;
 			m_leadER_E=leadingenergyratio_E;
 		       	leadphi=leadjet->get_phi();
@@ -108,10 +102,10 @@ class DijetEventCuts{
 			for(auto j: *eventjets){
 				float phi=j->get_phi();
 				int index=0;	
-				float dphi = abs(phi-leadphi);
-				while (dphi > 2*PI) dphi+=-2*PI; 
-				if( dphi > deltaphi && dphi <= 2*PI - deltaphi){
-				if(j->get_pt() > subleadjetpt && j != leadjet ){      
+				float dphi = std::abs(phi-leadphi);
+				while(dphi > PI) dphi=2*PI - dphi;
+				if( dphi > deltaphi && dphi < 2*PI - deltaphi){
+				if(j->get_pt() > subleadjetpt /*&& j != leadjet */){      
 					subleadjet=j;
 					subleadjetpt=j->get_pt();
 					haspartner=true;
@@ -131,7 +125,10 @@ class DijetEventCuts{
 				if(abs(sldeta) > etaedge) good=false;
 				m_etasl=sldeta;
 				m_deltaphi=subleadjet->get_phi()-leadjet->get_phi();
-
+				while (std::abs(m_deltaphi)  > PI){
+					if(m_deltaphi < 0 ) m_deltaphi = -2*PI-m_deltaphi;
+					else m_deltaphi = 2*PI-m_deltaphi;
+				}
 				m_subleadingER=subleadingenergyratio;
 				m_subleadingER_E=subleadingenergyratio_E;
 				if(m_subleadingER > maxOHCAL) good=false;
@@ -140,7 +137,13 @@ class DijetEventCuts{
 			
 				
 			}
-			if(subleadjetpt < subleadingpt || !haspartner) good=false;
+			if(!negativeEnergy){
+				if(leadjet->get_e() < 0 || (subleadjet && subleadjet->get_e() < 0 )){
+					m_hasnege=true;
+					good=false;
+				}
+			}
+			if(subleadjetpt < subleading_pt_cut || !haspartner) good=false;
 			passesCut=good;
 			m_isdijet=haspartner;
 			m_nJets=eventjets->size();
@@ -169,8 +172,8 @@ class DijetEventCuts{
 				<<"\n passesCut: " <<passesCut
 				<<"\n m_isdijet: " <<m_isdijet
 				<<"\n m_nJets: " <<m_nJets
-				<<"\n leadingpt: " <<leadingpt
-				<<"\n subleadingpt: " <<subleadingpt 
+				<<"\n leadingpt: " <<leading_pt_cut
+				<<"\n subleadingpt: " <<subleading_pt_cut 
 				<<"\n etaedge: " <<etaedge
 				<<"\n deltaphi: " <<deltaphi
 				<<"\n maxOHCAL: " <<maxOHCAL
@@ -223,8 +226,8 @@ class DijetEventCuts{
 		}			
 	private:
 
-		float leadingpt=0.;
-		float subleadingpt=0.; 
+		float leading_pt_cut=0.;
+		float subleading_pt_cut=0.; 
 		float etaedge=0.;
 		float deltaphi=0.;
 		float maxOHCAL=0.;

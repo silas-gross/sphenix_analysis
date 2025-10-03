@@ -2,8 +2,9 @@
 
 submit=${1:-'test'}
 nFile=${2:-'0'}
-nevts=${3:-'0'}
-minpt=${4:-'1.0'}
+cluster=${3:-'false'}
+nevts=${4:-'0'}
+minpt=${5:-'1.0'}
 i=0
 if [[ $nFile -eq 0 ]]; then 
 	nFile=`wc -l < dst_truth_jet_10.list`
@@ -20,7 +21,7 @@ for i in $(seq 0 ${nFile}); do
 	
 	echo "Universe 	        = vanilla " > $fname
 	echo "Executable 	= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/RunLargeRLENC.sh " >>$fname
-	echo "Arguments         = ${data} none none none ${truthf} ${truthj} ${caloclusterf} ${truthfr} ${globalf} ${nevts} ${minpt}" >> $fname 
+	echo "Arguments         = ${data} none none none ${truthf} ${truthj} ${caloclusterf} ${truthfr} ${globalf} ${cluster} ${nevts} ${minpt}" >> $fname 
 	echo "Output  	        = /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_10_cluster_${cluster}.out " >> $fname
 	echo "Error 		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_10_cluster_${cluster}.err " >> $fname
 	echo "Log  		= /gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/macros/condor_files/condor_${i}_10_cluster_${cluster}.log" >> $fname

@@ -390,7 +390,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 	ohcal_geom->set_calorimeter_id(RawTowerDefs::HCALOUT);
 	ihcal_geom->set_calorimeter_id(RawTowerDefs::HCALIN);
 	emcal_geom->set_calorimeter_id(RawTowerDefs::CEMC);
-	
+	std::cout<<"running the jet energy ratio" <<std::endl;	
 	for(auto j: *jets)
 	{
 		if(!j) continue;
@@ -401,6 +401,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 		auto cmp_vec=j->get_comp_vec(); 
 		for(auto iter:cmp_vec){
 			Jet::SRC source=iter.first; //get source of object
+			if(n_evts < 5) std::cout<<"Jet component source is : " <<source <<std::endl;
 			if(source == Jet::SRC::PARTICLE || source == Jet::SRC::CHARGED_PARTICLE || source == Jet::SRC::HEPMC_IMPORT){
 				has_particle=true; 
 				//if any particle source is found, we can use that. otherwise have to not use this cut
@@ -543,7 +544,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 					float etacenter=emcal_geom->get_etacenter(etabin);	
 					i_e+=e*std::pow(getR( etacenter, phicenter, jet_eta, jet_phi),2);
 				}
-				else if(source== Jet::SRC::CEMC_TOWERINFO || source == Jet::SRC::CEMC_TOWER_SUB1CS ){
+				else if(source== Jet::SRC::CEMC_TOWERINFO_RETOWER || source== Jet::SRC::CEMC_TOWERINFO || source == Jet::SRC::CEMC_TOWER_SUB1CS ){
 					unsigned int tower_id=iter.second;
 					auto key=ihcal_tower_energy->encode_key(tower_id);
 					float e=emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
@@ -578,7 +579,7 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 		}
 		else{
 			i_e=(float)i_e/(float)allcal_energy;
-	//		std::cout<<"The jet moment of inertia is " <<i_e <<std::endl;
+			if(n_evts < 10) std::cout<<"The jet moment of inertia is " <<i_e <<std::endl;
 			ohcal_energy=ohcal_energy/allcal_energy;
 			emcal_energy=emcal_energy/allcal_energy;
 			ohcal_ratio.push_back({ohcal_energy, emcal_energy, i_e});
@@ -756,14 +757,14 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			jets = findNode::getClass<JetContainerv1>(topNode, recoJetName); //check for already reconstructed jets
 			if(!jets || jets->size() == 0 ){
 				jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_unsubtracted_r04");
-				std::cout<<"Jet container for tower unsub has size: " <<jets->size() <<std::endl;
+				//std::cout<<"Jet container for tower unsub has size: " <<jets->size() <<std::endl;
 				if(!jets || jets->size() == 0){
 					jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_TowerInfo_r04");
 					if(jets) std::cout<<"Jet container for towerinfo has size: " <<jets->size() <<std::endl;
 				}
 				if(!jets || jets->size() == 0){
 					jets = findNode::getClass<JetContainerv1>(topNode, "AntiKt_Tower_r04_Sub1"); //explicit backup check
-					if(jets) std::cout<<"Jet container for subtracted has size: " <<jets->size() <<std::endl;
+				//	if(jets) std::cout<<"Jet container for subtracted has size: " <<jets->size() <<std::endl;
 				}
 				//try every possible style
 			}
@@ -788,8 +789,8 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	
 	std::array<float, 3> vertex={0.,0.,0.}; //set the initial vertex to origin 
 	try{
-		GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
-
+		GlobalVertexMapv1* vertexmap=findNode::getClass<GlobalVertexMapv1>(topNode, "GlobalVertexMap");
+		if(!vertexmap) vertexmap=(GlobalVertexMapv1*)findNode::getClass<MbdVertexMapv1>(topNode, "MbdVertexMap");
 		if(vertexmap){
 			if(vertexmap->empty())
 				std::cout<<"Empty Vertex Map. \n Setting vertex to origin" <<std::endl; 
@@ -797,7 +798,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 
 				GlobalVertex* gl_vtx=nullptr;
 				for(auto vertex_iter:*vertexmap){
-					if(vertex_iter.first == GlobalVertex::VTXTYPE::TRUTH || vertex_iter.first == GlobalVertex::VTXTYPE::MBD || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX_MBD ) 
+					if( vertex_iter.first == 0 || vertex_iter.first == GlobalVertex::VTXTYPE::TRUTH || vertex_iter.first == GlobalVertex::VTXTYPE::MBD || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX_MBD ) 
 					{ 
 						gl_vtx=vertex_iter.second;
 					}
@@ -808,11 +809,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					vertex[1]=gl_vtx->get_y();
 					m_vty=vertex[1];
 					vertex[2]=gl_vtx->get_z();
-
+					if(n_evts < 500) std::cout<<"z vertex: "<<vertex[2]<<std::endl;
 					m_vtz=vertex[2];
 				}
 			}
 		}
+		else std::cout<<"no vertex map" <<std::endl;
 	}
 	catch(std::exception& e){std::cout<<"Could not find the vertex. \n Setting to origin" <<std::endl;}
 
@@ -851,7 +853,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 	}
 	float truth_energy=0, e5=0;
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	
 	if(!isRealData && !pedestalData){
 		PHG4TruthInfoContainer *truthinfo=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
@@ -916,7 +918,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		ohcal_cl = c[2];
 		cl = c[3];	
 	}
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	
 	total_energy=emcal_energy+ihcal_energy+ohcal_energy;
 	ohcal_rat=ohcal_energy/(float)total_energy; //take the ratio at the whole calo as that is the region of interest
@@ -928,11 +930,11 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	ohcal_occup->Fill(ohcal_occupancy);
 	ohcal_rat_h->Fill(ohcal_rat);
 	
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 
 	std::vector<float> ohcal_jet_rat, emcal_jet_rat, jet_ie;
 	std::vector<std::array<float, 3>> ohcal_jet_rat_and_ie=getJetEnergyRatios(jets, ohcal_energy/(float)ihcal_energy, topNode);
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	
 	for(auto h:ohcal_jet_rat_and_ie){
 		ohcal_jet_rat.push_back(h[0]);
@@ -955,12 +957,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 		catch(std::exception& e){std::cout<<"Could not find the trigger object" <<std::endl;}
 	}
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;	
+//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;	
 	isDijet=eventCut->passesTheCut(jets, ohcal_jet_rat, emcal_jet_rat, ohcal_rat, vertex, jet_ie);	
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	if(!isDijet || !triggered_event){ //stores some data about the bad cuts to look for any arrising structure
 		//std::cout<<eventCut->getIsDijet()<<std::endl;
-		//eventCut->dumpStatus();
+		if(isRealData && n_evts < 1000 && eventCut->getLeadPt() > 10 )eventCut->dumpStatus();
 		if(jets->size() > 0){
 			int l=0;
 			for(auto j:*jets){
@@ -1043,8 +1045,8 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		h_truth_E_dc->Fill(truth_energy-e5);	
 		for(auto l:truth_pts){
 			float dphi = l.first.at(1) - m_philead;
-			if(dphi > PI ) dphi+=-2*PI;
-			else if(dphi < -PI) dphi+=2*PI;
+			if(dphi > PI ) dphi=2*PI - dphi;
+			else if(dphi < -PI) dphi=-2*PI-dphi;
 			float deta = l.first.at(0) - m_etalead;
 			h_jet_truth->Fill(dphi, deta, l.second);
 		}
@@ -1053,8 +1055,8 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		for(auto l:allcal){
 			if(l.second < all_min) continue;
 			float dphi = l.first.at(1) - m_philead;
-			if(dphi > PI ) dphi+=-2*PI;
-			else if(dphi < -PI) dphi+=2*PI;
+			if(dphi > PI ) dphi+=2*PI-dphi;
+			else if(dphi < -PI) dphi=-2*PI-dphi;
 			float deta = l.first.at(0) - m_etalead;
 			h_jet_reco->Fill(dphi, deta, l.second);
 			h_E_reco->Fill(l.second);
@@ -1257,7 +1259,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 	
 	//Processs the calorimeter data into my analysis class
 	//Do the vertex shift and add it into the output 
-	std::cout<<"Incoming prefiltered towers : " <<cal.size()  <<" Calorimeter Number " <<which_calo <<std::endl;
+//	std::cout<<"Incoming prefiltered towers : " <<cal.size()  <<" Calorimeter Number " <<which_calo <<std::endl;
 	if(cal.size() == 0 ) return; 
 	while(i !=cal.end()){
 		auto j=i->first;
@@ -1311,22 +1313,22 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			n_valid_towers++;	
 		}
 	}
-	std::cout<<"The thresholds and their number of towers are \n Threshold     Towers" <<std::endl;
+//	std::cout<<"The thresholds and their number of towers are \n Threshold     Towers" <<std::endl;
 	if(n_valid_towers <= 0 ) return; 
-	std::cout<<strippedCalo.at(0)->RegionOutput->threshold <<":    " <<n_valid_towers <<std::endl;
+//	std::cout<<strippedCalo.at(0)->RegionOutput->threshold <<":    " <<n_valid_towers <<std::endl;
 	//now I need to actualy run the dataset 
 	std::vector<std::thread> CalculatingThreads;
 	//std::cout<<"Calo object has size " <<strippedCalo.size() <<std::endl;
 	for(int i=0; i<(int)strippedCalo.size()-1; i++)
 	{
-		if(i%200 == 0 ) std::cout<<"Prepping tower for threading : " <<i <<std::endl;
+//		if(i%200 == 0 ) std::cout<<"Prepping tower for threading : " <<i <<std::endl;
 		StrippedDownTower* t = strippedCalo.at(i);
 		std::vector<StrippedDownTower> CaloCopy;
 		for(int j=i+1; j<(int)strippedCalo.size(); j++) CaloCopy.push_back(*(strippedCalo[j])); //avoid double counting
 //		CalculateENC(t, CaloCopy, transverse, energy);
 		CalculatingThreads.push_back(std::thread(&LargeRLENC::CalculateENC, this, t, CaloCopy, transverse, energy));
 	}
-	std::cout<<"Performing caluclation" <<std::endl;
+//	std::cout<<"Performing caluclation" <<std::endl;
 	for(int k=0; k<(int)CalculatingThreads.size(); k++) CalculatingThreads.at(k).join();
 	//now need to sum over the relevant towers
 	CalculatingThreads.clear(); //just trying to find memmory leaks
@@ -1353,7 +1355,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 	for(int n=0; n< (int)ToMergeRlRmRs.size(); n++)
 		for(int i=0; i < (int) arr_size; i++) */
 	//		ToMergeRlRmRs[n].push_back(std::set<std::array<float, 3>>());
-	std::cout<<"Max elements: " <<strippedCalo.size()<<std::endl;
+//	std::cout<<"Max elements: " <<strippedCalo.size()<<std::endl;
 	for(int i=0; i<(int)strippedCalo.size(); i++)
 	{
 			if(strippedCalo.at(i)->FullOutput->RL.size() > 0 )
@@ -1372,7 +1374,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			
 		
 	}
-	std::cout<<"Plotting Energy " <<std::endl;
+//	std::cout<<"Plotting Energy " <<std::endl;
 	if(which_calo == LargeRLENC::Calorimeter::TRUTH)
 	{
 		for(int region=0; region < 4; region++)
@@ -1429,7 +1431,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		else if(region == 3)
 			Region_vector[region][which_calo]->N->Fill(n_entries_arr[region]+n_entries_arr[region+1]);
 	}
-	std::cout<<"Plotting all the values" <<std::endl;
+//	std::cout<<"Plotting all the values" <<std::endl;
 	
 	for(auto Tow:strippedCalo)
 	{
@@ -1438,7 +1440,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		TowerOutput* R=Tow->RegionOutput;
 		int region_shift=region;
 		if(region_shift > 3 ) region_shift=3;
-		std::cout<<"scale: " <<	scale <<std::endl;
+//		std::cout<<"scale: " <<	scale <<std::endl;
 		scale=1.;
 		F->Normalize(scale, true, 0.1);
 		R->Normalize(scale, true, 0.1);
@@ -1469,7 +1471,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			}
 		}	
 	}
-	std::cout<<"Plotted all the values" <<std::endl;
+//	std::cout<<"Plotted all the values" <<std::endl;
 	strippedCalo.clear();
 /*	std::vector<std::thread> Merger_thread; //not merging, it was too slow, trying to just fill direct now
 	for(int i=0; i<5; i++)
@@ -1637,7 +1639,7 @@ void LargeRLENC::Print(const std::string &what) const
 
 	float pct=(float) n_with_jets / (float) n_evts;
 	pct=pct*100.; 
-	TH1F* h_percent=new TH1F("h_pct", "Percentage of events with a non-empty jet container; Percent; N_{files}", 100, -0.5, 99.5);
+	TH1F* h_percent=new TH1F("h_pct", "Percentage of events with a non-empty jet container; Percent; N_{files}", 2000, -0.5, 99.5);
 	h_percent->Fill(pct);
 //	h_percent->Write();
 	TDirectory* dir_evt=f1->mkdir("event_categorization");

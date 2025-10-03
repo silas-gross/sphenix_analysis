@@ -61,6 +61,8 @@
 //vertex stuff
 #include <globalvertex/GlobalVertex.h>
 #include <globalvertex/GlobalVertexMap.h>
+#include <globalvertex/GlobalVertexMapv1.h>
+#include <globalvertex/MbdVertexMapv1.h>
 
 
 //trigger

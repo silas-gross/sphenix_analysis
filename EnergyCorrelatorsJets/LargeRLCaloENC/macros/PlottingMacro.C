@@ -26,6 +26,35 @@
 #include <map>
 #include <sstream>
 std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ihcal", TColor::GetColor(252,244,52)}, {"ohcal", TColor::GetColor(61,165,66)}};
+/*void CompareNorms(TFile* f_Q, TFile* f_Np, TFile* F_no, std::string gen="Pythia8")
+{
+	SetsPhenixStyle();
+	TCanvas* c1=new TCanvas();
+	TPad* p1=new TPad("p1", "p1", 0, 0, 1, 0.33);
+	TPad* p2=new TPad("p2", "p2", 0, 0.35, 1, 1);
+	TH1F* h_tr_no, *h_reco_no, *h_tr_Q, *h_reco_Q, *h_tr_np, *h_reco_np;
+	f_no->cd();
+	bool get_truth=false;
+	if(gen.find("Data") !=std::string::npos) get_truth=true;
+	auto evt_cat_no=(TDirectory*)f_no->Get("event_categorization");
+	evt_cat_no->cd();
+	float evts = ((TH1F*)evt_cat_no->Get("h_total_E"))->GetEntries();
+	f_no->cd();
+	auto full_no=(TDirectory*)f_no->Get("Full_Calorimeter");
+	TList* list_of_keys=full->GetListOfKeys();
+	TIter liter(list_of_keys);
+	while(auto key=(TKey*)liter())
+	{
+		std::string name=key->GetName();
+		if(name.find("rs") != std::string::npos) continue;
+		if(name.find("e2c") == std::string::npos) continue;
+		if(name.find("Truth") != std::string::npos && get_truth) h_tr_no=(TH1F*)((TH1F*)full_no->Get(name.c_str()))->Clone();
+		else if(name.find("_CAL_") != std::string::npos) h_reco_no=(TH1F*)((TH1F*)full_no->Get(name.c_str()))->Clone();
+	}
+	if(get_truth) h_tr_no->Scale(10./evts);
+	h_reco_no->Scale(10./evts); //number of events and bin size correction
+	return;
+}*/
 float GetCutValue(std::string name)
 {
 	std::stringstream temp_name(name);
@@ -45,6 +74,7 @@ float GetCutValue(std::string name)
 }
 void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 {
+	SetsPhenixStyle();
 	f_cl->cd();
 	auto full=(TDirectory*)f_cl->Get("Full_Calorimeter");
 	full->cd();
@@ -64,7 +94,7 @@ void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 	{
 		//Pick up the histograms 
 		std::string name=key->GetName();
-		if(name.find("rs") != std::string::npos) continue;
+	//	if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;
@@ -73,7 +103,7 @@ void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 			&& name.find("pt") == std::string::npos	) type = 2;
 		else type=-1;
 		//determine which calo 
-		if(name.find("Truth") != std::string::npos) calo=0;
+		if(name.find("Cluster") != std::string::npos) calo=0;
 		else if(name.find("EMCAL") != std::string::npos) calo=2;
 		else if(name.find("IHCAL") != std::string::npos) calo=3;
 		else if(name.find("OHCAL") != std::string::npos) calo=4;
@@ -93,7 +123,7 @@ void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 	while(auto key=(TKey*) liter_t())
 	{
 		std::string name=key->GetName();
-		if(name.find("rs") != std::string::npos) continue;
+	//	if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;
@@ -147,30 +177,39 @@ void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 		l->SetBorderSize(0);
 		l->SetTextSize(0.02f);
 		l->SetNColumns(2);
+			
 		for(int j=0; j<(int)ha->size(); j++)
 		{
 			if(j==3) continue;
 			p1->cd();
 			auto h=ha->at(j);
 			std::string v="";
+		
+			if(!h) continue;
 			if(j%5==0) v="truth";
 			if(j%5==1) v="reco";
 			if(j%5==2 || j==5) v="emcal";
 			if(j%5==3) v="ihcal";
 			if(j%5==4|| j==6) v="ohcal";
 			if(j > 4) h->SetMarkerStyle(21);
+		
 			h->SetLineColor(color_map[v]);
+		
 			h->SetMarkerColor(color_map[v]);	
+		
 			TH1F* hc=(TH1F*)h->Clone();
 			hc->SetMarkerStyle(22);
+		
 			if(j > 4) hc->SetMarkerStyle(25);
 			hc->Divide(ha->at(5));
 			hc->SetYTitle("Tower Cluster / Truth");
 			hc->GetYaxis()->SetTitleSize(0.05f);
 			hc->GetXaxis()->SetTitleSize(0.05f);
+		
 //			h->GetYaxis()->SetRangeUser(0.1, max);
 			if(j%5 < 2) h->Draw("same");
 			std::string which_calo="";
+		
 			if(j==0) which_calo="Clusters";
 			if(j==1) which_calo="All Calo Sum Towers from Clusters";
 			if(j==2) which_calo="EMCAL Towers from Clusters";
@@ -223,7 +262,7 @@ void PlotClusterEC(TFile* f1, std::string gen="Pythia8")
 	{
 		//Pick up the histograms 
 		std::string name=key->GetName();
-		if(name.find("rs") != std::string::npos) continue;
+		//if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;
@@ -853,7 +892,7 @@ void PlotRatios(std::vector<std::map<std::string, std::array<std::vector<std::ve
 		if(i==1) region="Lead Region";
 		if(i==2) region="Away Region";
 		if(i==3) region="Transverse Regions";
-		//std::cout<<__LINE__<<std::endl;
+		//
 		for(int j=0; j < 5; j++)
 		{
 			TCanvas* c1=new TCanvas(Form("c_%d_%d", i, j), Form("c_%d_%d", i, j));
@@ -862,7 +901,7 @@ void PlotRatios(std::vector<std::map<std::string, std::array<std::vector<std::ve
 			if( j == 0 || j == 4) ymin=0; //no need for the ratio plots in E and N
 			TPad* p1=new TPad(Form("p_1_%d_%d", i, j), Form("p_1_%d_%d", i, j), 0, ymin, 1, 1);
 			TPad* p2=new TPad(Form("p_2_%d_%d", i, j), Form("p_2_%d_%d", i, j), 0, 0, 1, 0.3);
-			//std::cout<<__LINE__<<std::endl;	
+			//	
 			TLegend* l1=new TLegend(0.7, 0.5, 0.9, 0.95);
 			l1->SetFillStyle(0);
 			l1->SetFillColor(0);
@@ -882,7 +921,7 @@ void PlotRatios(std::vector<std::map<std::string, std::array<std::vector<std::ve
 			if(j==4) var="Number of non-zero energy towers";
 			l1->AddEntry("", var.c_str(), "");
 			LT->push_back(l1);
-			//std::cout<<__LINE__<<std::endl;
+			//
 			TLegend* l2=new TLegend(0.1, 0.6, 0.5, 0.85);
 			l2->SetFillStyle(0);
 			l2->SetFillColor(0);
@@ -900,30 +939,30 @@ void PlotRatios(std::vector<std::map<std::string, std::array<std::vector<std::ve
 		p_main[i]=P1;
 		p_ratio[i]=P2;
 		Canvases[i]=cs;
-		//std::cout<<__LINE__<<std::endl;
+		//
 	}
 	std::vector<std::map<std::string, std::array<std::vector<std::vector<TH1F*>*>*, 4>> > threshold_maps {}; 
 	for(int i=0; i<7; i++)
 	{
-		//std::cout<<__LINE__<<std::endl;
+		//
 		std::map<std::string, std::array<std::vector<std::vector<TH1F*>*>*, 4>> tm;
 		std::cout<<p_main[0]->size()<<std::endl;
 		std::array<std::vector<std::vector<TH1F*>*>*, 4> rg_1=DrawOneThreshold(	Pedestal_data, &p_main, &PlotLeg, i, 0);
 		tm["Pedestal"]=rg_1;
-		//std::cout<<__LINE__<<std::endl;
+		//
 		std::array<std::vector<std::vector<TH1F*>*>*, 4> rg_2=DrawOneThreshold(	Pulser_data, &p_main, &PlotLeg, i, 0);
 		tm["Pulser"]=rg_2;
-		//std::cout<<__LINE__<<std::endl;
+		//
 		if(include_led){
 			std::array<std::vector<std::vector<TH1F*>*>*, 4> rg_3=DrawOneThreshold(	LED_data, &p_main, &PlotLeg, i, 0);
 			tm["LED"]=rg_3;
 		}
 		threshold_maps.push_back(tm);
-		//std::cout<<__LINE__<<std::endl;
+		//
 	}
-		//std::cout<<__LINE__<<std::endl;
+		//
 	PlotRatios(threshold_maps, &p_ratio, &PlotLeg);
-		//std::cout<<__LINE__<<std::endl;
+		//
 	for(int i=0; i<(int)Canvases.size(); i++)
 	{
 		std::string region="";
