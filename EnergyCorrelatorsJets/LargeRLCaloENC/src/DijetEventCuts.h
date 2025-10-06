@@ -41,7 +41,6 @@ class DijetEventCuts{
 			JetCuts->Branch("Subleading_eta", &m_etasl, "#eta subleading jet center/F");
 			JetCuts->Branch("delta_phi", &m_deltaphi, "m_deltaphi/F");
 			JetCuts->Branch("ohcal_ratio", &m_ohcalrat, "m_ohcalrat/F");
-
 			JetCuts->Branch("lead_ohcal_ratio", &m_leadER, "m_leadER/F");
 			JetCuts->Branch("subleading_ohcal_ratio", &m_subleadingER, "m_leadER/F");
 			JetCuts->Branch("lead_emcal_ratio", &m_leadER_E, "m_leadER/F");
@@ -109,16 +108,13 @@ class DijetEventCuts{
 					subleadjet=j;
 					subleadjetpt=j->get_pt();
 					haspartner=true;
-
 					subleadingenergyratio=ohcal_ratio_jets.at(index);
 					subleadingenergyratio_E=emcal_ratio_jets.at(index);
 					m_isle=i_e.at(index);
-					
 					break;
 					}
 				}
 				index++;
-
 			}
 			if(subleadjet){ 
 				float sldeta=subleadjet->get_eta();
@@ -131,11 +127,9 @@ class DijetEventCuts{
 				}
 				m_subleadingER=subleadingenergyratio;
 				m_subleadingER_E=subleadingenergyratio_E;
-				if(m_subleadingER > maxOHCAL) good=false;
+//				if(m_subleadingER > maxOHCAL) good=false;
 
-			}
-			
-				
+			}	
 			}
 			if(!negativeEnergy){
 				if(leadjet->get_e() < 0 || (subleadjet && subleadjet->get_e() < 0 )){
@@ -143,9 +137,10 @@ class DijetEventCuts{
 					good=false;
 				}
 			}
-			if(subleadjetpt < subleading_pt_cut || !haspartner) good=false;
+			if(subleadjetpt < subleading_pt_cut /*|| haspartner == false*/) good=false;
 			passesCut=good;
 			m_isdijet=haspartner;
+			if(leadjetpt > 20.9) std::cout<<"has partner value is set to: " <<haspartner <<std::endl;
 			m_nJets=eventjets->size();
 			m_lpt=leadjetpt;
 			m_slpt=subleadjetpt;

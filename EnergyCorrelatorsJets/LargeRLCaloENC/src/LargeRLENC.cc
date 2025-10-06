@@ -401,7 +401,6 @@ std::vector<std::array<float,3>> LargeRLENC::getJetEnergyRatios(JetContainerv1* 
 		auto cmp_vec=j->get_comp_vec(); 
 		for(auto iter:cmp_vec){
 			Jet::SRC source=iter.first; //get source of object
-			if(n_evts < 5) std::cout<<"Jet component source is : " <<source <<std::endl;
 			if(source == Jet::SRC::PARTICLE || source == Jet::SRC::CHARGED_PARTICLE || source == Jet::SRC::HEPMC_IMPORT){
 				has_particle=true; 
 				//if any particle source is found, we can use that. otherwise have to not use this cut
@@ -962,7 +961,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 //	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	if(!isDijet || !triggered_event){ //stores some data about the bad cuts to look for any arrising structure
 		//std::cout<<eventCut->getIsDijet()<<std::endl;
-		if(isRealData && n_evts < 1000 && eventCut->getLeadPt() > 10 )eventCut->dumpStatus();
+		if(isRealData && eventCut->getIsDijet() == true && eventCut->getLeadPt() > 10 )eventCut->dumpStatus();
 		if(jets->size() > 0){
 			int l=0;
 			for(auto j:*jets){
@@ -1394,8 +1393,8 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			int region_shift=region;
 			if(region_shift > 3 ) region_shift=3;
 			scale=1.;
-			TF->Normalize(scale, true, 0.1);
-			TR->Normalize(scale, true, 0.1);
+			TF->Normalize(scale, false, 0.1);
+			TR->Normalize(scale, false, 0.1);
 			auto Hists=Truth_Region_vector[region_shift][0];
 			auto FullHists=Truth_Region_vector[0][0];
 			if((int)TF->RL.size() > 0 ){
@@ -1442,8 +1441,8 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		if(region_shift > 3 ) region_shift=3;
 //		std::cout<<"scale: " <<	scale <<std::endl;
 		scale=1.;
-		F->Normalize(scale, true, 0.1);
-		R->Normalize(scale, true, 0.1);
+		F->Normalize(scale, false, 0.1);
+		R->Normalize(scale, false, 0.1);
 		auto Hists=Region_vector[region_shift][which_calo];
 		auto FullHists=Region_vector[0][which_calo];
 		if((int)F->RL.size() > 0 ){
@@ -1685,6 +1684,7 @@ void LargeRLENC::Print(const std::string &what) const
 	h_truth_E->Write();
 	h_truth_E_c->Write();
 	h_truth_E_dc->Write();
+	h_jet_pt->Write();
 	eventCut->JetCuts->Write();
 	h_n_cal_clusters->Write();
 	h_n_ohcal_clusters->Write();
