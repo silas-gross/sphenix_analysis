@@ -71,7 +71,6 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	{
 		std::cout<<"working on the file for: " <<f.second <<std::endl;
 		if(f.first.find("none") != std::string::npos) continue;
-
 		/*if(f.second.find("data_trigger") != std::string::npos  || f.second.find("data_jet")!=std::string::npos){
 			std::pair<std::string, std::string> calo_fitting_files=fix_calo_fitting_dst_names(segment, f.first); //issue with the most recent pass needs fixing, probably should pick up ana number but meh
 			input_files[calo_fitting_files.first]="data_1_fitting";

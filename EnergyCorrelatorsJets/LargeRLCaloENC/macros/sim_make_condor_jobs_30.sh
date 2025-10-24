@@ -13,8 +13,8 @@ for i in $(seq 0 ${nFile}); do
 	j=$(( i+1 ))
 	fname="condor_files/condor_segment_"$i"_30_cluster_"${cluster}".job"
 	data="none" 	 
-	truthf=`sed "${j}q;d" dst_truth_30.list`
-	truthfr=`sed "${j}q;d" dst_truth_reco_30.list`
+	truthf=`sed "${j}q;d" g4hits_30.list`
+	truthfr="none" #`sed "${j}q;d" dst_truth_reco_30.list`
 	truthj=`sed "${j}q;d" dst_truth_jet_30.list`
 	caloclusterf=`sed "${j}q;d" dst_calo_cluster_30.list`
 	globalf=`sed "${j}q;d" dst_global_30.list`

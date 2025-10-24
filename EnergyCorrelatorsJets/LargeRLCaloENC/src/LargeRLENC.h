@@ -251,6 +251,7 @@ class LargeRLENC : public SubsysReco
 	TH1F* h_pt_reco;
 	TH2F* h_jet_reco;
 	TH2F* h_jet_truth;
+	TH2F* h_jet_truth_lead;
 	TH1F* h_total_E, *h_total_E_c, *h_total_E_dc;	
 	TH1F* h_truth_E, *h_truth_E_c, *h_truth_E_dc;	
 	TH1F* h_ohcal_E, *h_ohcal_E_c, *h_ohcal_E_dc;	

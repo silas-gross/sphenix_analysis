@@ -121,7 +121,7 @@ class DijetEventCuts{
 				if(abs(sldeta) > etaedge) good=false;
 				m_etasl=sldeta;
 				m_deltaphi=subleadjet->get_phi()-leadjet->get_phi();
-				while (std::abs(m_deltaphi)  > PI){
+				if (std::abs(m_deltaphi)  > PI){
 					if(m_deltaphi < 0 ) m_deltaphi = -2*PI-m_deltaphi;
 					else m_deltaphi = 2*PI-m_deltaphi;
 				}
@@ -140,7 +140,7 @@ class DijetEventCuts{
 			if(subleadjetpt < subleading_pt_cut /*|| haspartner == false*/) good=false;
 			passesCut=good;
 			m_isdijet=haspartner;
-			if(leadjetpt > 20.9) std::cout<<"has partner value is set to: " <<haspartner <<std::endl;
+			if(leadjetpt > leading_pt_cut ) std::cout<<"has partner value is set to: " <<haspartner <<std::endl;
 			m_nJets=eventjets->size();
 			m_lpt=leadjetpt;
 			m_slpt=subleadjetpt;

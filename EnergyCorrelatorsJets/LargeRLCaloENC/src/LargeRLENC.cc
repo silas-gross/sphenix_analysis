@@ -179,6 +179,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	h_phi_reco=new TH1F("h_phi_reco", "Truth Particle #varphi position; #varphi; N_{particles}", 64, -PI, PI);
 	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 96, -2.2, 2.2);
 	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
+	h_jet_truth_lead=new TH2F("h_jet_truth_lead", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
 	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
 	h_jet_pt=new TH1F("h_jet_pt", "Jet pt for all jets", 1000, -0.5, 99.5);
 	h_n_cal_clusters=new TH1I("h_n_cal_cl", "Towers per cluster", 1000, 0, 1000);
@@ -800,6 +801,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					if( vertex_iter.first == 0 || vertex_iter.first == GlobalVertex::VTXTYPE::TRUTH || vertex_iter.first == GlobalVertex::VTXTYPE::MBD || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX_MBD ) 
 					{ 
 						gl_vtx=vertex_iter.second;
+						if(vertex_iter.first <= GlobalVertex::VTXTYPE::TRUTH && gl_vtx->get_z() != 0 ) break;
 					}
 				}
 				if(gl_vtx){
@@ -887,7 +889,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 							if((*iter))
 							{
 								if(!(*iter)->end_vertex() && (*iter)->status() == 1){
-									if(abs((*iter)->pdg_id()) >= 12 && abs((*iter)->pdg_id()) <= 16) continue;
+									if( abs((*iter)->pdg_id()) >= 12 && abs((*iter)->pdg_id()) <= 18 ) continue;
 									float px=(*iter)->momentum().px();
 									float py=(*iter)->momentum().py();
 									float pz=(*iter)->momentum().pz();
@@ -1042,14 +1044,80 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		h_ihcal_E_dc->Fill(dc_i);	
 		h_emcal_E_dc->Fill(dc_e);	
 		h_truth_E_dc->Fill(truth_energy-e5);	
-		for(auto l:truth_pts){
+	/*	for(auto l:truth_pts){
 			float dphi = l.first.at(1) - m_philead;
 			if(dphi > PI ) dphi=2*PI - dphi;
 			else if(dphi < -PI) dphi=-2*PI-dphi;
 			float deta = l.first.at(0) - m_etalead;
 			h_jet_truth->Fill(dphi, deta, l.second);
 		}
-		
+		*/
+		for(auto j:*jets){
+			if(!j) continue;
+			float dphi = j->get_phi() - m_philead;
+			if(dphi > PI ) dphi=2*PI - dphi;
+			else if(dphi < -PI) dphi=-2*PI-dphi;
+			float deta = j->get_eta() - m_etalead;
+			h_jet_truth->Fill(dphi, deta, j->get_e());
+			for(auto l:truth_pts){
+			//	if(getR(l.first.at(0), l.first.at(1), m_etalead, m_philead) > 0.8 )continue;
+				float dphi = l.first.at(1) - m_philead;
+				if(dphi > PI ) dphi=2*PI - dphi;
+				else if(dphi < -PI) dphi=-2*PI-dphi;
+				float deta = l.first.at(0) - m_etalead;	
+				h_jet_truth_lead->Fill(dphi, deta, l.second);
+			}
+			/*if(j->get_pt() == eventCut->getLeadPt() ){
+				auto truth_particles_p=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+				try{
+					truth_particles_p->GetMap();
+				}
+				catch(std::exception& e){
+					std::cout<<"Could not find particle map" <<std::endl;
+					continue;
+				}
+				std::map<int, PHG4Particle*> truth_particles;
+				PHG4TruthInfoContainer::ConstRange range = truth_particles_p->GetPrimaryParticleRange();
+				for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter) truth_particles[iter->first]=iter->second;
+				//for(const auto& a:truth_particles_p->GetMap()) truth_particles[a.first]=a.second;
+				for(auto& iter:j->get_comp_vec()){
+					Jet::SRC source=iter.first;
+					if(source < Jet::SRC::PARTICLE - 1 || source>  Jet::SRC::CHARGED_PARTICLE){
+						//don't have a source particle so skip it
+						std::cout<<"source value: " <<source <<std::endl;
+						continue;
+					}
+					else{
+						unsigned int id=iter.second;
+						if(truth_particles.find(id) == truth_particles.end()){
+							std::cout<<"Did not find particle with id: " <<id <<std::endl;
+							continue;
+						}
+						else{
+							PHG4Particle* particle = truth_particles.at(id);
+							int pid=particle->get_pid();
+							if(abs(pid) <= 11 || abs(pid) > 18 ){
+								float E=particle->get_e();
+								float particle_phi=std::atan2(particle->get_py(), particle->get_px());
+								float particle_eta=std::atanh(particle->get_pz()/particle->get_e());
+								for(auto p:truth_pts) {
+									if(p.first.at(1) == particle_phi && p.first.at(0) == particle_eta) 
+									{
+										E=p.second;
+										break;
+									}
+								}
+								dphi = particle_phi - m_philead;
+								if(dphi > PI ) dphi=2*PI - dphi;
+								else if(dphi < -PI) dphi=-2*PI-dphi;
+								deta = particle_eta - m_etalead;
+								h_jet_truth_lead->Fill(dphi, deta, E);
+							}
+						}
+					}
+				}	
+			}*/
+		}
 		std::cout<<"AllCal has size " <<allcal.size() <<std::endl;
 		for(auto l:allcal){
 			if(l.second < all_min) continue;
@@ -1392,7 +1460,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			TowerOutput* TR=Tow->RegionOutput;
 			int region_shift=region;
 			if(region_shift > 3 ) region_shift=3;
-			scale=1.;
+//			scale=1.;
 			TF->Normalize(scale, false, 0.1);
 			TR->Normalize(scale, false, 0.1);
 			auto Hists=Truth_Region_vector[region_shift][0];
@@ -1440,7 +1508,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		int region_shift=region;
 		if(region_shift > 3 ) region_shift=3;
 //		std::cout<<"scale: " <<	scale <<std::endl;
-		scale=1.;
+//		scale=1.;
 		F->Normalize(scale, false, 0.1);
 		R->Normalize(scale, false, 0.1);
 		auto Hists=Region_vector[region_shift][which_calo];
@@ -1625,7 +1693,7 @@ float LargeRLENC::getR(float eta1, float phi1, float eta2, float phi2, bool tran
 	float deta=eta1-eta2; 
 
 	float dphi=std::abs(phi1-phi2);
-	if(std::abs(dphi) > PI ) dphi+=-PI;
+	if(std::abs(dphi) > PI ) dphi=2*PI-dphi;
 	if(transverse) return std::sqrt(std::pow(dphi,2));
 	float rsq=std::pow(deta, 2)+ std::pow(dphi, 2);
 	if(print)std::cout<<" The value for R squared is square of "<<dphi <<" + square of " <<deta <<" = "<<rsq <<std::endl;
@@ -1664,6 +1732,7 @@ void LargeRLENC::Print(const std::string &what) const
 	h_E_truth->Write();
 	h_pt_truth->Write();
 	h_jet_truth->Write();
+	h_jet_truth_lead->Write();
 	h_eta_reco->Write(); 
 	h_phi_reco->Write();
 	h_E_reco->Write();
