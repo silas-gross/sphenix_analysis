@@ -59,7 +59,7 @@ class DijetEventCuts{
 			m_ohcalrat=hcalratio;
 			std::cout<<hcalratio<<std::endl;
 			if(hcalratio < 0 ) good=false;
-			if(hcalratio > 0.95 /* maxOHCAL*/) good=false;
+			if(hcalratio > 0.9 /* maxOHCAL*/) good=false;
 			if(abs(vertex[2]) > 60 ) good=false; //cut on z=60 cm vertex
 			m_zvtx=vertex[2];
 			float leadjetpt=0., subleadjetpt=0.;
@@ -219,6 +219,7 @@ class DijetEventCuts{
 			}
 			return;
 		}			
+	int getNJets(){return this->m_nJets;}
 	private:
 
 		float leading_pt_cut=0.;

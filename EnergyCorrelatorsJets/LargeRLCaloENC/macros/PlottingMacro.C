@@ -72,6 +72,69 @@ float GetCutValue(std::string name)
 	value=value/1000.;
 	return value;
 }
+	
+void getHistograms(TDirectory* reg, std::array<std::array<TH1F*, 10>*, 4>* hs, std::array<std::array<float, 10>, 3>* cuts)
+{
+	for(int i=0; i<4; i++) hs->at(i)=new std::array<TH1F*, 10>; 
+	TList* list_of_keys=reg->GetListOfKeys();
+	TIter liter(list_of_keys);
+	while(auto key=(TKey*)liter())
+	{
+		//Pick up the histograms 
+		std::string name=key->GetName();
+		if(name.find("rs") != std::string::npos) continue;
+		int type=-1, calo=-1;
+		//determine which type
+		if(name.find("e2c") != std::string::npos	) type = 0;
+		else if (name.find("e3c") != std::string::npos	) type = 1;
+		else if (name.find("R")!= std::string::npos 
+			&& name.find("pt") == std::string::npos	) type = 2;
+		else if (name.find("e_") != std::string::npos ) type = 3;
+		else type=-1;
+		//determine which calo 
+		if(name.find("Cluster") != std::string::npos) calo=0;
+		else if(name.find("EMCAL") != std::string::npos) calo=2;
+		else if(name.find("IHCAL") != std::string::npos) calo=3;
+		else if(name.find("OHCAL") != std::string::npos) calo=4;
+		else if(name.find("CAL")   != std::string::npos) calo=1;
+		else calo=-1;
+		//add to the approriate array
+		if(type != -1 && calo != -1){
+			hs->at(type)->at(calo) = (TH1F*)reg->Get(name.c_str());
+			if(type != 3) cuts->at(type)[calo]=GetCutValue(name);
+			std::cout<<hs->at(type)->at(calo)->GetTitle() <<std::endl;
+		}
+	std::cout<<__LINE__<<std::endl;
+	}
+	return;
+}
+
+void doNPairNorm(TFile* f)
+{
+	f->cd();
+	auto full=(TDirectory*)f->Get("Full_Calorimeter");
+	full->cd();
+	std::cout<<__LINE__<<std::endl;
+	std::array<std::array<TH1F*, 10>*, 4>* hs=new std::array<std::array<TH1F*, 10>*, 4>;
+	std::array<std::array<float, 10>, 3> cuts;
+	getHistograms(full, hs, &cuts);
+	for(auto h:*hs)for(auto ht:*h) std::cout<<ht->GetTitle() <<std::endl;
+	for(int i=0; i<3; i++)
+	{
+		for(int j=0; j<(int)hs->at(i)->size(); j++){
+	std::cout<<__LINE__<<std::endl;
+			if(!hs->at(i)->at(j)) continue;
+	std::cout<<__LINE__<<std::endl;
+			hs->at(i)->at(j)->Scale(10.);
+	std::cout<<__LINE__<<std::endl;
+			hs->at(i)->at(j)->Scale(1/(float)hs->at(3)->at(j)->Integral());
+		}
+	std::cout<<__LINE__<<std::endl;
+	}
+	std::cout<<__LINE__<<std::endl;
+	return;
+}
+		
 void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 {
 	SetsPhenixStyle();
@@ -94,7 +157,7 @@ void PlotClusterTower(TFile* f_cl, TFile* f_tw, std::string gen="Pythia8")
 	{
 		//Pick up the histograms 
 		std::string name=key->GetName();
-	//	if(name.find("rs") != std::string::npos) continue;
+		if(name.find("rs") != std::string::npos) continue;
 		int type=-1, calo=-1;
 		//determine which type
 		if(name.find("e2c") != std::string::npos	) type = 0;

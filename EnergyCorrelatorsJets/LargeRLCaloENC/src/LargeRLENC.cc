@@ -179,12 +179,13 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	h_phi_reco=new TH1F("h_phi_reco", "Truth Particle #varphi position; #varphi; N_{particles}", 64, -PI, PI);
 	h_eta_reco=new TH1F("h_eta_reco", "Truth Particle #eta position; #eta; N_{particles}", 96, -2.2, 2.2);
 	h_jet_truth=new TH2F("h_jet_truth", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
-	h_jet_truth_lead=new TH2F("h_jet_truth_lead", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
+	h_jet_truth_lead=new TH2F("h_jet_truth_lead", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -4, 4, 100, -3, 3); 	
 	h_jet_reco=new TH2F("h_jet_reco", "Truth jet energy deposition relative to leading jet; #Delta #varphi; #Delta #eta; E [GeV]", 100, -PI, PI, 100, -2.2, 2.2); 	
 	h_jet_pt=new TH1F("h_jet_pt", "Jet pt for all jets", 1000, -0.5, 99.5);
 	h_n_cal_clusters=new TH1I("h_n_cal_cl", "Towers per cluster", 1000, 0, 1000);
 	h_n_ohcal_clusters=new TH1I("h_n_ohcal_cl", "OHCAL towers per cluster", 1000, 0, 1000);
 	h_n_emcal_clusters=new TH1I("h_n_emcal_cl", "EMCAL towers per cluster", 1000, 0, 1000);
+	h_jet_truth_R=new TH1F("h_jet_truth_R", "Truth jet energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
 	MinpTComp=0.01; //10 MeV cut on tower/components
 	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
 		std::string Calo_name;
@@ -886,6 +887,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					if(ev)
 					{
 						for(HepMC::GenEvent::particle_const_iterator iter=ev->particles_begin(); iter !=ev->particles_end(); ++iter){
+/*		auto truth_info=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+		if(truth_info)
+		{
+			PHG4TruthInfoContainer::ConstRange range = truthinfo->GetPrimaryParticleRange();
+			for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter)
+			{*/
 							if((*iter))
 							{
 								if(!(*iter)->end_vertex() && (*iter)->status() == 1){
@@ -894,6 +901,13 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 									float py=(*iter)->momentum().py();
 									float pz=(*iter)->momentum().pz();
 									float E=(*iter)->momentum().e();
+									/*
+									PHG4Particle *part = iter->second;
+									if(abs(part->get_pid()) >=12 && abs(part->get_pid()) <=16) continue;
+									float E = part->get_e();
+									float px = part->get_px();
+									float py = part->get_py();
+									float pz = part->get_pz();*/
 									float phi=atan2(py, px)+PI;
 									float eta=atanh(pz/E);
 									float r=1.;
@@ -1008,7 +1022,9 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		m_eohcal=ohcal_energy;
 		m_philead=eventCut->getLeadPhi();
 		m_etalead=eventCut->getLeadEta();
-	
+		m_xjl=(eventCut->getSubleadPt()/(float)eventCut->getLeadPt());
+		m_Ajjl= (1 - m_xjl)/((float) 1. + (float) m_xjl);
+		m_Njets=eventCut->getNJets();
 		float scale = 0.5 * ( eventCut->getLeadPt() + eventCut->getSubleadPt());
 		std::map<std::array<float, 3>, float>allcal;
 		for(auto t:emcal_towers) allcal[t.first]=t.second;
@@ -1044,31 +1060,23 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		h_ihcal_E_dc->Fill(dc_i);	
 		h_emcal_E_dc->Fill(dc_e);	
 		h_truth_E_dc->Fill(truth_energy-e5);	
-	/*	for(auto l:truth_pts){
+		for(auto l:truth_pts){
 			float dphi = l.first.at(1) - m_philead;
 			if(dphi > PI ) dphi=2*PI - dphi;
 			else if(dphi < -PI) dphi=-2*PI-dphi;
 			float deta = l.first.at(0) - m_etalead;
 			h_jet_truth->Fill(dphi, deta, l.second);
+			//h_jet_truth_R->Fill(getR(l.first.at(0), l.first.at(1), m_etalead, m_philead), l.second);
 		}
-		*/
+		
 		for(auto j:*jets){
 			if(!j) continue;
 			float dphi = j->get_phi() - m_philead;
 			if(dphi > PI ) dphi=2*PI - dphi;
 			else if(dphi < -PI) dphi=-2*PI-dphi;
 			float deta = j->get_eta() - m_etalead;
-			h_jet_truth->Fill(dphi, deta, j->get_e());
-			for(auto l:truth_pts){
-			//	if(getR(l.first.at(0), l.first.at(1), m_etalead, m_philead) > 0.8 )continue;
-				float dphi = l.first.at(1) - m_philead;
-				if(dphi > PI ) dphi=2*PI - dphi;
-				else if(dphi < -PI) dphi=-2*PI-dphi;
-				float deta = l.first.at(0) - m_etalead;	
-				h_jet_truth_lead->Fill(dphi, deta, l.second);
-			}
-			/*if(j->get_pt() == eventCut->getLeadPt() ){
-				auto truth_particles_p=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+			h_jet_truth_lead->Fill(dphi, deta, j->get_e());
+			auto truth_particles_p=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
 				try{
 					truth_particles_p->GetMap();
 				}
@@ -1076,47 +1084,48 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					std::cout<<"Could not find particle map" <<std::endl;
 					continue;
 				}
-				std::map<int, PHG4Particle*> truth_particles;
-				PHG4TruthInfoContainer::ConstRange range = truth_particles_p->GetPrimaryParticleRange();
-				for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter) truth_particles[iter->first]=iter->second;
-				//for(const auto& a:truth_particles_p->GetMap()) truth_particles[a.first]=a.second;
-				for(auto& iter:j->get_comp_vec()){
-					Jet::SRC source=iter.first;
-					if(source < Jet::SRC::PARTICLE - 1 || source>  Jet::SRC::CHARGED_PARTICLE){
-						//don't have a source particle so skip it
-						std::cout<<"source value: " <<source <<std::endl;
+			std::map<int, PHG4Particle*> truth_particles;
+			//PHG4TruthInfoContainer::ConstRange range = truth_particles_p->GetPrimaryParticleRange();
+			//for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter) truth_particles[iter->first]=iter->second;
+			if(dphi != 0 && j->get_pt() != eventCut->getSubleadPt()) continue;
+			for(const auto& a:truth_particles_p->GetMap()) truth_particles[a.first]=a.second;
+			for(auto& iter:j->get_comp_vec()){
+				Jet::SRC source=iter.first;
+				if(source < Jet::SRC::PARTICLE - 1 || source>  Jet::SRC::CHARGED_PARTICLE){
+					//don't have a source particle so skip it
+					std::cout<<"source value: " <<source <<std::endl;
+					continue;
+				}
+				else{
+					unsigned int id=iter.second;
+					if(truth_particles.find(id) == truth_particles.end()){
+						std::cout<<"Did not find particle with id: " <<id <<std::endl;
 						continue;
 					}
 					else{
-						unsigned int id=iter.second;
-						if(truth_particles.find(id) == truth_particles.end()){
-							std::cout<<"Did not find particle with id: " <<id <<std::endl;
-							continue;
-						}
-						else{
-							PHG4Particle* particle = truth_particles.at(id);
-							int pid=particle->get_pid();
-							if(abs(pid) <= 11 || abs(pid) > 18 ){
-								float E=particle->get_e();
-								float particle_phi=std::atan2(particle->get_py(), particle->get_px());
-								float particle_eta=std::atanh(particle->get_pz()/particle->get_e());
-								for(auto p:truth_pts) {
-									if(p.first.at(1) == particle_phi && p.first.at(0) == particle_eta) 
-									{
-										E=p.second;
-										break;
-									}
+						PHG4Particle* particle = truth_particles.at(id);
+						int pid=particle->get_pid();
+						if(abs(pid) <= 11 || abs(pid) > 18 ){
+							float E=particle->get_e();
+							float particle_phi=std::atan2(particle->get_py(), particle->get_px());
+							float particle_eta=std::atanh(particle->get_pz()/particle->get_e());
+							for(auto p:truth_pts) {
+								if(p.first.at(1) == particle_phi && p.first.at(0) == particle_eta) 
+								{
+									E=p.second;
+									break;
 								}
-								dphi = particle_phi - m_philead;
-								if(dphi > PI ) dphi=2*PI - dphi;
-								else if(dphi < -PI) dphi=-2*PI-dphi;
-								deta = particle_eta - m_etalead;
-								h_jet_truth_lead->Fill(dphi, deta, E);
 							}
+							float dphi_p = particle_phi - m_philead;
+							if(dphi_p > PI ) dphi_p=2*PI - dphi_p;
+							else if(dphi_p < -PI) dphi_p=-2*PI-dphi_p;
+							//float deta_p = particle_eta - m_etalead;
+							h_jet_truth_R->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead), E);
 						}
 					}
-				}	
-			}*/
+				}
+					
+			}
 		}
 		std::cout<<"AllCal has size " <<allcal.size() <<std::endl;
 		for(auto l:allcal){
@@ -1148,6 +1157,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		if(!isRealData && !pedestalData) LargeRLENC::TruthRegion(truth_pts, jetMinpT, which_variable, vertex, m_philead, scale); 
 		if(doClusters) LargeRLENC::CaloRegion(emcal_cl, ihcal_cl, ohcal_cl, jetMinpT, which_variable, m_vertex, m_philead, scale);
 		if(doClusters ) LargeRLENC::TruthRegion(cl, jetMinpT, which_variable, vertex, m_philead, scale); 
+				
 		DijetQA->Fill();
 	}
 	return Fun4AllReturnCodes::EVENT_OK;
@@ -1296,44 +1306,33 @@ void LargeRLENC::CaloRegion(std::map<std::array<float, 3>, float> emcal, std::ma
 		region_ints[region]=phi_lim;
 	}
 
-//	std::vector<std::thread> CaloThreads;
-//	CaloThreads.push_back(std::thread(&LargeRLENC::SingleCaloENC, this, emcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::EMCAL));
-	//CaloThreads.push_back(std::thread(&LargeRLENC::SingleCaloENC, this, ihcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::IHCAL));
-//	CaloThreads.push_back(std::thread(&LargeRLENC::SingleCaloENC, this, ohcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::OHCAL));
-//	if(! this->pedestalData) 
-	//	CaloThreads.push_back(std::thread(&LargeRLENC::c
 	if(!pedestalData) SingleCaloENC(allcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::All, scale);
-//	for(int ct=0; ct<(int)CaloThreads.size(); ct++) CaloThreads[ct].join();
 	allcal.clear();
-		SingleCaloENC(emcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::EMCAL, scale);
+	SingleCaloENC(emcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::EMCAL, scale);
 	emcal.clear();
-		SingleCaloENC(ihcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::IHCAL, scale);
+	SingleCaloENC(ihcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::IHCAL, scale);
 	ihcal.clear();
-		SingleCaloENC(ohcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::OHCAL, scale);
+	SingleCaloENC(ohcal, jetMinpT, vertex, transverse, energy, region_ints, LargeRLENC::Calorimeter::OHCAL, scale);
 	ohcal.clear();
 	
 	return;
 }
 void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float jetMinpT, std::array<float, 3> vertex, bool transverse, bool energy, std::map<int, std::pair<float, float>> phi_edges, LargeRLENC::Calorimeter which_calo, float scale)
 {
-	//MethodHistograms* ha=NULL, *hc=NULL;
 	float base_thresh=thresh_mins[which_calo];
 	auto i=cal.begin();
 	std::vector<StrippedDownTower*> strippedCalo;
-//	if(which_calo == LargeRLENC::Calorimeter::EMCAL) base_thresh=base_thresh*16.; //correct for the fact that the emcal has ~16 actual towers going to a single tower object
 	std::array<float, 4> e_region { 0., 0., 0., 0. };
 	
 	
 	//Processs the calorimeter data into my analysis class
 	//Do the vertex shift and add it into the output 
-//	std::cout<<"Incoming prefiltered towers : " <<cal.size()  <<" Calorimeter Number " <<which_calo <<std::endl;
 	if(cal.size() == 0 ) return; 
 	while(i !=cal.end()){
 		auto j=i->first;
 		auto j_val=i->second;
 		if(j_val < base_thresh){
 			++i;
-	//		std::cout<<"Failed with tower energy " <<j_val <<std::endl;
 			continue;
 		}
 		float eta_shift=i->first[0], r=i->first[2];
@@ -1380,68 +1379,35 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			n_valid_towers++;	
 		}
 	}
+	scale=0.5*(e_region.at(StrippedDownTower::Regions::Towards)+e_region.at(StrippedDownTower::Regions::Away));
 //	std::cout<<"The thresholds and their number of towers are \n Threshold     Towers" <<std::endl;
 	if(n_valid_towers <= 0 ) return; 
-//	std::cout<<strippedCalo.at(0)->RegionOutput->threshold <<":    " <<n_valid_towers <<std::endl;
-	//now I need to actualy run the dataset 
 	std::vector<std::thread> CalculatingThreads;
-	//std::cout<<"Calo object has size " <<strippedCalo.size() <<std::endl;
 	for(int i=0; i<(int)strippedCalo.size()-1; i++)
 	{
 //		if(i%200 == 0 ) std::cout<<"Prepping tower for threading : " <<i <<std::endl;
 		StrippedDownTower* t = strippedCalo.at(i);
 		std::vector<StrippedDownTower> CaloCopy;
 		for(int j=i+1; j<(int)strippedCalo.size(); j++) CaloCopy.push_back(*(strippedCalo[j])); //avoid double counting
-//		CalculateENC(t, CaloCopy, transverse, energy);
 		CalculatingThreads.push_back(std::thread(&LargeRLENC::CalculateENC, this, t, CaloCopy, transverse, energy));
 	}
 //	std::cout<<"Performing caluclation" <<std::endl;
 	for(int k=0; k<(int)CalculatingThreads.size(); k++) CalculatingThreads.at(k).join();
 	//now need to sum over the relevant towers
 	CalculatingThreads.clear(); //just trying to find memmory leaks
-/*	std::array<std::vector<TowerOutput*>, 5> AllTowOutput;
-	for(int i=0; i< 5; i++) {
-		std::vector<TowerOutput*> a;
-		for(auto t:thresholds){
-			a.push_back(new TowerOutput(t));
-		}
-		AllTowOutput[i]=a;
-	} //just get it the right range */
 	std::array<int, 5> n_entries_arr;
-//	std::array<std::vector<std::vector<TowerOutput*>>,5> ToMerge; 
-//	std::array<std::vector<std::set<float>>,5> ToMergeRl; 
-//	std::array<std::vector<std::set<std::array<float,3>>>,5> ToMergeRlRmRs; 
 	for(int n=0; n<5; n++)
 		n_entries_arr[n]=0;
-//	for(int n=0; n<(int)ToMerge.size(); n++)
-	//	for(int i=0; i < (int) arr_size; i++) 
-		//	ToMerge[n].push_back(std::vector<TowerOutput*>());
-/*	for(int n=0; n<(int)ToMergeRl.size(); n++)
-		for(int i=0; i < (int) arr_size; i++) 
-			ToMergeRl[n].push_back(std::set<float>());
-	for(int n=0; n< (int)ToMergeRlRmRs.size(); n++)
-		for(int i=0; i < (int) arr_size; i++) */
-	//		ToMergeRlRmRs[n].push_back(std::set<std::array<float, 3>>());
-//	std::cout<<"Max elements: " <<strippedCalo.size()<<std::endl;
 	for(int i=0; i<(int)strippedCalo.size(); i++)
 	{
-			if(strippedCalo.at(i)->FullOutput->RL.size() > 0 )
-				 n_entries_arr[0]++;
-			//ToMerge[0][j].push_back(strippedCalo.at(i)->FullOutput->at(j));
-		//	for(auto r:strippedCalo.at(i)->FullOutput->at(j)->RL)ToMergeRl[0][j].insert(r);
-		//	for(auto r:strippedCalo.at(i)->FullOutput->at(j)->RL_RM_RS)ToMergeRlRmRs[0][j].insert(r);
+		if(strippedCalo.at(i)->FullOutput->RL.size() > 0 )
+			n_entries_arr[0]++;
 					
 		
 		if(strippedCalo.at(i)->RegionOutput->RL.size() > 0 )
-			 n_entries_arr[(int)strippedCalo.at(i)->tag]++;
-		//	int tagn=strippedCalo.at(i)->tag;
-		//	ToMerge[tagn][j].push_back(strippedCalo.at(i)->RegionOutput->at(j));
-		//	for(auto r:strippedCalo.at(i)->RegionOutput->at(j)->RL)ToMergeRl[tagn][j].insert(r);
-		//	for(auto r:strippedCalo.at(i)->RegionOutput->at(j)->RL_RM_RS)ToMergeRlRmRs[tagn][j].insert(r);
+			n_entries_arr[(int)strippedCalo.at(i)->tag]++;
 			
-		
 	}
-//	std::cout<<"Plotting Energy " <<std::endl;
 	if(which_calo == LargeRLENC::Calorimeter::TRUTH)
 	{
 		for(int region=0; region < 4; region++)
@@ -1455,12 +1421,11 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		for(auto Tow:strippedCalo)
 		{
 			int region=Tow->tag;
-			//std::cout<<"Threshold index " <<threshold_index<<std::endl;
 			TowerOutput* TF=Tow->FullOutput;
 			TowerOutput* TR=Tow->RegionOutput;
 			int region_shift=region;
 			if(region_shift > 3 ) region_shift=3;
-//			scale=1.;
+			scale=1.;
 			TF->Normalize(scale, false, 0.1);
 			TR->Normalize(scale, false, 0.1);
 			auto Hists=Truth_Region_vector[region_shift][0];
@@ -1498,7 +1463,6 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		else if(region == 3)
 			Region_vector[region][which_calo]->N->Fill(n_entries_arr[region]+n_entries_arr[region+1]);
 	}
-//	std::cout<<"Plotting all the values" <<std::endl;
 	
 	for(auto Tow:strippedCalo)
 	{
@@ -1507,8 +1471,7 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 		TowerOutput* R=Tow->RegionOutput;
 		int region_shift=region;
 		if(region_shift > 3 ) region_shift=3;
-//		std::cout<<"scale: " <<	scale <<std::endl;
-//		scale=1.;
+		scale=1.;
 		F->Normalize(scale, false, 0.1);
 		R->Normalize(scale, false, 0.1);
 		auto Hists=Region_vector[region_shift][which_calo];
@@ -1538,51 +1501,8 @@ void LargeRLENC::SingleCaloENC(std::map<std::array<float, 3>, float> cal, float 
 			}
 		}	
 	}
-//	std::cout<<"Plotted all the values" <<std::endl;
-	strippedCalo.clear();
-/*	std::vector<std::thread> Merger_thread; //not merging, it was too slow, trying to just fill direct now
-	for(int i=0; i<5; i++)
-	{
-		for(int j=0; j<(int)arr_size; j++)
-		{
-			Merger_thread.push_back(std::thread(&LargeRLENC::Merger, this, AllTowOutput[i][j], ToMerge[i][j], ToMergeRl[i][j], ToMergeRlRmRs[i][j]));
-		}
-	}
-	std::cout<<"Merging output" <<std::endl;	
-	//for(int k=0; k<(int)Merger_thread.size(); k++) Merger_thread.at(k).join(); 
-	std::cout<<"Saving to plots" <<std::endl;	
-	//now push the data out to the plots
-	for(int region_index=0; region_index<(int)AllTowOutput.size(); region_index++)
-	{
-		for(int threshold_index=0; threshold_index<(int)AllTowOutput[region_index].size(); threshold_index++)
-		{
-			if(threshold_index >= (int)Region_vector.size()) continue;
-			int region_shift=region_index;
-		//	std::cout<<"Threshold index is : " <<threshold_index <<" Region: " << region_shift <<std::endl;
-			if(region_shift >= 3 ) region_shift=3;
-			AllTowOutput[region_index]->CalculateFlatE3C();
-			AllTowOutput[region_index]->Normalize(e_region[region_shift]);
-			auto Hists=Region_vector[region_shift][which_calo];
-			auto Output=AllTowOutput[region_index];
-			if(region_index < 3) Hists->N->Fill(n_entries_arr[region_index]);
-			else if (region_index==3)Hists->N->Fill(n_entries_arr[region_index]+n_entries_arr[region_index + 1]);
-			else n_entries_arr[region_index]=0;
-			int tower_number=(int)Output->RL.size();
-//			std::cout<<"number of entries to fill is " <<(int)Output->E2C.size() <<std::endl;
-			if(tower_number > 0){
-				for(int rl_index=0; rl_index < tower_number; rl_index++)
-				{
-					Hists->R->Fill(Output->RL.at(rl_index));
-					Hists->E2C->Fill(Output->RL.at(rl_index), Output->E2C.at(rl_index));
-					if((int)Output->E3C.size() > rl_index) Hists->E3C->Fill(Output->RL.at(rl_index), Output->E3C.at(rl_index));
-				}
-			}
-			Hists->E->Fill(e_region[region_shift]);
-		}
-	}*/
-	 
+	strippedCalo.clear(); 
 	return;
-	
 }
 void LargeRLENC::Merger(TowerOutput* output, std::vector<TowerOutput*> inputs, std::set<float> RLs, std::set<std::array<float, 3>> Rlmss)
 {
@@ -1691,9 +1611,9 @@ void LargeRLENC::JetEventObservablesBuilding(std::array<float, 3> central_tower,
 float LargeRLENC::getR(float eta1, float phi1, float eta2, float phi2, bool transverse, bool print)
 {
 	float deta=eta1-eta2; 
-
-	float dphi=std::abs(phi1-phi2);
-	if(std::abs(dphi) > PI ) dphi=2*PI-dphi;
+	float dphi=phi1-phi2;
+	if(dphi > PI ) dphi=2*PI-dphi;
+	else if( dphi < -PI) dphi = -2*PI-dphi;
 	if(transverse) return std::sqrt(std::pow(dphi,2));
 	float rsq=std::pow(deta, 2)+ std::pow(dphi, 2);
 	if(print)std::cout<<" The value for R squared is square of "<<dphi <<" + square of " <<deta <<" = "<<rsq <<std::endl;
@@ -1733,6 +1653,7 @@ void LargeRLENC::Print(const std::string &what) const
 	h_pt_truth->Write();
 	h_jet_truth->Write();
 	h_jet_truth_lead->Write();
+	h_jet_truth_R->Write();
 	h_eta_reco->Write(); 
 	h_phi_reco->Write();
 	h_E_reco->Write();
@@ -1758,6 +1679,7 @@ void LargeRLENC::Print(const std::string &what) const
 	h_n_cal_clusters->Write();
 	h_n_ohcal_clusters->Write();
 	h_n_emcal_clusters->Write();
+	DijetQA->Write();
 	std::vector<TDirectory*> region_dirs;
 	
 	auto FullCal=Region_vector.at(0);
@@ -1855,8 +1777,6 @@ void LargeRLENC::Print(const std::string &what) const
 	
 	f1->cd();
 	f1->Write();
-	
-
 	f1->Close();
 	return;	
 }
