@@ -4,8 +4,16 @@
 #define JETSHAPEEVENTOBSERVABLES_H
 
 #include <fun4all/SubsysReco.h>
+#include <fun4all/Fun4AllReturnCodes.h>
+
+#include <phool/PHCompositeNode.h>
 
 #include <string>
+#include <vector>
+#include <array>
+
+#include "HelplerStructs.h"
+#include "SoftDropComp.h"
 
 class PHCompositeNode;
 
