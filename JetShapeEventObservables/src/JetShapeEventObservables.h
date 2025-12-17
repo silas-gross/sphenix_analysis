@@ -12,7 +12,7 @@
 #include <vector>
 #include <array>
 
-#include "HelplerStructs.h"
+#include "TowerJetWeighter.h"
 #include "SoftDropComp.h"
 
 class PHCompositeNode;
