@@ -38,12 +38,13 @@ class ShapeTrim
 		ShapeTrim(float pt_min_i = 0.1, std::vector<float> R_vals_i ={0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}){
 			this->pt_min = pt_min;
 			this->R_vals = R_vals_i;
+			for(auto r:R_vals) this->Efficiency_R[r]=0.;
 		};
 		~ShapeTrim(){};
 		void FillWeightedTowers(std::map<int, std::array<float, 4>> inputTowers, std::string CaloLabel="")
 		{
 			PrepareNewEvent();
-			
+			n_Tows=inputTowers.size();
 			for(auto i:inputTowers) 
 			{
 				WeightedTower* tw = new WeightedTower(i.first, i.second[0], i.second[1], i.second[2], i.second[3], this->Et_min, CaloLabel);
@@ -69,7 +70,8 @@ class ShapeTrim
 			CalculateAllETiR();
 			return;
 		}
-		std::map<int, WeightedTower*>* getTowers(){return this->Towers};
+		std::map<int, WeightedTower*>* getTowers(){return this->Towers;}
+		std::map<float, float> getEff(){return this->Efficiency_R;}
 	private:
 		void PrepareNewEvent()
 		{
@@ -111,7 +113,16 @@ class ShapeTrim
 			for(auto ETTw:tower_energygroups)
 			{
 				Towers->at(ETTw.first)->ET_cut =  ETTw.second;
+				Towers->at(ETTw.first)->weight =  ETTw.second;
+				for(auto  e:ETTw.second){
+					if(e.second > Et_min){
+					       	Towers->at(ETTw.first)->weight.at(e.first) = 1;
+						Efficiency_R[e.first]++;
+					}
+					else Towers->at(ETTw.first)->weight.at(e.first) = 0;
+				}	
 			}
+			for(auto er: Efficiency_R) Efficiency_R[er.first]=er.second/(float)n_Tows;
 			return;
 		}
 		void DoTowerConeCalc(std::map<float, std::vector<int>> inputTowerList, std::map<int, float> ref, std::map<float, std::vector<float>>* output_energy )
@@ -163,6 +174,7 @@ class ShapeTrim
 		float Et_min {-1}; //the minimum cut --default for EMCAL = 100 MeV, default for HCAL = 650 MeV
 		std::vector<float> R_vals {}; //which values of R are we using (default 0.1-0.8 in 0.1 bins) 
 		std::map<float, float> Efficiency_R {}; // this is just the percentage of incoming towers that have non-zero weight at each R
+		int n_Tows {0};
 
 };
 #endif
