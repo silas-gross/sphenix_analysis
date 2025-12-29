@@ -13,7 +13,7 @@
 
 struct WeightedTower
 {
-	WeightedTower(int toweridi, float ri=-1, float phii=-100, float etai=-100, float ETi=-1, float pt_mini {-1}, std::string CaloLabeli=""):
+	WeightedTower(int toweridi, float etai=-1, float phii=-100, float ri=-100, float ETi=-1, float pt_mini {-1}, std::string CaloLabeli=""):
 	       	towerid(toweridi),
 		r(ri),
 	       	phi(phii),
@@ -23,9 +23,9 @@ struct WeightedTower
 		CaloLabel(CaloLabel)
 	{}
 	int towerid {};
-	float r {-1};
-	float phi {-100}; 
 	float eta {-100};
+	float phi {-100}; 
+	float r {-1};
 	float ET {-1};
 	float pt_min {-1};
 	std::string CaloLabel {""};
@@ -43,6 +43,8 @@ class ShapeTrim
 		~ShapeTrim(){};
 		void FillWeightedTowers(std::map<int, std::array<float, 4>> inputTowers, std::string CaloLabel="")
 		{
+			//input Towers {particle/cluster/tower id : {eta, phi, r, E}
+			//CaloLabel is a Type Tag
 			PrepareNewEvent();
 			n_Tows=inputTowers.size();
 			for(auto i:inputTowers) 
@@ -82,11 +84,12 @@ class ShapeTrim
 		};
 		void CollectRelevantTowers(std::array<float, 4> basetw, std::map<int, std::array<float, 4>> tows, std::pair<int, std::map<float, std::vector<int>>>* storageval )
 		{
+			//basetowers are coming in via an array {eta, phi, r, E}
 			for(auto R: storageval->second)
 			{
 				for(auto tw: tows) 
 				{
-					float Rij = calcR(basetw[1], basetw[2], tw.second[1], tw.second[2]);
+					float Rij = calcR(basetw[0], basetw[1], tw.second[0], tw.second[1]);
 					if(Rij <= R.first) R.second.push_back(tw.first);
 					else continue;
 				}

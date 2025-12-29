@@ -69,6 +69,7 @@ class JetShapeEventObservables : public SubsysReco
 		std::vector<TH1F*> efficiencies {};
 		std::map<int, WeightedTowers*> trimmedTowers;	
 		std::map<std::string, std::map<int, std::array<float, 4>>> filterInputTowers;
+		//structure "Type Tag":{particle/cluster/tower id : {eta, phi, r, E}}
 		TH1F *h_n_ohcal_clusters, *h_n_emcal_clusters;
 };
 

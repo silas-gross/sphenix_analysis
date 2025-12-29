@@ -27,7 +27,37 @@ void JetShapeEventObservables::getTowers(PHCompositeNode* topNode)
 }
 boid JetShapeEventObservables::getTruth(PHCompositeNode* topNode) 
 {
-	//
+	//if there is a truth node, grab it 
+	std::map<int, std::array<float, 4>> truth_phg4 {}, truth_hepmc{};  
+	try{ 
+		findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+	}
+	catch(std::exception& e ) {return; }
+	PHG4TruthInfoContainer *truthinfo=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+	if(!truthinfo) return;
+	else if (truthinfo) 
+	{
+		PHG4TruthInfoContainer::ConstRange range = truthinfo->GetPrimaryParticleRange();
+		for(PHG4TruthInfoContainer::ConstIterator iter = range.first, iter !=range.second; ++iter) 
+		{
+			PHG4Particle *part = iter->second;
+			if(!part) continue;
+			if(abs(part->get_pid()) >= 12  && abs(part->get_pid) <= 18) continue;
+			float E = part->get_e();
+			float px = part->get_px();
+			float py = part->get_py();
+			float pz = part->get_pz();
+			float phi=atan2(py, px)+PI;
+			float eta=atanh(pz/E);
+			float r = 1.;
+			int id = part->get_barcode();
+			truth_phg4[id]=std::array<float, 4> {eta, phi, r, E};
+		}
+		filterInputTowers["PHG4_sPHENIX_PRIMARY_TRUTH"]=truth_phg4;
+	}
+	else return;
+	
+	return;
 }
 void JetShapeEventObservables::getClusters(PHCompostieNode* topNode)
 {
