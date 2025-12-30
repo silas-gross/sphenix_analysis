@@ -22,10 +22,13 @@ void JetShapeEventObservables::getTowers(PHCompositeNode* topNode)
 	auto emcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC"   );
 	auto ihcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN"   );
 	auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT"   );
+	auto emcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, emcal_energy_towers      );
+	auto ihcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, emcal_energy_towers      );
+	auto ohcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, emcal_energy_towers      );
 
-	
+	return;	
 }
-boid JetShapeEventObservables::getTruth(PHCompositeNode* topNode) 
+void JetShapeEventObservables::getTruth(PHCompositeNode* topNode) 
 {
 	//if there is a truth node, grab it 
 	std::map<int, std::array<float, 4>> truth_phg4 {}, truth_hepmc{};  
@@ -56,7 +59,48 @@ boid JetShapeEventObservables::getTruth(PHCompositeNode* topNode)
 		filterInputTowers["PHG4_sPHENIX_PRIMARY_TRUTH"]=truth_phg4;
 	}
 	else return;
-	
+	try{
+		findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
+	}
+	catch(std::exception& e) { return;}
+	auto *hepmcinfo=findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
+	if(!hepmcinfo)return;
+	else if(hepmcinfo)
+	{
+		//as a backup look for the hepmc event
+		std::map<int, std::array<float, 4>> truth_hepmc{};
+		for(PHHepMCGenEventMap::ConstIter evtIter = hepmcinfo->begin(); evtIter != hepmcinfo->end(); ++evtIter)
+		{
+			PHHepMCGenEvent* hep_evt=evtIter->second;
+			if(hep_evt)
+			{
+				HepMC::GenEvent* ev=hep_evt->getEvent();
+				if(ev)
+				{
+					for(HepMC::GenEvent::particle_const_iterator iter = ev->particles_begin(); iter !=ev->particles_end(); ++iter)
+					{
+						if(!(*iter)) continue;
+						auto particle = *iter;
+						if(!(particle->end_vertex()) && particle->status() == 1) 
+						{
+							if(abs(particle->pdg_id()) >= 12 && abs(parrticle->pdg_id()) <=18) continue;
+							float px = particle->momentum.px();
+							float py = particle->momentum.py();
+							float pz = particle->momentum.pz();
+							float E  = particle->momentum.E();
+							float phi=atan2(py, px)+PI;
+							float eta=atanh(pz/E);
+							float r = 1.;
+							int id = particle->get_barcode();
+							truth_hepmc[id]=std::array<float, 4> {eta, phi, r, E};
+						}
+					}
+				}
+			}
+		}
+		filterInputTowers["HepMCGenEvent_TRUTH"]=truth_hepmc;
+	}
+	else return;
 	return;
 }
 void JetShapeEventObservables::getClusters(PHCompostieNode* topNode)

@@ -71,6 +71,7 @@ class JetShapeEventObservables : public SubsysReco
 		std::map<std::string, std::map<int, std::array<float, 4>>> filterInputTowers;
 		//structure "Type Tag":{particle/cluster/tower id : {eta, phi, r, E}}
 		TH1F *h_n_ohcal_clusters, *h_n_emcal_clusters;
+		std::string emcal_energy_towers {"TOWERINFO_CALIB_CEMC"}, ihcal_energy_towers {"TOWERINFO_CALIB_HCALIN"}, ohcal_energy_towers {"TOWERINFO_CALIB_HCALOUT"};
 };
 
 #endif // JETSHAPEEVENTOBSERVABLES_H
