@@ -65,6 +65,8 @@ class JetShapeEventObservables : public SubsysReco
 		void getTowerss(PHCompositeNode* topNode);
 		void getTruth(PHCompositeNode* topNode);
 		void getClusters(PHCompositeNode* topNode);
+		void MakeEMCALRetowerMap(RawTowerGeomContainer_Cylinderv1*, TowerInfoContainer*, RawTowerGeomContainer_Cylinderv1*, TowerInfoContainer*);
+		
 		ShapeTrim* ShapeTrimmer {nullptr};
 		std::vector<TH1F*> efficiencies {};
 		std::map<int, WeightedTowers*> trimmedTowers;	
@@ -72,6 +74,7 @@ class JetShapeEventObservables : public SubsysReco
 		//structure "Type Tag":{particle/cluster/tower id : {eta, phi, r, E}}
 		TH1F *h_n_ohcal_clusters, *h_n_emcal_clusters;
 		std::string emcal_energy_towers {"TOWERINFO_CALIB_CEMC"}, ihcal_energy_towers {"TOWERINFO_CALIB_HCALIN"}, ohcal_energy_towers {"TOWERINFO_CALIB_HCALOUT"};
+		std::map<int, std::pair<float, float>> emcal_lookup_table {};
 };
 
 #endif // JETSHAPEEVENTOBSERVABLES_H

@@ -23,9 +23,21 @@ void JetShapeEventObservables::getTowers(PHCompositeNode* topNode)
 	auto ihcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN"   );
 	auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT"   );
 	auto emcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, emcal_energy_towers      );
-	auto ihcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, emcal_energy_towers      );
-	auto ohcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, emcal_energy_towers      );
-
+	auto ihcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers      );
+	auto ohcal_tower_energy=findNode::getClass<TowerInfoContainer>(topNode, ohcal_energy_towers      );
+	
+	if(this->emcal_lookup_table.size() == 0  || n_evts==1)
+	{
+		MakeEMCALRetowerMap(emcal_geom, emcal_tower_energy, ohcal_geom, ohcal_tower_energy);
+		std::cout<<"Lookup table has size: " <<this->emcal_lookup_table.size() <<std::endl;
+	}
+	std::map<int, std::array<float, 4>> emcal {}, ihcal {}, ohcal {}, emcal_retower {}, all_cal {};
+	emcal_geom->set_calorimeter_id(RawTowerDefs::CEMC);
+	ihcal_geom->set_calorimeter_id(RawTowerDefs::HCALIN);
+	ohcal_geom->set_calorimeter_id(RawTowerDefs::HCALOUT);
+	for(int n=0; n<(int) emcal_tower_energy->size(); n++)
+	{
+			
 	return;	
 }
 void JetShapeEventObservables::getTruth(PHCompositeNode* topNode) 
@@ -170,4 +182,36 @@ void JetShapeEventObservables::getClusters(PHCompostieNode* topNode)
 	this->filterInputTowers["IHCALClusterTowers"]=ihcal_e;
 	return;
 }	
+void JetShapeEventObservables::MakeEMCALRetowerMap(RawTowerGeomContainer_Cylinderv1* em_geom, TowerInfoContainer* emcal, RawTowerGeomContainer_Cylinderv1* h_geom, TowerInfoContainer* hcal )
+{
+	em_geom->set_calorimeter_id(RawTowerDefs::CEMC);
+	h_geom->set_calorimeter_id(RawTowerDefs::HCALOUT);
 
+	for(int n=0; n<(int) emcal->size(); n++){
+		auto key=emcal->encode_key(n);
+		int phibin=emcal->getTowerPhiBin(key);
+		int etabin=emcal->getTowerEtaBin(key);
+		float phicenter=em_geom->get_phicenter(phibin);
+		float etacenter=em_geom->get_etacenter(etabin);
+		for(int j=0; j<(int) hcal->size(); j++)
+		{
+			bool goodPhi=false, goodEta=false;
+			auto key_h=hcal->encode_key(j);
+			int phibin_h=hcal->getTowerPhiBin(key_h);
+			int etabin_h=hcal->getTowerEtaBin(key_h);
+			float phicenter_h=h_geom->get_phicenter(phibin_h);
+			float etacenter_h=h_geom->get_etacenter(etabin_h);	
+			std::pair<double, double> phi_bounds=h_geom->get_phibounds(phibin_h);
+			std::pair<double, double> eta_bounds=h_geom->get_etabounds(etabin_h);
+			if(phicenter >= phi_bounds.first && phicenter < phi_bounds.second) goodPhi=true; 
+			if(etacenter >= eta_bounds.first && etacenter < eta_bounds.second) goodEta=true;
+			if(goodPhi && goodEta){
+				this->emcal_lookup_table[n]=std::make_pair(etacenter_h, phicenter_h);
+				break;
+			}
+			else continue;
+		}
+	}
+
+	return;
+}
