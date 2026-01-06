@@ -62,9 +62,9 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	bool data=true;
 	bool cluster= ( cl == "true" );
 	se->Verbosity(0);
-	if(data_dst.find("none") != std::string::npos) data=false;
+	if(data_fitting_dst.find("none") != std::string::npos) data=false;
 	if(data){
-		segment=Fun4AllUtils::GetRunSegment(data_dst).second;
+		segment=Fun4AllUtils::GetRunSegment(data_fitting_dst).second;
 	}
 
 	for(auto f:input_files)
@@ -201,13 +201,19 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 //	LEDPedestalScan* sc=new LEDPedestalScan(run_number, segment, false, false);
 	se->registerSubsystem(rlenc);
 //	se->registerSubsystem(sc);
-//	dummy* d=new dummy();
-//	se->registerSubsystem(d);
+	dummy* d=new dummy();
+	se->registerSubsystem(d);
 	std::cout<<"Runing for " <<n_evt <<" events" <<std::endl;
 	se->run(n_evts);
 //	sc->Print();
 
 	rlenc->Print();
+	TFile* f1=new TFile(Form("run_%d_%d_nevt.root", run_number, segment), "RECREATE");
+	f1->cd();
+	TH1F* h=new TH1F("n_evts", "Number of events analyzed", 10000, -0.5, 10000);
+	h->Fill(d->n_evts);
+	h->Write();
+	f1->Close();	
 return 0;
 }
 #endif		

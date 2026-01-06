@@ -5,7 +5,7 @@
 //			Author: Skaydi Grossberndt						//
 //			Depends on: Calorimeter Tower ENC 					//
 //			First Commit date: 18 Oct 2024						//
-//			Most recent Commit: 22 Sept 2025					//
+//			Most recent Commit: 5 Jan 2026						//
 //			version: v7 added cluster support, npair norm and updated cuts 	 	//
 //												//
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	thresh_mins[3]=ohcal_min;
 	thresh_mins[4]=truth_min;
 	MethodHistograms* fc, *fe, *fi, *fo, *tc, *te, *ti, *to, *ac, *ae, *ai, *ao, *trc, *tre, *tri, *tro;
-//set bin widths to tower size
+	//set bin widths to tower size
 	float truth_thresh=1000*truth_min;
 	float allcal_thresh=1000*all_min;
 	float emcal_thresh=1000*emcal_min;
@@ -93,7 +93,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	Region_vector_1.push_back(TowardRegion);
 	Region_vector_1.push_back(AwayRegion);
 	Region_vector_1.push_back(TransverseRegion);
-/*	if(pedestal || !data )
+	/*	if(pedestal || !data )
 	{
 		for(auto a:Region_vector_1)
 			for(auto b:a){
@@ -186,6 +186,7 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	h_n_ohcal_clusters=new TH1I("h_n_ohcal_cl", "OHCAL towers per cluster", 1000, 0, 1000);
 	h_n_emcal_clusters=new TH1I("h_n_emcal_cl", "EMCAL towers per cluster", 1000, 0, 1000);
 	h_jet_truth_R=new TH1F("h_jet_truth_R", "Truth jet energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
+	h_UE_truth_R=new TH1F("h_UE_truth_R", "Truth Underlyding eveent energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
 	MinpTComp=0.01; //10 MeV cut on tower/components
 	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
 		std::string Calo_name;
@@ -594,7 +595,6 @@ void LargeRLENC::addTower(int n, TowerInfoContainer* energies, RawTowerGeomConta
 {
 	if(!geom) return;
 	geom->set_calorimeter_id(td);
-//	std::cout<<"The map has size " <<towers->size() <<std::endl;
 	auto key=energies->encode_key(n);
 	auto tower=energies->get_tower_at_channel(n);
 	int phibin=energies->getTowerPhiBin(key);
@@ -602,7 +602,6 @@ void LargeRLENC::addTower(int n, TowerInfoContainer* energies, RawTowerGeomConta
 	float phicenter=geom->get_phicenter(phibin);
 	float etacenter=geom->get_etacenter(etabin);
 	float r=geom->get_radius();
-//	std::cout<<"energy is " <<tower->get_energy()<<std::endl;
 	std::array<float, 3> center {etacenter, phicenter, r};
 
 	if(td != RawTowerDefs::CEMC && !this->pedestalData){
@@ -855,11 +854,11 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 	}
 	float truth_energy=0, e5=0;
-//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	
 	if(!isRealData && !pedestalData){
 		PHG4TruthInfoContainer *truthinfo=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
 		if(truthinfo){
+			truth_pts.clear();
 			PHG4TruthInfoContainer::ConstRange range = truthinfo->GetPrimaryParticleRange();
 			for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter)
 			{ 
@@ -874,11 +873,13 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 				h_pt_truth->Fill(std::sqrt(pow(px,2) + pow(py, 2)));
 				h_phi_truth->Fill(phi);
 				h_eta_truth->Fill(eta);
+				std::array<float, 3> loc {eta, phi, 1.};
+				truth_pts[loc]=E;
 			}
 		}
 			
-		auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
-		if(hepmc_gen_event){
+		//auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
+		/*if(hepmc_gen_event){
 			for( PHHepMCGenEventMap::ConstIter evtIter=hepmc_gen_event->begin(); evtIter != hepmc_gen_event->end(); ++evtIter)
 			{
 				PHHepMCGenEvent* hpev=evtIter->second;
@@ -887,12 +888,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					if(ev)
 					{
 						for(HepMC::GenEvent::particle_const_iterator iter=ev->particles_begin(); iter !=ev->particles_end(); ++iter){
-/*		auto truth_info=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+		auto truth_info=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
 		if(truth_info)
 		{
 			PHG4TruthInfoContainer::ConstRange range = truthinfo->GetPrimaryParticleRange();
 			for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter)
-			{*/
+			{
 							if((*iter))
 							{
 								if(!(*iter)->end_vertex() && (*iter)->status() == 1){
@@ -901,18 +902,18 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 									float py=(*iter)->momentum().py();
 									float pz=(*iter)->momentum().pz();
 									float E=(*iter)->momentum().e();
-									/*
+								
 									PHG4Particle *part = iter->second;
 									if(abs(part->get_pid()) >=12 && abs(part->get_pid()) <=16) continue;
 									float E = part->get_e();
 									float px = part->get_px();
 									float py = part->get_py();
-									float pz = part->get_pz();*/
+									float pz = part->get_pz();
 									float phi=atan2(py, px)+PI;
 									float eta=atanh(pz/E);
 									float r=1.;
 									truth_energy+=E;
-									if(std::abs(eta) > 1.1 /*|| E < truth_min*/ ) continue;
+									if(std::abs(eta) > 1.1 || E < truth_min ) continue;
 									e5+=E;
 									std::array<float, 3> loc {eta, phi, r};
 									truth_pts[loc]=E;
@@ -923,7 +924,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					}
 				}
 			}
-		}
+		}*/
 	}	
 	if(doClusters)
 	{
@@ -1085,10 +1086,15 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					continue;
 				}
 			std::map<int, PHG4Particle*> truth_particles;
-			//PHG4TruthInfoContainer::ConstRange range = truth_particles_p->GetPrimaryParticleRange();
-			//for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter) truth_particles[iter->first]=iter->second;
+			std::map<int, bool> jet_evt_part;
+			PHG4TruthInfoContainer::ConstRange range = truth_particles_p->GetPrimaryParticleRange();
 			if(dphi != 0 && j->get_pt() != eventCut->getSubleadPt()) continue;
-			for(const auto& a:truth_particles_p->GetMap()) truth_particles[a.first]=a.second;
+			for (PHG4TruthInfoContainer::ConstIterator iter = range.first; iter != range.second; ++iter){
+			      	truth_particles[iter->first]=iter->second;
+			//for(const auto& a:truth_particles_p->GetMap()){
+			      // 	truth_particles[a.first]=a.second;
+				jet_evt_part[iter->first]=false;
+			}
 			for(auto& iter:j->get_comp_vec()){
 				Jet::SRC source=iter.first;
 				if(source < Jet::SRC::PARTICLE - 1 || source>  Jet::SRC::CHARGED_PARTICLE){
@@ -1104,6 +1110,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 					}
 					else{
 						PHG4Particle* particle = truth_particles.at(id);
+						jet_evt_part[id]=true;
 						int pid=particle->get_pid();
 						if(abs(pid) <= 11 || abs(pid) > 18 ){
 							float E=particle->get_e();
@@ -1126,6 +1133,16 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 				}
 					
 			}
+			for(auto tp:truth_particles)
+			{
+				if(jet_evt_part.at(tp.first) == true) continue;
+				auto particle = tp.second;
+				float E=particle->get_e();
+				float particle_phi=std::atan2(particle->get_py(), particle->get_px());
+				float particle_eta=std::atanh(particle->get_pz()/particle->get_e());
+				h_UE_truth_R->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead), E);
+			}
+
 		}
 		std::cout<<"AllCal has size " <<allcal.size() <<std::endl;
 		for(auto l:allcal){
@@ -1654,6 +1671,7 @@ void LargeRLENC::Print(const std::string &what) const
 	h_jet_truth->Write();
 	h_jet_truth_lead->Write();
 	h_jet_truth_R->Write();
+	h_UE_truth_R->Write();
 	h_eta_reco->Write(); 
 	h_phi_reco->Write();
 	h_E_reco->Write();
