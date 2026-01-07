@@ -185,8 +185,24 @@ LargeRLENC::LargeRLENC(const int n_run/*=0*/, const int n_segment/*=0*/, const f
 	h_n_cal_clusters=new TH1I("h_n_cal_cl", "Towers per cluster", 1000, 0, 1000);
 	h_n_ohcal_clusters=new TH1I("h_n_ohcal_cl", "OHCAL towers per cluster", 1000, 0, 1000);
 	h_n_emcal_clusters=new TH1I("h_n_emcal_cl", "EMCAL towers per cluster", 1000, 0, 1000);
-	h_jet_truth_R=new TH1F("h_jet_truth_R", "Truth jet energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
-	h_UE_truth_R=new TH1F("h_UE_truth_R", "Truth Underlyding eveent energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
+	h_whole_truth_ER=new TH1F("h_whole_truth_ER", "Truth energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
+	h_jet_truth_ER=new TH1F("h_jet_truth_ER", "Truth jet energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
+	h_UE_truth_ER=new TH1F("h_UE_truth_ER", "Truth Underlyding eveent energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
+	h_whole_truth_R=new TH1F("h_whole_truth_R", "Truth particle deposition relative to leading jet; #Delta R; N", 100, -0.5, 4.0); 	
+	h_jet_truth_R=new TH1F("h_jet_truth_R", "Truth jet particle deposition relative to leading jet; #Delta R; N", 100, -0.5, 4.0); 	
+	h_UE_truth_R=new TH1F("h_UE_truth_R", "Truth Underlyding event particle deposition relative to leading jet; #Delta R; N", 100, -0.5, 4.0); 	
+	h_whole_truth_eta_E=new TH1F("h_whole_truth_eta_E", "Truth energy deposition relative to leading jet; #Delta eta; E [GeV]", 100, -0.5, 4.0); 	
+	h_jet_truth_eta_E=new TH1F("h_jet_truth_eta_E", "Truth jet energy deposition relative to leading jet; #Delta eta; E [GeV]", 100, -0.5, 4.0); 	
+	h_UE_truth_eta_E=new TH1F("h_UE_truth_eta_E", "Truth Underlyding eveent energy deposition relative to leading jet; #Delta eta; E [GeV]", 100, -0.5, 4.0); 	
+	h_whole_truth_eta=new TH1F("h_whole_truth_eta", "Truth particle deposition relative to leading jet; #Delta eta; N", 100, -0.5, 4.0); 	
+	h_jet_truth_eta=new TH1F("h_jet_truth_eta", "Truth jet particle deposition relative to leading jet; #Delta eta; N", 100, -0.5, 4.0); 	
+	h_UE_truth_eta=new TH1F("h_UE_truth_eta", "Truth Underlyding event particle deposition relative to leading jet; #Delta eta; N", 100, -0.5, 4.0); 	
+	h_whole_truth_phi_E=new TH1F("h_whole_truth_phi_E", "Truth energy deposition relative to leading jet; #Delta phi; E [GeV]", 100, -0.5, 4.0); 	
+	h_jet_truth_phi_E=new TH1F("h_jet_truth_phi_E", "Truth jet energy deposition relative to leading jet; #Delta phi; E [GeV]", 100, -0.5, 4.0); 	
+	h_UE_truth_phi_E=new TH1F("h_UE_truth_phi_E", "Truth Underlyding eveent energy deposition relative to leading jet; #Delta R; E [GeV]", 100, -0.5, 4.0); 	
+	h_whole_truth_phi=new TH1F("h_whole_truth_phi", "Truth particle deposition relative to leading jet; #Delta phi; N", 100, -0.5, 4.0); 	
+	h_jet_truth_phi=new TH1F("h_jet_truth_phi", "Truth jet particle deposition relative to leading jet; #Delta phi; N", 100, -0.5, 4.0); 	
+	h_UE_truth_phi=new TH1F("h_UE_truth_phi", "Truth Underlyding event particle deposition relative to leading jet; #Delta phi; N", 100, -0.5, 4.0); 	
 	MinpTComp=0.01; //10 MeV cut on tower/components
 	for(int ci=0; ci < (int) Et_miss_hists.size(); ci++){
 		std::string Calo_name;
@@ -774,7 +790,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 	}
 	catch(std::exception& e){ std::cout<<"Did not find a jet container object, will attempt to reconstruct the jets" <<std::endl;}
-//	if(jets==NULL || jets->size() == 0 ) jets=getJets("Tower", radius, topNode); //if needed will go back to this
+	//if(jets==NULL || jets->size() == 0 ) jets=getJets("Tower", radius, topNode); //if needed will go back to this
 	if(!jets){
 		std::cout<<"Didn't find any jets, skipping event" <<std::endl;
 		return Fun4AllReturnCodes::EVENT_OK;
@@ -934,7 +950,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		ohcal_cl = c[2];
 		cl = c[3];	
 	}
-//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	
 	total_energy=emcal_energy+ihcal_energy+ohcal_energy;
 	ohcal_rat=ohcal_energy/(float)total_energy; //take the ratio at the whole calo as that is the region of interest
@@ -946,11 +962,11 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 	ohcal_occup->Fill(ohcal_occupancy);
 	ohcal_rat_h->Fill(ohcal_rat);
 	
-//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 
 	std::vector<float> ohcal_jet_rat, emcal_jet_rat, jet_ie;
 	std::vector<std::array<float, 3>> ohcal_jet_rat_and_ie=getJetEnergyRatios(jets, ohcal_energy/(float)ihcal_energy, topNode);
-//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	
 	for(auto h:ohcal_jet_rat_and_ie){
 		ohcal_jet_rat.push_back(h[0]);
@@ -973,9 +989,10 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 		}
 		catch(std::exception& e){std::cout<<"Could not find the trigger object" <<std::endl;}
 	}
-//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;	
+	triggered_event=true;
+	//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;	
 	isDijet=eventCut->passesTheCut(jets, ohcal_jet_rat, emcal_jet_rat, ohcal_rat, vertex, jet_ie);	
-//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+	//	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 	if(!isDijet || !triggered_event){ //stores some data about the bad cuts to look for any arrising structure
 		//std::cout<<eventCut->getIsDijet()<<std::endl;
 		if(isRealData && eventCut->getIsDijet() == true && eventCut->getLeadPt() > 10 )eventCut->dumpStatus();
@@ -1013,7 +1030,7 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			i1++;
 		}
 		
-	if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
+		if(n_with_jets < 2 ) std::cout<<__LINE__<<std::endl;
 		eventCut->getDijets(jets, &m_dijets);
 		
 		m_vertex=vertex;
@@ -1067,7 +1084,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 			else if(dphi < -PI) dphi=-2*PI-dphi;
 			float deta = l.first.at(0) - m_etalead;
 			h_jet_truth->Fill(dphi, deta, l.second);
-			//h_jet_truth_R->Fill(getR(l.first.at(0), l.first.at(1), m_etalead, m_philead), l.second);
+			h_whole_truth_ER->Fill(getR(l.first.at(0), l.first.at(1), m_etalead, m_philead), l.second);
+			h_whole_truth_R->Fill(getR(l.first.at(0), l.first.at(1), m_etalead, m_philead));
+			h_whole_truth_phi->Fill(dphi);
+			h_whole_truth_eta->Fill(deta);
+			h_whole_truth_phi_E->Fill(dphi, l.second);
+			h_whole_truth_eta_E->Fill(deta, l.second);
 		}
 		
 		for(auto j:*jets){
@@ -1126,8 +1148,13 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 							float dphi_p = particle_phi - m_philead;
 							if(dphi_p > PI ) dphi_p=2*PI - dphi_p;
 							else if(dphi_p < -PI) dphi_p=-2*PI-dphi_p;
-							//float deta_p = particle_eta - m_etalead;
-							h_jet_truth_R->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead), E);
+							float deta_p = particle_eta - m_etalead;
+							h_jet_truth_ER->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead), E);
+							h_jet_truth_R->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead));
+							h_jet_truth_phi->Fill(dphi);
+							h_jet_truth_eta->Fill(deta);
+							h_jet_truth_phi_E->Fill(dphi, E);
+							h_jet_truth_eta_E->Fill(deta, E);
 						}
 					}
 				}
@@ -1140,7 +1167,12 @@ int LargeRLENC::process_event(PHCompositeNode* topNode)
 				float E=particle->get_e();
 				float particle_phi=std::atan2(particle->get_py(), particle->get_px());
 				float particle_eta=std::atanh(particle->get_pz()/particle->get_e());
-				h_UE_truth_R->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead), E);
+				h_UE_truth_ER->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead), E);
+				h_UE_truth_R->Fill(getR(particle_eta, particle_phi, m_etalead, m_philead));
+				h_UE_truth_phi->Fill(dphi);
+				h_UE_truth_eta->Fill(deta);
+				h_UE_truth_phi_E->Fill(dphi, E);
+				h_UE_truth_eta_E->Fill(deta, E);
 			}
 
 		}
@@ -1670,8 +1702,24 @@ void LargeRLENC::Print(const std::string &what) const
 	h_pt_truth->Write();
 	h_jet_truth->Write();
 	h_jet_truth_lead->Write();
+	h_whole_truth_ER->Write();
+	h_jet_truth_ER->Write();
+	h_UE_truth_ER->Write();
+	h_whole_truth_R->Write();
 	h_jet_truth_R->Write();
 	h_UE_truth_R->Write();
+	h_whole_truth_phi_E->Write();
+	h_jet_truth_phi_E->Write();
+	h_UE_truth_phi_E->Write();
+	h_whole_truth_phi->Write();
+	h_jet_truth_phi->Write();
+	h_UE_truth_phi->Write();
+	h_whole_truth_eta_E->Write();
+	h_jet_truth_eta_E->Write();
+	h_UE_truth_eta_E->Write();
+	h_whole_truth_eta->Write();
+	h_jet_truth_eta->Write();
+	h_UE_truth_eta->Write();
 	h_eta_reco->Write(); 
 	h_phi_reco->Write();
 	h_E_reco->Write();
