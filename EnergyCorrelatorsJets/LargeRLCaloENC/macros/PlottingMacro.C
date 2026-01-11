@@ -25,7 +25,7 @@
 #include <math.h>
 #include <map>
 #include <sstream>
-std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ihcal", TColor::GetColor(252,244,52)}, {"ohcal", TColor::GetColor(61,165,66)}};
+//std::map<std::string, int> color_map {{"truth", TColor::GetColor(252,106,223)}, {"reco", TColor::GetColor(91,206,250)}, {"emcal", TColor::GetColor(156,89,209)}, {"ihcal", TColor::GetColor(252,244,52)}, {"ohcal", TColor::GetColor(61,165,66)}};
 /*void CompareNorms(TFile* f_Q, TFile* f_Np, TFile* F_no, std::string gen="Pythia8")
 {
 	SetsPhenixStyle();

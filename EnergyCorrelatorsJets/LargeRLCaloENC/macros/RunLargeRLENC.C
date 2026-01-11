@@ -208,12 +208,12 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 //	sc->Print();
 
 	rlenc->Print();
-	TFile* f1=new TFile(Form("run_%d_%d_nevt.root", run_number, segment), "RECREATE");
+/*	TFile* f1=new TFile(Form("run_%d_%d_nevt.root", run_number, segment), "RECREATE");
 	f1->cd();
 	TH1F* h=new TH1F("n_evts", "Number of events analyzed", 10000, -0.5, 10000);
 	h->Fill(d->n_evts);
 	h->Write();
-	f1->Close();	
-return 0;
+	f1->Close();	*/
+	return 0;
 }
 #endif		
