@@ -272,6 +272,14 @@ class BuildMetaTowers
 			return;
 		}
 		//just returns configs
+		void setCaloRadius ( CALO calo) 
+		{
+			//allows for setting of radius based on calo avg radius rather than by number
+			if (calo == CALO::EMCAL) this->R = R_EMCAL_MID;
+			if (calo == CALO::IHCAL) this->R = R_IHCAL_MID;
+			if (calo == CALO::OHCAL) this->R = R_OHCAL_MID;
+			return;
+		}
 		void setRadius	( float r = 1.245 ) { this->R = r ; } ;
 	       	float getRadius	( ) { return this->R; };
 		
@@ -280,6 +288,9 @@ class BuildMetaTowers
 		std::string 	getInput() { return this->T; }; 
 		
 		//return the final object
+		std::array<TowerArrayEntry*, 1536>* getEMReTowers() { return this->EMReTowers; };
+		std::array<TowerArrayEntry*, 1536>* getIHCaTowers() { return this->IHCaTowers; };
+		std::array<TowerArrayEntry*, 1536>* getOHCaTowers() { return this->OHCaTowers; };
 		std::array<TowerArrayEntry*, 1536>* getMetaTowers() { return this->MetaTowers; };
 
 	private:

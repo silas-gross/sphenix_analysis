@@ -51,29 +51,67 @@ class PerCaloQAPlots
 						std::format("New #eta of center {}; #eta; N_{hits}", calo).c_str(),
 						100, -4, 4
 					);
-
+			etaDeltaEtabin	= new TH2F(
+						std::format("h_{}_eta_deta", calo).c_str(),
+						std::format("{} bin shift; #eta_{phyiscal}; #Delta #eta_{bin}; N_{evts}", calo).c_str(),
+					       	24, -1.1, 1.1,
+						100, -2, 2,
+					);
+			zVTXdeltaeta	= new TH2F(
+						std::format("h_{}_z_deta", calo).c_str(),
+						std::format("Event average #Delta #eta in {}; z_{vtx}; < #eta >; N_{evts}", calo).c_str(),
+						120, -60.5, 59.5,
+						100, -4, 4
+					);
 
 		}
 };
 class EtaShiftQA
 {
 	public:
-		EtaShiftQA();
+		EtaShiftQA()
+		
 		~EtaShiftQA(){};
+		double caluclatedAvgEta(std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* calovals)
+		{
+			double avgeta=0.;
+			int n=0;
+			for(int i = 0; i<(int)calovals->size(); i++)
+			{
+				if(calovals->at(i)->E <= 0.) continue; //don't bother with empty bins, we want to not include dead areas in a systemaic analysis
+				avgeta+=calovals->at(i)->eta;
+				n++;
+			}
+			avgeta = avgeta / (double)n;
+			return avgeta;
+		}
 
 	private:
-		TH1F* etaShiftEMCAL;
-		TH1F* etaShiftOHCAL;
-		TH1F* etaShiftIHCAL;
-		TH1F* etaShiftEMCALRMeta;
-		TH1F* etaShiftOHCALRMeta;
-		TH1F* etaShiftIHCALRMeta;
+		//over all z 
+		PerCaloQAPlots* EMCALQA;
+		PerCaloQAPlots* IHCALQA;
+		PerCaloQAPlots* OHCALQA;
+		//using EMCAL radius, IHCAL radius and OHCAL radius respectively
+		PerCaloQAPlots* MetaEQA;
+		PerCaloQAPlots* MetaIQA;
+		PerCaloQAPlots* MetaOQA;
+
 		TH1F* calculatedJetpt;
 		TH1F* calculatedShiftedJetpt;
-		TH1F* zVTX;
-		TH2F* etaZdeta;
-		TH2F* etabineta;
+		
+		TH1F* hzVTX;
+		
+		//restricted z ranges
+		std::array<PerCaloQAPlots*, 6>* EMCAL_Z_QA;
+		std::array<PerCaloQAPlots*, 6>* IHCAL_Z_QA;
+		std::array<PerCaloQAPlots*, 6>* OHCAL_Z_QA;
+		std::array<PerCaloQAPlots*, 6>* MetaE_Z_QA;
+		std::array<PerCaloQAPlots*, 6>* MetaI_Z_QA;
+		std::array<PerCaloQAPlots*, 6>* MetaO_Z_QA;
 
+		BuildMetaTowers* emMetaTowerBuilder;
+		BuildMetaTowers* ihMetaTowerBuilder;
+		BuildMetaTowers* ohMetaTowerBuilder;
 
 };
 #endif
