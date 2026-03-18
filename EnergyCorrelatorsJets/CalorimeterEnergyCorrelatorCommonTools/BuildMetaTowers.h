@@ -29,7 +29,7 @@
 
 //Vandy classes
 #include <vandyclasses/Tower.h>
-#include <vadyclasses/EventInfo.h>
+#include <vandyclasses/EventInfo.h>
 
 //Calo classes 
 #include <calobase/TowerInfoContainer.h>
