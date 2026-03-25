@@ -6,8 +6,9 @@ OPTFLAGS  = -O2
 PIC       = -fPIC
 
 # === ONNX Runtime ===
+ORT_PREFIX ?= /home/jingyu/Downloads/onnxruntime-linux-x64-1.19.2
 # ORT_PREFIX ?= /sphenix/u/jzhang1/opt/onnxruntime
-ORT_PREFIX ?= $(OFFLINE_MAIN)
+# ORT_PREFIX ?= $(OFFLINE_MAIN)
 ORT_INC     = $(ORT_PREFIX)/include
 ORT_LIBDIR  = $(ORT_PREFIX)/lib
 

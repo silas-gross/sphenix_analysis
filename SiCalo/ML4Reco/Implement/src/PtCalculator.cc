@@ -4,10 +4,55 @@
 #include <limits>
 #include <array>
 #include <memory>
+#include <iostream>
 
 #include <onnxruntime_cxx_api.h>   // ONNX Runtime C++ API
 #include <fstream>
 #include <nlohmann/json.hpp>       // Choose any json library (or the one you already have)
+
+namespace {
+
+// Convert 7 raw inputs -> 3 engineered features:
+// raw order (as in PtCalculator.h comment):
+//   [0] R34, [1] Z34, [2] R56, [3] Z56, [4] Rcalo, [5] Zcalo, [6] E
+static std::vector<float> MLEprojRaw7_to_Feature3(const std::vector<float>& raw7)
+{
+    constexpr double eps = 1e-12;
+
+    const double R0 = raw7.at(0), Z0 = raw7.at(1);
+    const double R1 = raw7.at(2), Z1 = raw7.at(3);
+    const double R2 = raw7.at(4), Z2 = raw7.at(5);
+    const double E  = raw7.at(6);
+
+    // direction eta from endpoint (0 -> 2) in RZ
+    const double dR = (R2 - R0);
+    const double dZ = (Z2 - Z0);
+    const double vT = std::fabs(dR);              // RZ 里把 transverse 当作 |dR|
+    const double eta_dir = std::asinh(dZ / (vT + eps));  // 对应 data.py: asinh(vz/(vT+eps))
+
+    // kink angle between segments (0->1) and (1->2) in RZ
+    const double v01x = (R1 - R0), v01z = (Z1 - Z0);
+    const double v12x = (R2 - R1), v12z = (Z2 - Z1);
+
+    const double n01 = std::sqrt(v01x*v01x + v01z*v01z);
+    const double n12 = std::sqrt(v12x*v12x + v12z*v12z);
+    const double denom = (n01 * n12) + eps;
+
+    double cos_kink = (v01x*v12x + v01z*v12z) / denom;
+    if (cos_kink > 1.0) cos_kink = 1.0;
+    if (cos_kink < -1.0) cos_kink = -1.0;
+    const double kink = std::acos(cos_kink);
+
+    // logE
+    const double logE = std::log(E + 1e-6);       // 对应 data.py: log(E+1e-6)
+
+    return { static_cast<float>(eta_dir),
+             static_cast<float>(logE),
+             static_cast<float>(kink) };
+}
+
+} // anonymous namespace
+
 
 namespace SiCaloPt {
 
@@ -18,43 +63,80 @@ void PtCalculator::setConfig(const PtCalculatorConfig& cfg) {
     m_cfg = cfg;
 }
 
+float PtCalculator::ComputeResidualBasePt(float proxy,
+                                          float eta,
+                                          const ResidualBaseParam& param)
+{
+    const float ceta = param.p0 + param.p1*eta + param.p2*eta*eta;
+    return ceta * std::pow(proxy, param.power);
+}
+
+SiCaloPt::ResidualBaseParam PtCalculator::GetDefaultMLEMDBaseParam(int scenario)
+{
+    switch (scenario)
+    {
+        case -10: return {0.199854f,  0.00971966f, -0.0177071f,  1.0f};
+        case -11: return {0.198211f,  0.013064f,   -0.009812f,   1.0f};
+        case -12: return {0.197232f,  0.014244f,   -0.0188948f,  1.0f};
+        case  10: return {0.203717f,  -0.000515f,  -0.00131f,    1.0f};
+        case  11: return {0.197297f,  0.01297f,    -0.00979f,    1.0f};
+        case  12: return {0.200697f,  -0.0040371f, -0.000426f,   1.0f};
+        default:  return {0.f, 0.f, 0.f, 1.f};
+    }
+}
+
 bool PtCalculator::init(std::string* err)
 {
     // EMD ML Model loading
-    if (m_cfg.mlEMD_model_path) 
+    for (const auto& kv : m_cfg.mlEMD_model_path) 
     {
+        const int scenario = kv.first;
+        const std::string& model_path = kv.second;
+
         std::string err_string;
-        auto fn = MakeOnnxInfer(*m_cfg.mlEMD_model_path, &err_string);
+        auto fn = MakeOnnxInfer(model_path, &err_string);
         if (!fn) 
         { 
             if (err) *err = "ONNX load mlEMD failed: " + err_string; 
             return false; 
         }
-        setMLEMDInfer(std::move(fn));
+        setMLEMDInfer(scenario, std::move(fn));
         // scaler (optional)
-        if (m_cfg.mlEMD_scaler_json) 
+        auto it_scaler = m_cfg.mlEMD_scaler_json.find(scenario);
+        if (it_scaler != m_cfg.mlEMD_scaler_json.end()) 
         {
             std::vector<float> mean, scale;
-            if (!LoadScalerJson(*m_cfg.mlEMD_scaler_json, mean, scale, &err_string)) 
+            if (!LoadScalerJson(it_scaler->second, mean, scale, &err_string)) 
             {
                 if (err) *err = "Load mlEMD scaler failed: " + err_string; 
                 return false;
             }
-            setMLEMDStandardizer(std::move(mean), std::move(scale));
+            setMLEMDStandardizer(scenario, std::move(mean), std::move(scale));
+        }
+
+        auto it_base = m_cfg.mlEMD_base_param.find(scenario);
+        if (it_base != m_cfg.mlEMD_base_param.end())
+        {
+            setMLEMDBaseParam(scenario, it_base->second);
+        }
+        else
+        {
+            setMLEMDBaseParam(scenario, GetDefaultMLEMDBaseParam(scenario));
         }
     }
 
-    // Eproj ML model loading
+    // Eproj ML Model loading
     if (m_cfg.mlEproj_model_path) 
     {
         std::string err_string;
         auto fn = MakeOnnxInfer(*m_cfg.mlEproj_model_path, &err_string);
-        if (!fn)
+        if (!fn) 
         { 
             if (err) *err = "ONNX load mlEproj failed: " + err_string; 
             return false; 
         }
         setMLEprojInfer(std::move(fn));
+        // scaler (optional)
         if (m_cfg.mlEproj_scaler_json) 
         {
             std::vector<float> mean, scale;
@@ -67,7 +149,7 @@ bool PtCalculator::init(std::string* err)
         }
     }
 
-    // Combined Gate ML model loading
+    // Combined Gate ML Model loading
     if (m_cfg.mlCombined_model_path) 
     {
         std::string err_string;
@@ -127,16 +209,62 @@ PtResult PtCalculator::ComputeEMD(const InputEMD& in) const
         return PtResult{.pt_reco = NAN, .ok = false, .err = "EMD_Angle is zero"};
     }
 
-    // whethear considering the eta dependence on EMD compute
+    int scenario = getScenario(in.EMD_Angle);
+    if (scenario == -999)
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "Invalid scenario"};
+    }
+
+    const float x_eta = in.EMD_Eta;
+
     if (consider_eta_dependence_on_EMDcompute)
     {
-        float x_eta = in.EMD_Eta;
-        m_par_Ceta = 0.198211 + (0.013064*x_eta*x_eta) + (-0.009812*x_eta*x_eta*x_eta*x_eta); // Function to calculate the correct factor of eta
-        m_par_Power = -1.0;
-    }  
+        switch (scenario)
+        {
+            case -10:
+                // negative charge + projected cluster
+                m_par_Ceta = 0.199854 + (0.00971966*x_eta*x_eta) + (-0.0177071*x_eta*x_eta*x_eta*x_eta);
+                m_par_Power = -1.0;
+                break;
+
+            case -11:
+                // negative charge + inner face
+                m_par_Ceta = 0.198211 + (0.013064*x_eta*x_eta) + (-0.009812*x_eta*x_eta*x_eta*x_eta);
+                m_par_Power = -1.0;
+                break;
+
+            case -12:
+                // negative charge + detail
+                m_par_Ceta = 0.197232 + (0.014244*x_eta*x_eta) + (-0.0188948*x_eta*x_eta*x_eta*x_eta);
+                m_par_Power = -1.0;
+                break;
+
+            case 10:
+                // positive charge + projected cluster
+                m_par_Ceta = 0.203717 + (-0.000515*x_eta*x_eta) + (-0.00131*x_eta*x_eta*x_eta*x_eta);
+                m_par_Power = -1.0;
+                break;
+
+            case 11:
+                // positive charge + inner face
+                m_par_Ceta = 0.197297 + (0.01297*x_eta*x_eta) + (-0.00979*x_eta*x_eta*x_eta*x_eta);
+                m_par_Power = -1.0;
+                break;
+
+            case 12:
+                // positive charge + detail
+                m_par_Ceta = 0.200697 + (-0.0040371*x_eta*x_eta) + (-0.000426*x_eta*x_eta*x_eta*x_eta);
+                m_par_Power = -1.0;
+                break;
+
+            default:
+                return PtResult{.pt_reco = NAN, .ok = false, .err = "Unknown scenario"};
+        }
+    }
     const float pt = m_par_Ceta * std::pow(std::fabs(in.EMD_Angle), m_par_Power);
     return PtResult{.pt_reco = pt, .ok = true, .err = ""};
 }
+
 
 PtResult PtCalculator::ComputeEproj(const InputEproj& in) const 
 {
@@ -154,20 +282,57 @@ PtResult PtCalculator::ComputeEproj(const InputEproj& in) const
 
 PtResult PtCalculator::ComputeMLEMD(const InputMLEMD& in) const 
 {
-    if (!m_mlEMD_infer) 
+    std::vector<float> x = in.features;
+
+    if (x.size() != 2)
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEMD expects 2 features: {dphi, eta}"};
+    }
+
+    const float dphi = x[0];
+    const float eta  = x[1];
+    if (!std::isfinite(dphi) || dphi == 0.f)
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEMD dphi is invalid or zero"};
+    }
+
+    const int scenario = getScenario(dphi);
+    if (scenario == -999)
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEMD invalid scenario"};
+    }
+
+    auto it_infer = m_mlEMD_infer.find(scenario);
+    if (it_infer == m_mlEMD_infer.end()) 
     {
         return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEMD infer function not set"};
     }
-    std::vector<float> x = in.features;
-    if (!m_mlEMD_mean.empty() && !m_mlEMD_scale.empty()) 
+
+    auto it_base = m_mlEMD_base_param.find(scenario);
+    if (it_base == m_mlEMD_base_param.end())
     {
-        if (m_mlEMD_mean.size() != x.size() || m_mlEMD_scale.size() != x.size()) 
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEMD base param not set"};
+    }
+
+    // convert external input dphi -> internal model input 1/abs(dphi)
+    const float proxy = 1.f / std::fabs(dphi);
+    x[0] = proxy;
+
+    auto it_mean = m_mlEMD_mean.find(scenario);
+    auto it_scale = m_mlEMD_scale.find(scenario);
+    if (it_mean != m_mlEMD_mean.end() && it_scale != m_mlEMD_scale.end()) 
+    {
+        if (it_mean->second.size() != x.size() || it_scale->second.size() != x.size()) 
         {
             return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEMD standardizer dim mismatch"};
         }
-        applyStandardize(x, m_mlEMD_mean, m_mlEMD_scale);
+        applyStandardize(x, it_mean->second, it_scale->second);
     }
-    const float pt = m_mlEMD_infer(x);
+
+    const float residual = it_infer->second(x);
+    const float pt_base = ComputeResidualBasePt(proxy, eta, it_base->second);
+    const float pt = pt_base * (1.f + residual);
+
     return PtResult{.pt_reco = pt, .ok = true, .err = ""};
 }
 
@@ -177,7 +342,59 @@ PtResult PtCalculator::ComputeMLEproj(const InputMLEproj& in) const
     {
         return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEproj infer function not set"};
     }
+
     std::vector<float> x = in.features;
+
+    // --- compute pt0 (baseline) ---
+    // training uses: pt0 = E * sin(theta),  pt_pred = pt0 * exp(delta)
+    // If we only have R,Z, approximate direction in RZ plane:
+    //   vT = |dR|, vmag = sqrt(dR^2 + dZ^2), sin(theta) ~ vT/vmag
+    double pt0 = NAN;
+
+    if (x.size() == 7)
+    {
+        const double R0 = x[0], Z0 = x[1];
+        const double R2 = x[4], Z2 = x[5];
+        const double E  = x[6];
+
+        const double dR = (R2 - R0);
+        const double dZ = (Z2 - Z0);
+
+        const double vT   = std::fabs(dR);
+        const double vmag = std::sqrt(dR*dR + dZ*dZ) + 1e-12;
+        const double uT   = vT / vmag;   // ~ sin(theta)
+
+        pt0 = E * uT;
+
+        // 7 raw -> 3 engineered
+        x = MLEprojRaw7_to_Feature3(x);
+    }
+    else if (x.size() == 3)
+    {
+        // x = [eta_dir, logE, kink]
+        const double eta_dir = x[0];
+        const double logE    = x[1];
+
+        // E = exp(logE) - 1e-6  (inverse of log(E+1e-6))
+        const double E = std::exp(logE) - 1e-6;
+
+        // sin(theta) = 1/cosh(eta)  (since eta = asinh(vz/vT), equivalent to usual direction eta)
+        const double uT = 1.0 / std::cosh(eta_dir);
+
+        pt0 = E * uT;
+    }
+    else
+    {
+        return PtResult{.pt_reco = NAN, .ok = false,
+                        .err = "MLEproj expects 7 raw inputs or 3 engineered features"};
+    }
+
+    if (!std::isfinite(pt0) || pt0 <= 0.0)
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEproj pt0 invalid"};
+    }
+
+    // --- standardize x (must match dim=3 after conversion) ---
     if (!m_mlEproj_mean.empty() && !m_mlEproj_scale.empty()) 
     {
         if (m_mlEproj_mean.size() != x.size() || m_mlEproj_scale.size() != x.size()) 
@@ -186,8 +403,24 @@ PtResult PtCalculator::ComputeMLEproj(const InputMLEproj& in) const
         }
         applyStandardize(x, m_mlEproj_mean, m_mlEproj_scale);
     }
-    const float pt = m_mlEproj_infer(x);
-    return PtResult{.pt_reco = pt, .ok = true, .err = ""};
+
+    // --- infer delta, then pt = pt0 * exp(delta) ---
+    const float delta_f = m_mlEproj_infer(x);
+    const double delta  = static_cast<double>(delta_f);
+
+    if (!std::isfinite(delta))
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEproj delta invalid"};
+    }
+
+    const double pt = pt0 * std::exp(delta);
+
+    if (!std::isfinite(pt) || pt <= 0.0)
+    {
+        return PtResult{.pt_reco = NAN, .ok = false, .err = "MLEproj pt invalid"};
+    }
+
+    return PtResult{.pt_reco = static_cast<float>(pt), .ok = true, .err = ""};
 }
 
 PtResult PtCalculator::ComputeMLCombined(const InputMLCombined& in) const 
@@ -209,14 +442,14 @@ PtResult PtCalculator::ComputeMLCombined(const InputMLCombined& in) const
     return PtResult{.pt_reco = pt, .ok = true, .err = ""};
 }
 
-void PtCalculator::setMLEMDInfer(InferFn fn) { m_mlEMD_infer = std::move(fn); }
+void PtCalculator::setMLEMDInfer(int scenario, InferFn fn) { m_mlEMD_infer[scenario] = std::move(fn); }
 void PtCalculator::setMLEprojInfer(InferFn fn) { m_mlEproj_infer = std::move(fn); }
 void PtCalculator::setMLCombinedInfer(InferFn fn) { m_mlCombined_infer = std::move(fn); }
 
-void PtCalculator::setMLEMDStandardizer(std::vector<float> mean, std::vector<float> scale) 
+void PtCalculator::setMLEMDStandardizer(int scenario, std::vector<float> mean, std::vector<float> scale) 
 {
-    m_mlEMD_mean  = std::move(mean);
-    m_mlEMD_scale = std::move(scale);
+    m_mlEMD_mean[scenario]  = std::move(mean);
+    m_mlEMD_scale[scenario] = std::move(scale);
 }
 
 void PtCalculator::setMLEprojStandardizer(std::vector<float> mean, std::vector<float> scale) 
@@ -229,6 +462,11 @@ void PtCalculator::setMLCombinedStandardizer(std::vector<float> mean, std::vecto
 {
     m_mlCombined_mean  = std::move(mean);
     m_mlCombined_scale = std::move(scale);
+}
+
+void PtCalculator::setMLEMDBaseParam(int scenario, ResidualBaseParam param)
+{
+    m_mlEMD_base_param[scenario] = param;
 }
 
 void PtCalculator::applyStandardize(std::vector<float>& x,
