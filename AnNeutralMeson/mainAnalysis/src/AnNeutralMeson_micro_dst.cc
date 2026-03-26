@@ -14,6 +14,9 @@
 #include <uspin/SpinDBContentv1.h>
 #include <uspin/SpinDBOutput.h>
 
+#include <jetbase/JetContainer.h>
+#include <jetbase/Jet.h>
+
 #include <format>
 #include <fstream>
 #include <iomanip>
@@ -67,7 +70,7 @@ AnNeutralMeson_micro_dst::~AnNeutralMeson_micro_dst()
 
 int AnNeutralMeson_micro_dst::Init(PHCompositeNode *)
 {
-  // Book tree
+  // Book tree (used for nano analysis)
   if (store_tree)
   {
     outfile_tree = new TFile(outtreename.c_str(),
@@ -76,8 +79,8 @@ int AnNeutralMeson_micro_dst::Init(PHCompositeNode *)
       "tree_diphoton_compact",
       "Minimal diphoton info");
     output_tree->Branch(
-      "vertex_z", &vertex_z,
-      "vertex_z/F");
+      "diphoton_vertex_z", &diphoton_vertex_z,
+      "diphoton_vertex_z/F");
     output_tree->Branch(
       "diphoton_bunchnumber", &diphoton_bunchnumber,
       "diphoton_bunchnumber/I");
@@ -96,444 +99,503 @@ int AnNeutralMeson_micro_dst::Init(PHCompositeNode *)
     output_tree->Branch(
       "diphoton_xf", &diphoton_xf,
       "diphoton_xf/F");
-    output_tree->Branch(
-      "gamma1_eta", &gamma1_eta,
-      "gamma1_eta/F");
-    output_tree->Branch(
-      "gamma1_phi", &gamma1_phi,
-      "gamma1_phi/F");
-    output_tree->Branch(
-      "gamma1_E", &gamma1_E,
-      "gamma1_E/F");
-    output_tree->Branch(
-      "gamma2_eta", &gamma2_eta,
-      "gamma2_eta/F");
-    output_tree->Branch(
-      "gamma2_phi", &gamma2_phi,
-      "gamma2_phi/F");
-    output_tree->Branch(
-      "gamma2_E", &gamma2_E,
-      "gamma2_E/F");
   }
   
   // Book histograms
   outfile = new TFile(outfilename.c_str(),
                       "RECREATE");
 
-  // Event QA
-  h_multiplicity_efficiency = new TH1F(
-      "h_multiplicity_efficiency",
-      ";multiplicity; counts",
-      10, 0, 10);
-
-  h_multiplicity_emulator = new TH1F(
-      "h_multiplicity_emulator",
-      ";multiplicity; counts",
-      10, 0, 10);
-
-  h_matching_consistency = new TH1F(
-      "h_matching_consistency",
-      ";condition; counts",
-      4, 0, 4);
-
-  h_event_zvtx = new TH1F(
-      "h_event_zvtx",
-      ";vertex z [cm]; counts",
-      200, -200, 200);
-  
-  h_triggered_event_zvtx = new TH1F(
-      "h_triggered_event_zvtx",
-      ";vertex z [cm]; counts",
-      200, -200, 200);
-
-  h_triggered_event_photons = new TH1F(
-      "h_triggered_event_photons",
-      ";# photons; counts",
-      20, 0, 10);
-
-  h_analysis_event_zvtx = new TH1F(
-      "h_analysis_event_zvtx",
-      ";vertex z [cm]; counts",
-      200, -200, 200);
-  
-  // event trigger QA
-  h_trigger_live =
-      new TH1F(
-          "h_trigger_live",
-          "Trigger Live;;Counts", 32, -0.5, 32 - 0.5);
-  h_trigger_scaled = new TH1F(
-      "h_trigger_scaled",
-      "Trigger Scaled;;Counts", 32,
-      -0.5, 32 - 0.5);
-
-  for (const auto &[trigger_number,
-                    trigger_name] : trigger_names)
-  {
-    h_trigger_live->GetXaxis()->SetBinLabel(trigger_number + 1,
-                                            trigger_name.c_str());
-    h_trigger_scaled->GetXaxis()->SetBinLabel(trigger_number + 1,
-                                              trigger_name.c_str());
-  }
-
-  h_emulator_selection = new TH1I(
+  if (require_emulator_matching) {
+    h_emulator_selection = new TH1I(
       "h_emulator_selection",
       ";Trigger Tile Count; Count",
       10,0,10);
-
-  h_count_diphoton_nomatch = new TH1I(
-      "h_count_diphoton_nomatch",
-      ";>= 1 diphoton; Count",
-      1,0,1);
-
+  }
   
-  // Single photon QA
-  h_photon_eta = new TH1F(
-      "h_photon_eta",
-      ";#eta [rad];counts",
-      200, -2.0, 2.0);
-  h_photon_phi = new TH1F(
-      "h_photon_phi",
-      ";#phi [rad];counts",
-      128, -M_PI, M_PI);
-  h_photon_pt = new TH1F(
-      "h_photon_pt",
-      ";p_{T} [GeV];counts",
-      200, 0, 20);
-  h_photon_zvtx = new TH1F(
-      "h_photon_zvtx",
-      ";z vertex [cm];counts",
-      200, -200, 200);
-  
-  h_photon_eta_phi = new TH2F(
-      "h_photon_eta_phi",
-      ";#eta [rad];#phi [rad]",
-      200, -2.0, 2.0, 128, -M_PI, M_PI);
-  h_photon_eta_pt = new TH2F(
-      "h_photon_eta_pt",
-      ";#eta [rad];p_{T} [GeV]",
-      200, -2.0, 2.0, 200, 0, 20);
-  h_photon_eta_zvtx = new TH2F(
-      "h_photon_eta_zvtx",
-      ";#eta [rad];vertex z [cm]; counts",
-      200, -2, 2, 200, -200, 200);
-  h_photon_phi_pt = new TH2F(
-      "h_photon_phi_pt",
-      ";#phi [rad];p_{T} [GeV]; counts",
-      128, -M_PI, M_PI, 200, 0, 20);
-  h_photon_phi_zvtx = new TH2F(
-      "h_photon_phi_zvtx",
-      ";#phi [rad];vertex z [cm]; counts",
-      128, -M_PI, M_PI, 200, -200, 200);
-  h_photon_pt_zvtx = new TH2F(
-      "h_photon_pt_zvtx",
-      ";p_{T} [GeV];vertex z [cm]; counts",
-      200, 0, 20, 200, -200, 200);
-
-  h_selected_photon_eta = new TH1F(
-      "h_selected_photon_eta",
-      ";#eta [rad];counts",
-      200, -2.0, 2.0);
-  h_selected_photon_phi = new TH1F(
-      "h_selected_photon_phi",
-      ";#phi [rad];counts",
-      128, -M_PI, M_PI);
-  h_selected_photon_pt = new TH1F(
-      "h_selected_photon_pt",
-      ";p_{T} [GeV];counts",
-      200, 0, 20);
-  h_selected_photon_zvtx = new TH1F(
-      "h_selected_photon_zvtx",
-      ";z vertex [cm];counts",
-      200, -200, 200);
-  
-  h_selected_photon_eta_phi = new TH2F(
-      "h_selected_photon_eta_phi",
-      ";#eta [rad];#phi [rad]",
-      200, -2.0, 2.0, 128, -M_PI, M_PI);
-  h_selected_photon_eta_pt = new TH2F(
-      "h_selected_photon_eta_pt",
-      ";#eta [rad];p_{T} [GeV]",
-      200, -2.0, 2.0, 200, 0, 20);
-  h_selected_photon_eta_zvtx = new TH2F(
-      "h_selected_photon_eta_zvtx",
-      ";#eta [rad];vertex z [cm]; counts",
-      200, -2, 2, 200, -200, 200);
-  h_selected_photon_phi_pt = new TH2F(
-      "h_selected_photon_phi_pt",
-      ";#phi [rad];p_{T} [GeV]; counts",
-      128, -M_PI, M_PI, 200, 0, 20);
-  h_selected_photon_phi_zvtx = new TH2F(
-      "h_selected_photon_phi_zvtx",
-      ";#phi [rad];vertex z [cm]; counts",
-      128, -M_PI, M_PI, 200, -200, 200);
-  h_selected_photon_pt_zvtx = new TH2F(
-      "h_selected_photon_pt_zvtx",
-      ";p_{T} [GeV];vertex z [cm]; counts",
-      200, 0, 20, 200, -200, 200);
-
-  // diphoton QA
-  h_pair_eta = new TH1F(
-      "h_pair_eta",
-      ";#eta [rad];counts",
-      200, -2.0, 2.0);
-  h_pair_phi = new TH1F(
-      "h_pair_phi",
-      ";#phi [rad];counts",
-      128, -M_PI, M_PI);
-  h_pair_pt = new TH1F(
-      "h_pair_pt",
-      ";p_{T} [GeV];counts",
-      200, 0, 20);
-  h_pair_zvtx = new TH1F(
-      "h_pair_zvtx",
-      ";z vertex [cm];counts",
-      200, -200, 200);
-  h_pair_DeltaR = new TH1F(
-      "h_pair_DeltaR",
-      ";#Delta R [rad];counts",
-      500, 0, 5);
-  h_pair_alpha = new TH1F(
-      "h_pair_alpha",
-      ";#alpha [rad];counts",
-      200, 0, 2);
-  h_pair_eta_phi = new TH2F(
-      "h_pair_eta_phi",
-      ";#eta [rad];#phi [rad]",
-      200, -2.0, 2.0, 128, -M_PI, M_PI);
-  h_pair_eta_pt = new TH2F(
-      "h_pair_eta_pt",
-      ";#eta [rad];p_{T} [GeV]",
-      200, -2.0, 2.0, 200, 0, 20);
-  h_pair_eta_zvtx = new TH2F(
-      "h_pair_eta_zvtx",
-      ";#eta [rad];vertex z [cm]; counts",
-      200, -2, 2, 200, -200, 200);
-  h_pair_phi_pt = new TH2F(
-      "h_pair_phi_pt",
-      ";#phi [rad];p_{T} [GeV]; counts",
-      128, -M_PI, M_PI, 200, 0, 20);
-  h_pair_phi_zvtx = new TH2F(
-      "h_pair_phi_zvtx",
-      ";#phi [rad];vertex z [cm]; counts",
-      128, -M_PI, M_PI, 200, -200, 200);
-  h_pair_pt_zvtx = new TH2F(
-      "h_pair_pt_zvtx",
-      ";p_{T} [GeV];vertex z [cm]; counts",
-      200, 0, 20, 200, -200, 200);
-
-  // diphoton eta bin by bin
-  h_pair_pi0_eta_pt_1 = new TH1F( // 1-2 GeV
-      "h_pair_pi0_eta_pt_1",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_2 = new TH1F( // 2-3 GeV
-      "h_pair_pi0_eta_pt_2",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_3 = new TH1F( // 3-4 GeV
-      "h_pair_pi0_eta_pt_3",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_4 = new TH1F( // 4-5 GeV
-      "h_pair_pi0_eta_pt_4",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_5 = new TH1F( // 5-6 GeV
-      "h_pair_pi0_eta_pt_5",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_6 = new TH1F( // 6-7 GeV
-      "h_pair_pi0_eta_pt_6",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_7 = new TH1F( // 7-8 GeV
-      "h_pair_pi0_eta_pt_7",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_8 = new TH1F( // 8-10 GeV
-      "h_pair_pi0_eta_pt_8",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_pi0_eta_pt_9 = new TH1F( // 10-20 GeV
-      "h_pair_pi0_eta_pt_9",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_1 = new TH1F( // 1-2 GeV
-      "h_pair_eta_eta_pt_1",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_2 = new TH1F( // 2-3 GeV
-      "h_pair_eta_eta_pt_2",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_3 = new TH1F( // 3-4 GeV
-      "h_pair_eta_eta_pt_3",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_4 = new TH1F( // 4-5 GeV
-      "h_pair_eta_eta_pt_4",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_5 = new TH1F( // 5-6 GeV
-      "h_pair_eta_eta_pt_5",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_6 = new TH1F( // 6-7 GeV
-      "h_pair_eta_eta_pt_6",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_7 = new TH1F( // 7-8 GeV
-      "h_pair_eta_eta_pt_7",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_8 = new TH1F( // 8-10 GeV
-      "h_pair_eta_eta_pt_8",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_pair_eta_eta_pt_9 = new TH1F( // 10-20 GeV
-      "h_pair_eta_eta_pt_9",
-      ";#eta [rad]; Counts / [20 mrad]",
-      200,-2.0,2.0);
-
-  h_efficiency_x_matching = new TH1I(
+  if (require_efficiency_matching && require_emulator_matching)
+  {
+    h_efficiency_x_matching = new TH1I(
       "h_efficiency_x_matching",
       ";case;Counts",
       4, 1, 4);
 
-  // xf distributions
+    for (int iPt = 0; iPt < nPtBins; iPt++) {
+      std::stringstream h_efficiency_x_matching_name;
+      h_efficiency_x_matching_name << "h_efficiency_x_matching_pt_" << iPt;
 
-  h_pair_pi0_xf_pt_1 = new TH1F( // 1-2 GeV
+      h_efficiency_x_matching_pt[iPt] = new TH1I(h_efficiency_x_matching_name.str().c_str(),
+                                                 ";case;Counts",
+                                                 4, 1, 4);
+    }
+  }
+  
+  if (store_qa)
+  {
+    // Event QA
+    h_multiplicity_efficiency = new TH1F(
+      "h_multiplicity_efficiency",
+      ";multiplicity; counts",
+      10, 0, 10);
+
+    h_multiplicity_emulator = new TH1F(
+      "h_multiplicity_emulator",
+      ";multiplicity; counts",
+      10, 0, 10);
+
+    h_event_zvtx = new TH1F(
+      "h_event_zvtx",
+      ";vertex z [cm]; counts",
+      200, -200, 200);
+  
+    h_triggered_event_zvtx = new TH1F(
+      "h_triggered_event_zvtx",
+      ";vertex z [cm]; counts",
+      200, -200, 200);
+
+    h_triggered_event_photons = new TH1F(
+      "h_triggered_event_photons",
+      ";# photons; counts",
+      20, 0, 10);
+
+    h_analysis_event_zvtx = new TH1F(
+      "h_analysis_event_zvtx",
+      ";vertex z [cm]; counts",
+      200, -200, 200);
+  
+    // event trigger QA
+    h_trigger_live =
+      new TH1F(
+          "h_trigger_live",
+          "Trigger Live;;Counts", 32, -0.5, 32 - 0.5);
+    h_trigger_scaled = new TH1F(
+      "h_trigger_scaled",
+      "Trigger Scaled;;Counts", 32,
+      -0.5, 32 - 0.5);
+
+    for (const auto &[trigger_number,
+                    trigger_name] : trigger_names)
+    {
+      h_trigger_live->GetXaxis()->SetBinLabel(trigger_number + 1,
+                                              trigger_name.c_str());
+      h_trigger_scaled->GetXaxis()->SetBinLabel(trigger_number + 1,
+                                                trigger_name.c_str());
+    }
+
+    h_count_diphoton_nomatch = new TH1I(
+      "h_count_diphoton_nomatch",
+      ";>= 1 diphoton; Count",
+      1,0,1);
+
+    // Event mixing QA
+    h_current_E = new TH1F(
+      "h_current_E",
+      ";E [GeV]; counts",
+      200, 0, 20);
+    h_current_eta = new TH1F(
+      "h_current_eta",
+      ";#eta [rad];counts",
+      200, -2.0, 2.0);
+    h_current_phi = new TH1F(
+      "h_current_phi",
+      ";#phi [rad];counts",
+      128, -M_PI, M_PI);
+    h_pool_E = new TH1F(
+      "h_pool_E",
+      ";E [GeV]; counts",
+      200, 0, 20);
+    h_pool_eta = new TH1F(
+      "h_pool_eta",
+      ";#eta [rad];counts",
+      200, -2.0, 2.0);
+    h_pool_phi = new TH1F(
+      "h_pool_phi",
+      ";#phi [rad];counts",
+      128, -M_PI, M_PI);
+
+    h_same_delta_eta = new TH1F(
+      "h_same_delta_eta",
+      ";#Delta #eta [rad];counts",
+      500, 0, 10);
+    h_same_delta_phi = new TH1F(
+      "h_same_delta_phi",
+      ";#Delta #phi [rad];counts",
+      500, 0, 10);
+    h_same_delta_R = new TH1F(
+      "h_same_delta_R",
+      ";#Delta R [rad];counts",
+      500, 0, 10);
+    h_same_alpha = new TH1F(
+      "h_same_alpha",
+      ";#alpha [rad];counts",
+      500, 0, 1);
+    h_mixed_delta_eta = new TH1F(
+      "h_mixed_delta_eta",
+      ";#Delta #eta [rad];counts",
+      500, 0, 10);
+    h_mixed_delta_phi = new TH1F(
+      "h_mixed_delta_phi",
+      ";#Delta #phi [rad];counts",
+      500, 0, 10);
+    h_mixed_delta_R = new TH1F(
+      "h_mixed_delta_R",
+      ";#Delta R [rad];counts",
+      500, 0, 10);
+    h_mixed_alpha = new TH1F(
+      "h_mixed_alpha",
+      ";#alpha [rad];counts",
+      500, 0, 1);
+
+    // Single photon QA
+    h_photon_eta = new TH1F(
+      "h_photon_eta",
+      ";#eta [rad];counts",
+      200, -2.0, 2.0);
+    h_photon_phi = new TH1F(
+      "h_photon_phi",
+      ";#phi [rad];counts",
+      128, -M_PI, M_PI);
+    h_photon_pt = new TH1F(
+      "h_photon_pt",
+      ";p_{T} [GeV];counts",
+      200, 0, 20);
+    h_photon_zvtx = new TH1F(
+      "h_photon_zvtx",
+      ";z vertex [cm];counts",
+      200, -200, 200);
+  
+    h_photon_eta_phi = new TH2F(
+      "h_photon_eta_phi",
+      ";#eta [rad];#phi [rad]",
+      200, -2.0, 2.0, 128, -M_PI, M_PI);
+    h_photon_eta_pt = new TH2F(
+      "h_photon_eta_pt",
+      ";#eta [rad];p_{T} [GeV]",
+      200, -2.0, 2.0, 200, 0, 20);
+    h_photon_eta_zvtx = new TH2F(
+      "h_photon_eta_zvtx",
+      ";#eta [rad];vertex z [cm]; counts",
+      200, -2, 2, 200, -200, 200);
+    h_photon_phi_pt = new TH2F(
+      "h_photon_phi_pt",
+      ";#phi [rad];p_{T} [GeV]; counts",
+      128, -M_PI, M_PI, 200, 0, 20);
+    h_photon_phi_zvtx = new TH2F(
+      "h_photon_phi_zvtx",
+      ";#phi [rad];vertex z [cm]; counts",
+      128, -M_PI, M_PI, 200, -200, 200);
+    h_photon_pt_zvtx = new TH2F(
+      "h_photon_pt_zvtx",
+      ";p_{T} [GeV];vertex z [cm]; counts",
+      200, 0, 20, 200, -200, 200);
+
+    h_selected_photon_eta = new TH1F(
+      "h_selected_photon_eta",
+      ";#eta [rad];counts",
+      200, -2.0, 2.0);
+    h_selected_photon_phi = new TH1F(
+      "h_selected_photon_phi",
+      ";#phi [rad];counts",
+      128, -M_PI, M_PI);
+    h_selected_photon_pt = new TH1F(
+      "h_selected_photon_pt",
+      ";p_{T} [GeV];counts",
+      200, 0, 20);
+    h_selected_photon_zvtx = new TH1F(
+      "h_selected_photon_zvtx",
+      ";z vertex [cm];counts",
+      200, -200, 200);
+  
+    h_selected_photon_eta_phi = new TH2F(
+      "h_selected_photon_eta_phi",
+      ";#eta [rad];#phi [rad]",
+      200, -2.0, 2.0, 128, -M_PI, M_PI);
+    h_selected_photon_eta_pt = new TH2F(
+      "h_selected_photon_eta_pt",
+      ";#eta [rad];p_{T} [GeV]",
+      200, -2.0, 2.0, 200, 0, 20);
+    h_selected_photon_eta_zvtx = new TH2F(
+      "h_selected_photon_eta_zvtx",
+      ";#eta [rad];vertex z [cm]; counts",
+      200, -2, 2, 200, -200, 200);
+    h_selected_photon_phi_pt = new TH2F(
+      "h_selected_photon_phi_pt",
+      ";#phi [rad];p_{T} [GeV]; counts",
+      128, -M_PI, M_PI, 200, 0, 20);
+    h_selected_photon_phi_zvtx = new TH2F(
+      "h_selected_photon_phi_zvtx",
+      ";#phi [rad];vertex z [cm]; counts",
+      128, -M_PI, M_PI, 200, -200, 200);
+    h_selected_photon_pt_zvtx = new TH2F(
+      "h_selected_photon_pt_zvtx",
+      ";p_{T} [GeV];vertex z [cm]; counts",
+      200, 0, 20, 200, -200, 200);
+
+    // diphoton QA
+    h_pair_eta = new TH1F(
+      "h_pair_eta",
+      ";#eta [rad];counts",
+      200, -2.0, 2.0);
+    h_pair_phi = new TH1F(
+      "h_pair_phi",
+      ";#phi [rad];counts",
+      128, -M_PI, M_PI);
+    h_pair_pt = new TH1F(
+      "h_pair_pt",
+      ";p_{T} [GeV];counts",
+      200, 0, 20);
+    h_pair_zvtx = new TH1F(
+      "h_pair_zvtx",
+      ";z vertex [cm];counts",
+      200, -200, 200);
+    h_pair_DeltaR = new TH1F(
+      "h_pair_DeltaR",
+      ";#Delta R [rad];counts",
+      500, 0, 5);
+    h_pair_alpha = new TH1F(
+      "h_pair_alpha",
+      ";#alpha [rad];counts",
+      200, 0, 2);
+    h_pair_alpha_pt = new TH2F(
+      "h_pair_alpha_pt",
+      ";#alpha; p_{T}; counts",
+      200, 0, 2, 200, 0, 20);
+    h_pair_eta_phi = new TH2F(
+      "h_pair_eta_phi",
+      ";#eta [rad];#phi [rad]",
+      200, -2.0, 2.0, 128, -M_PI, M_PI);
+    h_pair_eta_pt = new TH2F(
+      "h_pair_eta_pt",
+      ";#eta [rad];p_{T} [GeV]",
+      200, -2.0, 2.0, 200, 0, 20);
+    h_pair_eta_zvtx = new TH2F(
+      "h_pair_eta_zvtx",
+      ";#eta [rad];vertex z [cm]; counts",
+      200, -2, 2, 200, -200, 200);
+    h_pair_phi_pt = new TH2F(
+      "h_pair_phi_pt",
+      ";#phi [rad];p_{T} [GeV]; counts",
+      128, -M_PI, M_PI, 200, 0, 20);
+    h_pair_phi_zvtx = new TH2F(
+      "h_pair_phi_zvtx",
+      ";#phi [rad];vertex z [cm]; counts",
+      128, -M_PI, M_PI, 200, -200, 200);
+    h_pair_pt_zvtx = new TH2F(
+      "h_pair_pt_zvtx",
+      ";p_{T} [GeV];vertex z [cm]; counts",
+      200, 0, 20, 200, -200, 200);
+
+    // diphoton eta pT-bin by pT-bin
+    h_pair_pi0_eta_pt_1 = new TH1F( // 1-2 GeV
+      "h_pair_pi0_eta_pt_1",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_2 = new TH1F( // 2-3 GeV
+      "h_pair_pi0_eta_pt_2",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_3 = new TH1F( // 3-4 GeV
+      "h_pair_pi0_eta_pt_3",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_4 = new TH1F( // 4-5 GeV
+      "h_pair_pi0_eta_pt_4",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_5 = new TH1F( // 5-6 GeV
+      "h_pair_pi0_eta_pt_5",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_6 = new TH1F( // 6-7 GeV
+      "h_pair_pi0_eta_pt_6",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_7 = new TH1F( // 7-8 GeV
+      "h_pair_pi0_eta_pt_7",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_8 = new TH1F( // 8-10 GeV
+      "h_pair_pi0_eta_pt_8",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_pi0_eta_pt_9 = new TH1F( // 10-20 GeV
+      "h_pair_pi0_eta_pt_9",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_1 = new TH1F( // 1-2 GeV
+      "h_pair_eta_eta_pt_1",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_2 = new TH1F( // 2-3 GeV
+      "h_pair_eta_eta_pt_2",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_3 = new TH1F( // 3-4 GeV
+      "h_pair_eta_eta_pt_3",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_4 = new TH1F( // 4-5 GeV
+      "h_pair_eta_eta_pt_4",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_5 = new TH1F( // 5-6 GeV
+      "h_pair_eta_eta_pt_5",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_6 = new TH1F( // 6-7 GeV
+      "h_pair_eta_eta_pt_6",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_7 = new TH1F( // 7-8 GeV
+      "h_pair_eta_eta_pt_7",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_8 = new TH1F( // 8-10 GeV
+      "h_pair_eta_eta_pt_8",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    h_pair_eta_eta_pt_9 = new TH1F( // 10-20 GeV
+      "h_pair_eta_eta_pt_9",
+      ";#eta [rad]; Counts / [20 mrad]",
+      200,-2.0,2.0);
+
+    // diphoton xF pT-bin by pT-bin
+
+    h_pair_pi0_xf_pt_1 = new TH1F( // 1-2 GeV
       "h_pair_pi0_xf_pt_1",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_2 = new TH1F( // 2-3 GeV
+    h_pair_pi0_xf_pt_2 = new TH1F( // 2-3 GeV
       "h_pair_pi0_xf_pt_2",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_3 = new TH1F( // 3-4 GeV
+    h_pair_pi0_xf_pt_3 = new TH1F( // 3-4 GeV
       "h_pair_pi0_xf_pt_3",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_4 = new TH1F( // 4-5 GeV
+    h_pair_pi0_xf_pt_4 = new TH1F( // 4-5 GeV
       "h_pair_pi0_xf_pt_4",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_5 = new TH1F( // 5-6 GeV
+    h_pair_pi0_xf_pt_5 = new TH1F( // 5-6 GeV
       "h_pair_pi0_xf_pt_5",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_6 = new TH1F( // 6-7 GeV
+    h_pair_pi0_xf_pt_6 = new TH1F( // 6-7 GeV
       "h_pair_pi0_xf_pt_6",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_7 = new TH1F( // 7-8 GeV
+    h_pair_pi0_xf_pt_7 = new TH1F( // 7-8 GeV
       "h_pair_pi0_xf_pt_7",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_8 = new TH1F( // 8-10 GeV
+    h_pair_pi0_xf_pt_8 = new TH1F( // 8-10 GeV
       "h_pair_pi0_xf_pt_8",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_pi0_xf_pt_9 = new TH1F( // 10-20 GeV
+    h_pair_pi0_xf_pt_9 = new TH1F( // 10-20 GeV
       "h_pair_pi0_xf_pt_9",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_1 = new TH1F( // 1-2 GeV
+    h_pair_eta_xf_pt_1 = new TH1F( // 1-2 GeV
       "h_pair_eta_xf_pt_1",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_2 = new TH1F( // 2-3 GeV
+    h_pair_eta_xf_pt_2 = new TH1F( // 2-3 GeV
       "h_pair_eta_xf_pt_2",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_3 = new TH1F( // 3-4 GeV
+    h_pair_eta_xf_pt_3 = new TH1F( // 3-4 GeV
       "h_pair_eta_xf_pt_3",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_4 = new TH1F( // 4-5 GeV
+    h_pair_eta_xf_pt_4 = new TH1F( // 4-5 GeV
       "h_pair_eta_xf_pt_4",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_5 = new TH1F( // 5-6 GeV
+    h_pair_eta_xf_pt_5 = new TH1F( // 5-6 GeV
       "h_pair_eta_xf_pt_5",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_6 = new TH1F( // 6-7 GeV
+    h_pair_eta_xf_pt_6 = new TH1F( // 6-7 GeV
       "h_pair_eta_xf_pt_6",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_7 = new TH1F( // 7-8 GeV
+    h_pair_eta_xf_pt_7 = new TH1F( // 7-8 GeV
       "h_pair_eta_xf_pt_7",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_8 = new TH1F( // 8-10 GeV
+    h_pair_eta_xf_pt_8 = new TH1F( // 8-10 GeV
       "h_pair_eta_xf_pt_8",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_pair_eta_xf_pt_9 = new TH1F( // 10-20 GeV
+    h_pair_eta_xf_pt_9 = new TH1F( // 10-20 GeV
       "h_pair_eta_xf_pt_9",
       ";x_{F} [rad]; Counts / [2 mrad]",
       200,-0.2,0.2);
 
-  h_meson_pi0_pt = new TH1F(
+    h_meson_pi0_pt = new TH1F(
       "h_meson_pi0_pt",
       ";p_{T} [GeV];counts",
       200, 0, 20);
 
-  h_meson_pi0_E = new TH1F(
+    h_meson_pi0_E = new TH1F(
       "h_meson_pi0_E",
       ";E [GeV];counts",
       200, 0, 20);
   
-  h_meson_eta_pt = new TH1F(
+    h_meson_eta_pt = new TH1F(
       "h_meson_eta_pt",
       ";p_{T} [GeV];counts",
       200, 0, 20);
 
-  h_meson_eta_E = new TH1F(
+    h_meson_eta_E = new TH1F(
       "h_meson_eta_E",
       ";E [GeV];counts",
       200, 0, 20);
+  }
   
   // diphoton invariant mass
   h_pair_mass = new TH1F(
       "h_pair_mass",
       ";M_{#gamma} [GeV];counts", 500, 0, 1);
 
+  h_pair_mass_mixing = new TH1F(
+      "h_pair_mass_mixing",
+      ";M_{#gamma #gamma} [GeV];counts", 500, 0, 1);
 
   for (int iPt = 0; iPt < nPtBins; iPt++)
   {
@@ -547,6 +609,11 @@ int AnNeutralMeson_micro_dst::Init(PHCompositeNode *)
                       << "];M_{#gamma#gamma} [GeV/c^{2}];counts";
     h_pair_mass_pt[iPt] = new TH1F(h_pair_mass_name.str().c_str(),
                                    h_pair_mass_title.str().c_str(), 500, 0, 1);
+    h_pair_mass_name.str("");
+    h_pair_mass_name << std::fixed << std::setprecision(0) << "h_pair_mass_mixing_pt_"
+                     << iPt;
+    h_pair_mass_mixing_pt[iPt] = new TH1F(h_pair_mass_name.str().c_str(),
+                                            h_pair_mass_title.str().c_str(), 500, 0, 1);
   }
 
   for (int izvtx = 0; izvtx < nZvtxBins; izvtx++)
@@ -811,80 +878,84 @@ int AnNeutralMeson_micro_dst::Init(PHCompositeNode *)
     ecore_cuts_labels[i] = label.str();
   }
 
-  h_cluster_level_cuts_total = new TH2F(
+  // Only store cluster level cuts if several cuts are given in (E,chi2):
+
+  if (n_chi2_cuts > 1 || n_ecore_cuts > 1)
+  {
+    h_cluster_level_cuts_total = new TH2F(
       "h_cluster_level_cuts_total",
       "Total number of Diphotons;Cluster #chi^{2} Cut;Min Cluster Ecore Cut",
       n_chi2_cuts, 0, (float) n_chi2_cuts, n_ecore_cuts, 0, (float) n_ecore_cuts);
-  for (int il = 0; il < n_chi2_cuts; il++)
-    h_cluster_level_cuts_total->GetXaxis()->SetBinLabel(
+    for (int il = 0; il < n_chi2_cuts; il++)
+      h_cluster_level_cuts_total->GetXaxis()->SetBinLabel(
         il + 1, chi2_cuts_labels[il].c_str());
-  for (int il = 0; il < n_ecore_cuts; il++)
-    h_cluster_level_cuts_total->GetYaxis()->SetBinLabel(
+    for (int il = 0; il < n_ecore_cuts; il++)
+      h_cluster_level_cuts_total->GetYaxis()->SetBinLabel(
         il + 1, ecore_cuts_labels[il].c_str());
 
-  for (int iP = 0; iP < nParticles; iP++)
-  {
-    for (int iR = 0; iR < nRegions; iR++)
+    for (int iP = 0; iP < nParticles; iP++)
     {
-      std::stringstream h_name;
-      h_name << "h_cluster_level_cuts_" << particle[iP] << "_" << regions[iR];
-      std::stringstream h_title;
-      h_title << "Total Number of Diphotons (" << (iP == 0 ? "#pi^{0}" : "#eta")
-              << " " << regions[iR]
-              << ");Cluster #chi^{2} Cut;Min Cluster Energy Cut";
-      h_cluster_level_cuts_particle[iP][iR] =
+      for (int iR = 0; iR < nRegions; iR++)
+      {
+        std::stringstream h_name;
+        h_name << "h_cluster_level_cuts_" << particle[iP] << "_" << regions[iR];
+        std::stringstream h_title;
+        h_title << "Total Number of Diphotons (" << (iP == 0 ? "#pi^{0}" : "#eta")
+                << " " << regions[iR]
+                << ");Cluster #chi^{2} Cut;Min Cluster Energy Cut";
+        h_cluster_level_cuts_particle[iP][iR] =
           new TH2F(h_name.str().c_str(), h_title.str().c_str(), n_chi2_cuts, 0,
                    (float) n_chi2_cuts, n_ecore_cuts, 0, (float) n_ecore_cuts);
-      for (int il = 0; il < n_chi2_cuts; il++)
-        h_cluster_level_cuts_particle[iP][iR]->GetXaxis()->SetBinLabel(
+        for (int il = 0; il < n_chi2_cuts; il++)
+          h_cluster_level_cuts_particle[iP][iR]->GetXaxis()->SetBinLabel(
             il + 1, chi2_cuts_labels[il].c_str());
-      for (int il = 0; il < n_ecore_cuts; il++)
-        h_cluster_level_cuts_particle[iP][iR]->GetYaxis()->SetBinLabel(
+        for (int il = 0; il < n_ecore_cuts; il++)
+          h_cluster_level_cuts_particle[iP][iR]->GetYaxis()->SetBinLabel(
             il + 1, ecore_cuts_labels[il].c_str());
 
-      for (int iPt = 0; iPt < nPtBins; iPt++)
-      {
-        if ((iP == 0) && (iR == 0))
+        for (int iPt = 0; iPt < nPtBins; iPt++)
         {
-          h_name.str("");
-          h_name << "h_cluster_level_cuts_total_pt_" << iPt;
-          h_title.str("");
-          h_title << "Total Number of Diphotons (p_{T} #in [" << pTBins[iPt]
-                  << "," << pTBins[iPt + 1]
-                  << "] GeV/c);Cluster #chi^{2} Cut;Min Cluster Energy Cut";
-          h_cluster_level_cuts_total_pt[iPt] = new TH2F(
+          if ((iP == 0) && (iR == 0))
+          {
+            h_name.str("");
+            h_name << "h_cluster_level_cuts_total_pt_" << iPt;
+            h_title.str("");
+            h_title << "Total Number of Diphotons (p_{T} #in [" << pTBins[iPt]
+                    << "," << pTBins[iPt + 1]
+                    << "] GeV/c);Cluster #chi^{2} Cut;Min Cluster Energy Cut";
+            h_cluster_level_cuts_total_pt[iPt] = new TH2F(
               h_name.str().c_str(), h_title.str().c_str(), n_chi2_cuts, 0,
               (float) n_chi2_cuts, n_ecore_cuts, 0, (float) n_ecore_cuts);
-          for (int il = 0; il < n_chi2_cuts; il++)
-            h_cluster_level_cuts_total_pt[iPt]->GetXaxis()->SetBinLabel(
+            for (int il = 0; il < n_chi2_cuts; il++)
+              h_cluster_level_cuts_total_pt[iPt]->GetXaxis()->SetBinLabel(
                 il + 1, chi2_cuts_labels[il].c_str());
-          for (int il = 0; il < n_ecore_cuts; il++)
-            h_cluster_level_cuts_total_pt[iPt]->GetYaxis()->SetBinLabel(
+            for (int il = 0; il < n_ecore_cuts; il++)
+              h_cluster_level_cuts_total_pt[iPt]->GetYaxis()->SetBinLabel(
                 il + 1, ecore_cuts_labels[il].c_str());
-        }
-        h_name.str(
-            "");
-        h_name << "h_cluster_level_cuts_" << particle[iP] << "_" << regions[iR]
-               << "_pt_" << iPt;
-        h_title.str(
-            "");
-        h_title << "Total Number of Diphotons ("
-                << (iP == 0 ? "#pi^{0}"
-                            : "#eta")
-                << " " << regions[iR]
-                << ", p_{T} #in [" << pTBins[iPt] << "," << pTBins[iPt + 1]
-                << "] GeV/c);Cluster #chi^{2} Cut;Min Cluster Energy Cut";
-        h_cluster_level_cuts_particle_pt[iP][iR][iPt] = new TH2F(
+          }
+          h_name.str(
+                     "");
+          h_name << "h_cluster_level_cuts_" << particle[iP] << "_" << regions[iR]
+                 << "_pt_" << iPt;
+          h_title.str(
+                      "");
+          h_title << "Total Number of Diphotons ("
+                  << (iP == 0 ? "#pi^{0}" : "#eta")
+                  << " " << regions[iR]
+                  << ", p_{T} #in [" << pTBins[iPt] << "," << pTBins[iPt + 1]
+                  << "] GeV/c);Cluster #chi^{2} Cut;Min Cluster Energy Cut";
+          h_cluster_level_cuts_particle_pt[iP][iR][iPt] = new TH2F(
             h_name.str().c_str(), h_title.str().c_str(), n_chi2_cuts, 0,
             (float) n_chi2_cuts, n_ecore_cuts, 0, (float) n_ecore_cuts);
-        for (int il = 0; il < n_chi2_cuts; il++)
-          h_cluster_level_cuts_particle_pt[iP][iR][iPt]
+          for (int il = 0; il < n_chi2_cuts; il++)
+            h_cluster_level_cuts_particle_pt[iP][iR][iPt]
               ->GetXaxis()
               ->SetBinLabel(il + 1, chi2_cuts_labels[il].c_str());
-        for (int il = 0; il < n_ecore_cuts; il++)
-          h_cluster_level_cuts_particle_pt[iP][iR][iPt]
+          for (int il = 0; il < n_ecore_cuts; il++)
+            h_cluster_level_cuts_particle_pt[iP][iR][iPt]
               ->GetYaxis()
               ->SetBinLabel(il + 1, ecore_cuts_labels[il].c_str());
+        }
       }
     }
   }
@@ -1029,10 +1100,11 @@ int AnNeutralMeson_micro_dst::InitRun(PHCompositeNode *topNode)
 
   // Spin pattern from SpinDB
   // Get spin pattern from SpinDB
-  unsigned int qa_level = 0xffff;  // or equivalently 65535 in decimal notation -> Default
+  // Use the default QA level
+  //unsigned int qa_level = 0xffff;  // or equivalently 65535 in decimal notation -> Default
   SpinDBOutput spin_out("phnxrc");
   SpinDBContent *spin_cont = new SpinDBContentv1();
-  spin_out.StoreDBContent(runnumber, runnumber, qa_level);
+  spin_out.StoreDBContent(runnumber, runnumber);
   spin_out.GetDBContentStore(spin_cont, runnumber);
 
   crossingshift = spin_cont->GetCrossingShift();
@@ -1050,11 +1122,11 @@ int AnNeutralMeson_micro_dst::InitRun(PHCompositeNode *topNode)
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
-int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
+int AnNeutralMeson_micro_dst::process_event(PHCompositeNode *topNode)
 {
   _eventcounter++;
 
-  if (_eventcounter % 100000 == 0)
+  if (_eventcounter % 100'000 == 0)
   {
     monitorMemoryUsage("check");
     std::cout << "event: " << _eventcounter << std::endl;
@@ -1084,17 +1156,20 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
     return Fun4AllReturnCodes::ABORTEVENT;
   }
 
-  // Trigger count per bit (QA)
-  for (const auto &[trigger_number,
-                      trigger_name] : trigger_names)
+  if (store_qa)
   {
-    if ((live_trigger >> trigger_number & 0x1U) == 0x1U)
+  // Trigger count per bit (QA)
+    for (const auto &[trigger_number,
+                        trigger_name] : trigger_names)
     {
-      h_trigger_live->Fill(trigger_number + 1);
-    }
-    if ((scaled_trigger >> trigger_number & 0x1U) == 0x1U)
-    {
-      h_trigger_scaled->Fill(trigger_number + 1);
+      if ((live_trigger >> trigger_number & 0x1U) == 0x1U)
+      {
+        h_trigger_live->Fill(trigger_number + 1);
+      }
+      if ((scaled_trigger >> trigger_number & 0x1U) == 0x1U)
+      {
+        h_trigger_scaled->Fill(trigger_number + 1);
+      }
     }
   }
 
@@ -1103,33 +1178,40 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
   {
     return Fun4AllReturnCodes::ABORTEVENT;
   }
+  diphoton_vertex_z = vertex_z;
 
-  //std::cout << "z vertex = " << vertex_z << std::endl;
-  
-  h_event_zvtx->Fill(vertex_z);
+  if (store_qa) h_event_zvtx->Fill(vertex_z);
 
   // Additional trigger selection
-  if (require_mbd_trigger_bit)
+  if (require_mbd_trigger_bit && !require_photon_trigger_bit)
   {
     // Minimum Bias Event
     if (!mbd_trigger_bit())
     {
-     return Fun4AllReturnCodes::ABORTEVENT;
+      return Fun4AllReturnCodes::ABORTEVENT;
     }
+    mbd_trigger_bit_event = true;
   }
-  else if (require_photon_trigger_bit)
+  else if (require_photon_trigger_bit && !require_mbd_trigger_bit)
   {
     // Photon Trigger Event
     if (!photon_trigger_bit())
     {
-     return Fun4AllReturnCodes::ABORTEVENT;
+      return Fun4AllReturnCodes::ABORTEVENT;
     }
+    photon_trigger_bit_event = true;
+  }
+  else { // If both triggers are used, apply a pT threshold between them
+    mbd_trigger_bit_event = mbd_trigger_bit();
+    photon_trigger_bit_event = photon_trigger_bit();
   }
 
-  h_triggered_event_photons->Fill(cluster_number);
-
-  // Fill vertex info, for QA
-  h_triggered_event_zvtx->Fill(vertex_z);
+  if (store_qa) {
+    h_triggered_event_photons->Fill(cluster_number);
+    
+    // Fill vertex info, for QA
+    h_triggered_event_zvtx->Fill(vertex_z);
+  }
 
   // If more than one cut for ecore and chi2 is given, apply the following method for cluster number comparison (QA only)
   if (n_chi2_cuts > 1 || n_ecore_cuts > 1)
@@ -1153,23 +1235,24 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
         ecore >= ecore_cuts[0])
     {
       ROOT::Math::PtEtaPhiMVector photon(ecore / std::cosh(eta), eta, phi, 0);
-      h_photon_eta->Fill(photon.Eta());
-      h_photon_phi->Fill(photon.Phi());
-      h_photon_pt->Fill(photon.Pt());
-      h_photon_zvtx->Fill(vertex_z);
-      h_photon_eta_phi->Fill(photon.Eta(), photon.Phi());
-      h_photon_eta_pt->Fill(photon.Eta(), photon.Pt());
-      h_photon_eta_zvtx->Fill(photon.Eta(), vertex_z);
-      h_photon_phi_pt->Fill(photon.Phi(), photon.Pt());
-      h_photon_phi_zvtx->Fill(photon.Phi(), vertex_z);
-      h_photon_pt_zvtx->Fill(photon.Pt(), vertex_z);
+      if (store_qa)
+      {
+        h_photon_eta->Fill(photon.Eta());
+        h_photon_phi->Fill(photon.Phi());
+        h_photon_pt->Fill(photon.Pt());
+        h_photon_zvtx->Fill(vertex_z);
+        h_photon_eta_phi->Fill(photon.Eta(), photon.Phi());
+        h_photon_eta_pt->Fill(photon.Eta(), photon.Pt());
+        h_photon_eta_zvtx->Fill(photon.Eta(), vertex_z);
+        h_photon_phi_pt->Fill(photon.Phi(), photon.Pt());
+        h_photon_phi_zvtx->Fill(photon.Phi(), vertex_z);
+        h_photon_pt_zvtx->Fill(photon.Pt(), vertex_z);
+      }
       Cluster cluster(photon, false); // by default, a cluster does not activate the trigger
       good_photons.push_back(cluster);
       num_photons++;
     }
   }
-
-  //if (num_photons > 11) return Fun4AllReturnCodes::ABORTEVENT;
 
   // Trigger emulator -> determine what cluster(s) fired the trigger (cluster.isTrigger = true)
   if (require_emulator_matching)
@@ -1192,19 +1275,31 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
 
       diphoton_pt = diphoton.Pt();
 
-      h_pair_alpha->Fill(std::abs(photon1.E() - photon2.E())/(photon1.E() + photon2.E()));
       float eta_diff = photon1.Eta() - photon2.Eta();
       float phi_diff = WrapAngleDifference(photon1.Phi(), photon2.Phi());
-      h_pair_DeltaR->Fill(std::sqrt(std::pow(eta_diff, 2) + std::pow(phi_diff, 2)));
+      if (store_qa) h_pair_DeltaR->Fill(std::sqrt(std::pow(eta_diff, 2) + std::pow(phi_diff, 2)));
 
       // General diphoton cut
       if (diphoton_cut(photon1, photon2, diphoton)) continue;
 
-      if (first_diphoton_nomatch)
+      if (store_qa && diphoton.M() > 0.25 && diphoton.M() < 0.38)
+      {
+        h_same_delta_eta->Fill(std::abs(photon1.Eta() - photon2.Eta()));
+        h_same_delta_phi->Fill(std::abs(ROOT::Math::VectorUtil::DeltaPhi(photon1, photon2)));
+        h_same_delta_R->Fill(ROOT::Math::VectorUtil::DeltaR(photon1, photon2));
+        h_same_alpha->Fill(std::abs(photon1.E() - photon2.E())/(photon1.E() + photon2.E()));
+      }
+
+      if (store_qa && first_diphoton_nomatch)
       {
         h_count_diphoton_nomatch->Fill(1);
         first_diphoton_nomatch = false;
       }
+
+      // Distinct diphoton selection between MBD and Photon Trigger
+
+      // For a photon-triggered event
+      // Keep candidates at high-pT which satisfy the trigger matching criterion
 
       // Trigger emulator matching cut
       if (require_emulator_matching && !require_efficiency_matching)
@@ -1216,8 +1311,8 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
         }
         multiplicity_emulator++;
       }
-      
-      // Trigger efficiency matching cut
+
+      // Trigger efficiency matching cut ("Proxy method")
       if (require_efficiency_matching && !require_emulator_matching)
       {
         efficiency_match = trigger_efficiency_matching(photon1, photon2, diphoton);
@@ -1227,54 +1322,52 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
         }
       }
 
+      // Emulator vs proxy comparison
       if (require_efficiency_matching && require_emulator_matching)
       {
+        int iPt = FindBinBinary(diphoton_pt, pTBins, nPtBins + 1);
+        if (iPt < 0 || iPt >= nPtBins) continue;
         emulator_match = (good_photons[iclus1].isTrigger || good_photons[iclus2].isTrigger);
         efficiency_match = trigger_efficiency_matching(photon1, photon2, diphoton);
-        if (emulator_match && efficiency_match) h_efficiency_x_matching->AddBinContent(1);
-        if (!emulator_match && !efficiency_match) h_efficiency_x_matching->AddBinContent(2);
-        if (emulator_match && !efficiency_match) h_efficiency_x_matching->AddBinContent(3);
+        if (emulator_match && efficiency_match)
+        {
+          h_efficiency_x_matching_pt[iPt]->AddBinContent(1);
+          h_efficiency_x_matching->AddBinContent(1);
+        }
+        if (!emulator_match && !efficiency_match)
+        {
+          h_efficiency_x_matching_pt[iPt]->AddBinContent(2);
+          h_efficiency_x_matching->AddBinContent(2);
+        }
+        if (emulator_match && !efficiency_match)
+        {
+          h_efficiency_x_matching_pt[iPt]->AddBinContent(3);
+          h_efficiency_x_matching->AddBinContent(3);
+        }
         if (!emulator_match && efficiency_match) {
-          // Bad case
-          // std::cout << "diphoton = (" << diphoton.Pt() << ", " << diphoton.E() << ") ";
-          // std::cout << "delta_eta = " << std::abs(photon1.Eta() - photon2.Eta()) << ", ";
-          // std::cout << "delta_phi = " << WrapAngleDifference(photon1.Phi(), photon2.Phi()) << ", ";
-          // std::cout << "energies = (" << photon1.E() << ", " << photon2.E() << ")" << std::endl;
+          h_efficiency_x_matching_pt[iPt]->AddBinContent(4);
           h_efficiency_x_matching->AddBinContent(4);
         }
         continue;
       }
-        
-      if (good_photons[iclus1].isTrigger)
-      {
-        gamma1_eta = photon1.Eta();
-        gamma1_phi = photon1.Phi();
-        gamma1_E = photon1.E();
-        gamma2_eta = photon2.Eta();
-        gamma2_phi = photon2.Phi();
-        gamma2_E = photon2.E();
-      }
-      else
-      {
-        gamma1_eta = photon2.Eta();
-        gamma1_phi = photon2.Phi();
-        gamma1_E = photon2.E();
-        gamma2_eta = photon1.Eta();
-        gamma2_phi = photon1.Phi();
-        gamma2_E = photon1.E();
-      }
 
+      if (store_qa)
+      {
+        h_pair_alpha->Fill(std::abs(photon1.E() - photon2.E())/(photon1.E() + photon2.E()));
+        h_pair_alpha_pt->Fill(std::abs(photon1.E() - photon2.E())/(photon1.E() + photon2.E()), diphoton_pt);
+      }
+        
       if (multiplicity_efficiency == 1) {
         h_analysis_event_zvtx->Fill(vertex_z);
       }
-      
+
       // Store diphoton properties
       diphoton_mass = diphoton.mag();
       diphoton_eta = diphoton.Eta();
       diphoton_phi = diphoton.Phi();
       diphoton_xf = 2 * diphoton.Pz() / Vs;
 
-      if (true)
+      if (store_qa)
       {
         h_selected_photon_eta->Fill(photon1.Eta());
         h_selected_photon_phi->Fill(photon1.Phi());
@@ -1308,7 +1401,7 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
         h_pair_phi_zvtx->Fill(diphoton_phi, vertex_z);
         h_pair_pt_zvtx->Fill(diphoton_pt, vertex_z);
       }
-           
+
       // Select the pt bin:
       int iPt = FindBinBinary(diphoton_pt, pTBins, nPtBins + 1);
 
@@ -1376,107 +1469,109 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
         }
       }
 
-
       // Get Kinematic distributions:
-      if (iP == 0 && iR == 0)
+      if (store_qa)
       {
-        h_meson_pi0_pt->Fill(diphoton_pt);
-        h_meson_pi0_E->Fill(diphoton.E());
-        if (1 < diphoton_pt && diphoton_pt < 2)
+        if (iP == 0 && iR == 0)
         {
-          h_pair_pi0_eta_pt_1->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_1->Fill(diphoton_xf);
+          h_meson_pi0_pt->Fill(diphoton_pt);
+          h_meson_pi0_E->Fill(diphoton.E());
+          if (1 < diphoton_pt && diphoton_pt < 2)
+          {
+            h_pair_pi0_eta_pt_1->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_1->Fill(diphoton_xf);
+          }
+          else if (2 < diphoton_pt && diphoton_pt < 3)
+          {
+            h_pair_pi0_eta_pt_2->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_2->Fill(diphoton_xf);
+          }
+          else if (3 < diphoton_pt && diphoton_pt < 4)
+          {
+            h_pair_pi0_eta_pt_3->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_3->Fill(diphoton_xf);
+          }
+          else if (4 < diphoton_pt && diphoton_pt < 5)
+          {
+            h_pair_pi0_eta_pt_4->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_4->Fill(diphoton_xf);
+          }
+          else if (5 < diphoton_pt && diphoton_pt < 6)
+          {
+            h_pair_pi0_eta_pt_5->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_5->Fill(diphoton_xf);
+          }
+          else if (6 < diphoton_pt && diphoton_pt < 7)
+          {
+            h_pair_pi0_eta_pt_6->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_6->Fill(diphoton_xf);
+          }
+          else if (7 < diphoton_pt && diphoton_pt < 8)
+          {
+            h_pair_pi0_eta_pt_7->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_7->Fill(diphoton_xf);
+          }
+          else if (8 < diphoton_pt && diphoton_pt < 10)
+          {
+            h_pair_pi0_eta_pt_8->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_8->Fill(diphoton_xf);
+          }
+          else if (10 < diphoton_pt && diphoton_pt < 20)
+          {
+            h_pair_pi0_eta_pt_9->Fill(diphoton_eta);
+            h_pair_pi0_xf_pt_9->Fill(diphoton_xf);
+          }
         }
-        else if (2 < diphoton_pt && diphoton_pt < 3)
-        {
-          h_pair_pi0_eta_pt_2->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_2->Fill(diphoton_xf);
-        }
-        else if (3 < diphoton_pt && diphoton_pt < 4)
-        {
-          h_pair_pi0_eta_pt_3->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_3->Fill(diphoton_xf);
-        }
-        else if (4 < diphoton_pt && diphoton_pt < 5)
-        {
-          h_pair_pi0_eta_pt_4->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_4->Fill(diphoton_xf);
-        }
-        else if (5 < diphoton_pt && diphoton_pt < 6)
-        {
-          h_pair_pi0_eta_pt_5->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_5->Fill(diphoton_xf);
-        }
-        else if (6 < diphoton_pt && diphoton_pt < 7)
-        {
-          h_pair_pi0_eta_pt_6->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_6->Fill(diphoton_xf);
-        }
-        else if (7 < diphoton_pt && diphoton_pt < 8)
-        {
-          h_pair_pi0_eta_pt_7->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_7->Fill(diphoton_xf);
-        }
-        else if (8 < diphoton_pt && diphoton_pt < 10)
-        {
-          h_pair_pi0_eta_pt_8->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_8->Fill(diphoton_xf);
-        }
-        else if (10 < diphoton_pt && diphoton_pt < 20)
-        {
-          h_pair_pi0_eta_pt_9->Fill(diphoton_eta);
-          h_pair_pi0_xf_pt_9->Fill(diphoton_xf);
-        }
-      }
 
-      if (iP == 1 && iR == 0)
-      {
-        h_meson_eta_pt->Fill(diphoton_pt);
-        h_meson_eta_E->Fill(diphoton.E());
-        if (1 < diphoton_pt && diphoton_pt < 2)
+        if (iP == 1 && iR == 0)
         {
-          h_pair_eta_eta_pt_1->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_1->Fill(diphoton_xf);
-        }
-        else if (2 < diphoton_pt && diphoton_pt < 3)
-        {
-          h_pair_eta_eta_pt_2->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_2->Fill(diphoton_xf);
-        }
-        else if (3 < diphoton_pt && diphoton_pt < 4)
-        {
-          h_pair_eta_eta_pt_3->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_3->Fill(diphoton_xf);
-        }
-        else if (4 < diphoton_pt && diphoton_pt < 5)
-        {
-          h_pair_eta_eta_pt_4->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_4->Fill(diphoton_xf);
-        }
-        else if (5 < diphoton_pt && diphoton_pt < 6)
-        {
-          h_pair_eta_eta_pt_5->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_5->Fill(diphoton_xf);
-        }
-        else if (6 < diphoton_pt && diphoton_pt < 7)
-        {
-          h_pair_eta_eta_pt_6->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_6->Fill(diphoton_xf);
-        }
-        else if (7 < diphoton_pt && diphoton_pt < 8)
-        {
-          h_pair_eta_eta_pt_7->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_7->Fill(diphoton_xf);
-        }
-        else if (8 < diphoton_pt && diphoton_pt < 10)
-        {
-          h_pair_eta_eta_pt_8->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_8->Fill(diphoton_xf);
-        }
-        else if (10 < diphoton_pt && diphoton_pt < 20)
-        {
-          h_pair_eta_eta_pt_9->Fill(diphoton_eta);
-          h_pair_eta_xf_pt_9->Fill(diphoton_xf);
+          h_meson_eta_pt->Fill(diphoton_pt);
+          h_meson_eta_E->Fill(diphoton.E());
+          if (1 < diphoton_pt && diphoton_pt < 2)
+          {
+            h_pair_eta_eta_pt_1->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_1->Fill(diphoton_xf);
+          }
+          else if (2 < diphoton_pt && diphoton_pt < 3)
+          {
+            h_pair_eta_eta_pt_2->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_2->Fill(diphoton_xf);
+          }
+          else if (3 < diphoton_pt && diphoton_pt < 4)
+          {
+            h_pair_eta_eta_pt_3->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_3->Fill(diphoton_xf);
+          }
+          else if (4 < diphoton_pt && diphoton_pt < 5)
+          {
+            h_pair_eta_eta_pt_4->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_4->Fill(diphoton_xf);
+          }
+          else if (5 < diphoton_pt && diphoton_pt < 6)
+          {
+            h_pair_eta_eta_pt_5->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_5->Fill(diphoton_xf);
+          }
+          else if (6 < diphoton_pt && diphoton_pt < 7)
+          {
+            h_pair_eta_eta_pt_6->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_6->Fill(diphoton_xf);
+          }
+          else if (7 < diphoton_pt && diphoton_pt < 8)
+          {
+            h_pair_eta_eta_pt_7->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_7->Fill(diphoton_xf);
+          }
+          else if (8 < diphoton_pt && diphoton_pt < 10)
+          {
+            h_pair_eta_eta_pt_8->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_8->Fill(diphoton_xf);
+          }
+          else if (10 < diphoton_pt && diphoton_pt < 20)
+          {
+            h_pair_eta_eta_pt_9->Fill(diphoton_eta);
+            h_pair_eta_xf_pt_9->Fill(diphoton_xf);
+          }
         }
       }
 
@@ -1556,26 +1651,24 @@ int AnNeutralMeson_micro_dst::process_event(PHCompositeNode */*topNode*/)
     }
   }
 
-  if (multiplicity_efficiency == 0 && multiplicity_emulator == 0)
+  if (store_qa)
   {
-    h_matching_consistency->Fill(1);
+    h_multiplicity_efficiency->Fill(multiplicity_efficiency);
+    h_multiplicity_emulator->Fill(multiplicity_emulator);
   }
-  else if (multiplicity_efficiency == 0 && multiplicity_emulator > 0)
-  {
-    h_matching_consistency->Fill(2);
-  }
-  else if (multiplicity_efficiency > 0 && multiplicity_emulator == 0)
-  {
-    h_matching_consistency->Fill(3);
-  }
-  else if (multiplicity_efficiency > 0 && multiplicity_emulator > 0)
-  {
-    h_matching_consistency->Fill(4);
-  }
-  
 
-  h_multiplicity_efficiency->Fill(multiplicity_efficiency);
-  h_multiplicity_emulator->Fill(multiplicity_emulator);
+  // Event Mixing: If there is at least one good pair, store the event in the pool
+  if (use_event_mixing)
+  {
+    if (require_mbd_trigger_bit)
+    {
+      event_mixing_mbd(topNode);
+    }
+    else if (require_photon_trigger_bit)
+    {
+      event_mixing_photon();
+    }
+  }
   
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -1635,14 +1728,7 @@ void AnNeutralMeson_micro_dst::cluster_cuts()
           ROOT::Math::PtEtaPhiMVector photon2 = good_photons_by_cut[ichi2cut * n_ecore_cuts + iecorecut][iclus2];
           ROOT::Math::PtEtaPhiMVector diphoton = photon1 + photon2;
 
-          float alpha = std::abs(photon1.E() - photon2.E()) / (photon1.E() + photon2.E());
-          float pT = diphoton.Pt();
-
-          if (alpha > alphacut ||
-              pT < pTcut)
-          {
-            continue;
-          }
+          if (diphoton_cut(photon1, photon2, diphoton)) continue;
 
           diphoton_mass = diphoton.mag();
 
@@ -1685,7 +1771,7 @@ bool AnNeutralMeson_micro_dst::diphoton_cut(ROOT::Math::PtEtaPhiMVector p1,
 {
   float alpha = std::abs(p1.E() - p2.E()) / (p1.E() + p2.E());
   float pt = ppair.Pt();
-  return (alpha > alphacut || pt < pTcut);
+  return (alpha > alphaCut || pt < pTCutMin || pt > pTCutMax);
 }
 
 bool AnNeutralMeson_micro_dst::mbd_trigger_bit()
@@ -1767,22 +1853,22 @@ void AnNeutralMeson_micro_dst::trigger_emulator_input()
   fired_indices.clear();
   
   tileNumber = emcaltiles->get_tile_number();
-  if (trigger_mbd_photon_4)
+  if (trigger_mbd_photon_3)
   {
     for (int itile = 0; itile < tileNumber; itile++)
     {
-      if (emcaltiles->get_tile_energy_adc(itile) >= adc_threshold_4)
+      if (emcaltiles->get_tile_energy_adc(itile) >= adc_threshold_3)
       {
         fired_indices.push_back(itile);
         emulator_selection++;
       }
     }
   }
-  else if (trigger_mbd_photon_3)
+  else if (trigger_mbd_photon_4)
   {
     for (int itile = 0; itile < tileNumber; itile++)
     {
-      if (emcaltiles->get_tile_energy_adc(itile) >= adc_threshold_3)
+      if (emcaltiles->get_tile_energy_adc(itile) >= adc_threshold_4)
       {
         fired_indices.push_back(itile);
         emulator_selection++;
@@ -1900,7 +1986,6 @@ bool AnNeutralMeson_micro_dst::trigger_efficiency_matching(const ROOT::Math::PtE
     // - distance between two clusters is small enough for them to have been in the same trigger tile
     // - if their energy sum is sufficient to fire the specific trigger.
     float delta_eta = std::abs(photon1.Eta() - photon2.Eta());
-    //float delta_phi = std::abs(photon1.Phi() - photon2.Phi()); // Bad angle wrapping !!!!!!!!!!!!!!!
     float delta_phi = WrapAngleDifference(photon1.Phi(), photon2.Phi());
     if (!((diphoton.E() > energy_threshold) &&
           (delta_eta < delta_eta_threshold) &&
@@ -1911,6 +1996,213 @@ bool AnNeutralMeson_micro_dst::trigger_efficiency_matching(const ROOT::Math::PtE
     }
   }
   return true;
+}
+
+void AnNeutralMeson_micro_dst::event_mixing_mbd(PHCompositeNode *topNode)
+{
+  
+  EventInPool current_event;
+  current_event.zvtx = vertex_z;
+  current_event.clusters = good_photons;
+  
+  // Associate cluster from current event to
+  // clusters in pooled events
+  int iPoolZvtxBin = FindBinBinary(vertex_z, poolZvtxBins, nPoolZvtxBins + 1);
+  int iMultiplicityBin = FindBinBinary(num_photons, multiplicityBins, nMultiplicityBins + 1);
+
+  // Determine the angle of the leading jet
+  std::vector<ROOT::Math::PtEtaPhiMVector> photon_vectors;
+  for (int iclus = 0; iclus < cluster_number; iclus++)
+  {
+    ClusterSmallInfo *smallcluster = _smallclusters->get_cluster_at(iclus);
+    float eta = smallcluster->get_eta();
+    float phi = smallcluster->get_phi();
+    float ecore = smallcluster->get_ecore();
+    ROOT::Math::PtEtaPhiMVector photon(ecore / std::cosh(eta), eta, phi, 0);
+    photon_vectors.push_back(photon);
+  }
+
+  // Determine  the leading jet position
+  JetContainer *jet_cont = findNode::getClass<JetContainer>(topNode, "AntiKt_Tower_r04");
+
+  if (!jet_cont)
+  {
+    std::cout << "Jet Container is empty" << std::endl;
+    return;
+  }
+
+  Jet *leading_jet = nullptr;
+  float leading_pt = 0;
+  float sum_relative_pt = 0;
+  float sum_absolute_pt = 0;
+  for (Jet *jet : *jet_cont)
+  {
+    std::cout << "(" << jet->get_pt() << ", " << jet->get_eta() << ", " << jet->get_phi() << ")" << std::endl; 
+    sum_relative_pt += jet->get_pt();
+    sum_absolute_pt += std::abs(jet->get_pt());
+    if (jet->get_pt() > leading_pt)
+    {
+      leading_jet = jet;
+    }
+  }
+  std::cout << std::endl;
+
+  // Sharpness (to define "jetty" events):
+  float S = std::abs(sum_relative_pt) / sum_absolute_pt;
+  bool is_jet_event = false;
+  if (S > 0.3) is_jet_event = true;
+
+  std::cout << "Sharpness = " << S << std::endl;
+
+  if (is_jet_event)
+  {
+    std::cout << "Jetty event (" << leading_jet->get_eta() << ", " << leading_jet->get_phi() << ")" << std::endl; 
+    current_event.eta_lead = leading_jet->get_eta();
+    current_event.phi_lead = leading_jet->get_phi();
+  }
+  else
+  {
+    std::cout << "Not a jetty event" << std::endl;
+  }
+
+  int iPoolEtaBin = FindBinBinary(current_event.eta_lead, poolEtaBins, nPoolEtaBins + 1);
+  
+  if ((iPoolZvtxBin < 0 || iPoolZvtxBin >= nPoolZvtxBins) ||
+      (iMultiplicityBin < 0 || iMultiplicityBin >= nMultiplicityBins) ||
+      (iPoolEtaBin < 0 || iPoolEtaBin >= nPoolEtaBins))
+  {
+    return;
+  }
+  
+  int CurrentNmix = std::min(int(pool[iPoolZvtxBin][iMultiplicityBin][iPoolEtaBin].size()), Nmix);
+  float sum_multiplicities_pool = 0;
+  for (int ipool = 0; ipool < CurrentNmix; ipool++)
+  {
+    EventInPool pool_event = pool[iPoolZvtxBin][iMultiplicityBin][iPoolEtaBin][ipool];
+    sum_multiplicities_pool += (float) pool_event.clusters.size();
+  }
+
+  float correction_weight = (sum_multiplicities_pool > 0.5 ? ((float) current_event.clusters.size() - 1)/ sum_multiplicities_pool : 0);
+
+  for (auto current_cluster: current_event.clusters)
+  {
+    for (int ipool = 0; ipool < CurrentNmix; ipool++)
+    {
+      EventInPool pool_event = pool[iPoolZvtxBin][iMultiplicityBin][iPoolEtaBin][ipool];
+      for (auto pool_cluster: pool_event.clusters)
+      {
+        // Adapt pseudorapidity direction to the current vertex position 
+        float z_pool = pool_event.zvtx + radius * std::sinh(pool_cluster.p4.Eta());
+        float eta_pool = std::asinh((z_pool - current_event.zvtx) / radius);
+          
+        ROOT::Math::PtEtaPhiMVector pool_photon(0, 0, 0, 0);
+        if (is_jet_event) // rotation
+        {
+          // Adapt pseudorapidity direction to the current vertex position 
+          float z_lead_pool = pool_event.zvtx + radius * std::sinh(pool_event.eta_lead);
+          float eta_lead_pool = std::asinh((z_lead_pool - current_event.zvtx) / radius);
+          
+          // Rotate the event to align the jet axes
+          float eta_rot = eta_pool + current_event.eta_lead - eta_lead_pool;
+          float phi_rot = pool_cluster.p4.Phi() + current_event.phi_lead - pool_event.phi_lead;
+          pool_photon.SetCoordinates(pool_cluster.p4.Pt(), eta_rot, phi_rot, 0);
+        }
+        else // Naïve event mixing
+        {
+          pool_photon.SetCoordinates(pool_cluster.p4.Pt(), eta_pool, pool_cluster.p4.Phi(), 0);
+        }
+          
+        ROOT::Math::PtEtaPhiMVector mixed_pair = current_cluster.p4 + pool_photon;
+        if (false)
+          mixed_pair = current_cluster.p4 + pool_photon;
+
+        if (store_qa)
+        {
+          h_current_E->Fill(current_cluster.p4.E());
+          h_current_eta->Fill(current_cluster.p4.Eta());
+          h_current_phi->Fill(current_cluster.p4.Phi());
+          h_pool_E->Fill(pool_photon.E());
+          h_pool_eta->Fill(pool_photon.Eta());
+          h_pool_phi->Fill(pool_photon.Phi());
+        }
+        
+        // The mixed event pair should satisfy the main cut as main analysis
+        if (diphoton_cut(current_cluster.p4, pool_photon, mixed_pair)) continue;
+        // In addition, require a minimum separation between two clusters
+        // In reconstruction, two clusters cannot be too close
+        float dR = ROOT::Math::VectorUtil::DeltaR(current_cluster.p4, pool_photon);
+        if (dR < dR_min) continue;
+        if (dR < 0.05) continue;
+
+        if (store_qa && mixed_pair.M() > 0.25 && mixed_pair.M() < 0.38)
+        {
+          h_mixed_delta_eta->Fill(std::abs(current_cluster.p4.Eta() - pool_photon.Eta()), correction_weight);
+          h_mixed_delta_phi->Fill(std::abs(ROOT::Math::VectorUtil::DeltaPhi(current_cluster.p4, pool_photon)), correction_weight);
+          h_mixed_delta_R->Fill(dR, correction_weight);
+          h_mixed_alpha->Fill(std::abs(current_cluster.p4.E() - pool_photon.E()) / (current_cluster.p4.E() + pool_photon.E()), correction_weight);
+        }
+        
+        int iPt = FindBinBinary(mixed_pair.Pt(), pTBins, nPtBins + 1);
+        
+        float mixed_mass = mixed_pair.M();
+        
+        h_pair_mass_mixing->Fill(mixed_mass, correction_weight);
+        h_pair_mass_mixing_pt[iPt]->Fill(mixed_mass, correction_weight);
+      }
+    }
+  }
+  pool[iPoolZvtxBin][iMultiplicityBin][iPoolEtaBin].push_front(current_event);
+  if (CurrentNmix == Nmix)
+  {
+    pool[iPoolZvtxBin][iMultiplicityBin][iPoolEtaBin].pop_back();
+  }
+}
+
+void AnNeutralMeson_micro_dst::event_mixing_photon()
+{
+  // if ((std::abs(vertex_z) >= 50) || (cluster_number > 11))
+  //   return;
+  
+  // EventInPool current_event;
+  // current_event.zvtx = vertex_z;
+  // current_event.clusters = good_photons;
+  
+  // // Associate trigger cluster from current event to
+  // // non-trigger clusters in pooled events
+  // int iPoolZvtxBin = FindBinBinary(vertex_z, poolZvtxBins, nPoolZvtxBins + 1);
+  // int iMultiplicityBin = FindBinBinary(cluster_number, multiplicityBins, nMultiplicityBins + 1);
+  // int CurrentNmix = std::min(int(pool[iPoolZvtxBin][iMultiplicityBin].size()), Nmix);
+  // for (auto current_cluster: current_event.clusters)
+  // {
+  //   if (! current_cluster.isTrigger) continue;
+  //   for (int ipool = 0; ipool < CurrentNmix; ipool++)
+  //   {
+  //     EventInPool pool_event = pool[iPoolZvtxBin][iMultiplicityBin][ipool];
+  //     for (auto pool_cluster: pool_event.clusters)
+  //     {
+  //       if (pool_cluster.isTrigger) continue;
+
+  //       ROOT::Math::PtEtaPhiMVector mixed_pair = current_cluster.p4 + pool_cluster.p4;
+  //       if (diphoton_cut(current_cluster.p4, pool_cluster.p4, mixed_pair)) continue;
+  //       int iPt = FindBinBinary(mixed_pair.Pt(), pTBins, nPtBins + 1);
+        
+  //       float mixed_mass = mixed_pair.M();
+        
+  //       h_pair_mass_mixing->Fill(mixed_mass);
+  //       h_pair_mass_mixing_pt[iPt]->Fill(mixed_mass);
+  //     }
+  //   }
+  // }
+  // pool[iPoolZvtxBin][iMultiplicityBin].push_front(current_event);
+  // if (CurrentNmix == Nmix)
+  // {
+  //   pool[iPoolZvtxBin][iMultiplicityBin].pop_back();
+  // }
+} 
+
+bool AnNeutralMeson_micro_dst::startswith(const std::string& str, const std::string& cmp)
+{
+  return str.compare(0, cmp.length(), cmp) == 0;
 }
 
 float AnNeutralMeson_micro_dst::WrapAngleDifference(const float& phi1, const float& phi2)

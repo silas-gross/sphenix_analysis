@@ -92,10 +92,16 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   // Read input tile info from the trigger emulator
   void trigger_emulator_input();
 
-  // Check if photon pair satsisfies the trigger efficiency matching (70%)
+  // Check if photon pair satsisfies the trigger efficiency matching using the proxy method
   bool trigger_efficiency_matching(const ROOT::Math::PtEtaPhiMVector& photon1,
                                    const ROOT::Math::PtEtaPhiMVector& photon2,
                                    const ROOT::Math::PtEtaPhiMVector& diphoton);
+
+  void event_mixing_mbd(PHCompositeNode *topNode);
+
+  void event_mixing_photon();
+
+  void set_event_mixing(bool use) { use_event_mixing = use; }
 
   void set_mbd_trigger_bit_requirement(bool require) { require_mbd_trigger_bit = require; }
 
@@ -123,10 +129,23 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   void set_ecorecut(const std::vector<float>& ecore) { ecore_cuts = ecore; n_ecore_cuts = ecore.size(); } 
 
   //! Set diphoton alpha cut
-  void set_alphacut(float alpha) { alphacut = alpha; }
+  void set_alphacut(float alpha) { alphaCut = alpha; }
 
-  //! Set diphoton pT cut
-  void set_ptcut(float pT) { pTcut = pT; }
+  //! Set diphoton pT cut in pi0 mass range
+  void set_ptcut(float pTMin = 1.0, float pTMax = 1000.0)
+  {
+    pTCutMin = pTMin;
+    pTCutMax = pTMax;
+  }
+
+  //! Set diphoton pT threshold between MBD and photon trigger selection
+  void set_pt_threshold(float pT = 0)
+  {
+    pTCutThreshold = pT;
+  }
+
+  //! Choose to record QA histograms or not
+  void set_store_qa(bool val) { store_qa = val; }
 
   //! Produce QA histograms at different chi2 / energy cuts
   void cluster_cuts();
@@ -139,6 +158,8 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   //! Check trigger matching
   bool trigger_matching(const ROOT::Math::PtEtaPhiMVector&, const ROOT::Math::PtEtaPhiMVector&, const ROOT::Math::PtEtaPhiMVector&);
 
+  bool startswith(const std::string&, const std::string&);
+
   //! Absolute angle difference with wrapping
   float WrapAngleDifference(const float& phi1, const float& phi2);
 
@@ -149,6 +170,15 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   struct Cluster {
     ROOT::Math::PtEtaPhiMVector p4;
     bool isTrigger = false;
+  };
+
+
+  // Minimal information for pooling event in event mixing
+  struct EventInPool {
+    float zvtx = 1000;
+    float eta_lead = -10;
+    float phi_lead = -10;
+    std::vector<Cluster> clusters;
   };
  
  private:
@@ -178,19 +208,14 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   TFile *outfile_tree = nullptr;
   bool store_tree = false;
 
-  // Simplified output tree
+  // Simplified output tree (for nano analysis)
   int diphoton_bunchnumber;
+  float diphoton_vertex_z;
   float diphoton_mass;
   float diphoton_eta;
   float diphoton_pt;
   float diphoton_xf;
   float diphoton_phi;
-  float gamma1_eta;
-  float gamma1_phi;
-  float gamma1_E;
-  float gamma2_eta;
-  float gamma2_phi;
-  float gamma2_E;
   TTree *output_tree;
 
   // List of configurations
@@ -202,18 +227,25 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   const std::string regions[nRegions] = {"peak", "side"};
   static constexpr int nSpins = 2; // up or down spin
   const std::string spins[nSpins] = {"up", "down"};
+
+  // pT bins, same as those used in PHENIX 2021 Asymmetries
   static constexpr int nPtBins = 9;
   const float pTBins[nPtBins + 1] = {1, 2, 3, 4, 5, 6, 7, 8, 10, 20};
-  static constexpr int nEtaBins = 10;
-  const float etaBins[nEtaBins + 1] = {-3.0, -1.7, -1.2, -0.7, -0.35, 0.0, 0.35, 0.7, 1.2, 1.7, 3.0};
+
+  // New eta binning -> more equally distributed
+  static constexpr int nEtaBins = 8;
+  const float etaBins[nEtaBins + 1] = {-2.00, -1.05, -0.86, -0.61, 0.0, 0.61, 0.86, 1.05, 2.0};
+
+  // New xF binning -> more equally distributed
   static constexpr int nXfBins = 8;
-  const float xfBins[nXfBins + 1] = {-0.15, -0.10, -0.06, -0.03, 0, 0.03, 0.06, 0.10, 0.15};
+  const float xfBins[nXfBins + 1] = {-0.200, -0.048, -0.035, -0.022, 0.0, 0.022, 0.035, 0.048, 0.200};
+  
   static constexpr int nZvtxBins = 7;
   const float zvtxBins[nZvtxBins + 1] = {0, 10, 30, 50, 70, 100, 150, 200};
 
   static constexpr int nEtaRegions = 2;
   // |eta| < thresh or |eta| > thresh -> low or high
-  // To compare with PHENIX results
+  // thresh defines the PHENIX acceptance
   const std::string etaRegions[nEtaRegions] = {"low", "high"};
   static constexpr float Vs = 200; // 200 GeV
   static constexpr int nDirections = 2;
@@ -222,7 +254,7 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   
   // Constants
   const double etaThreshold = 0.35; // PHENIX acceptance threshold
-  const float beamDirection[nBeams] = {-1, 1}; // Yes, in that order
+  const float beamDirection[nBeams] = {-1, 1}; // Yes, in that order for yellow and blue
 
   // List spin info
   static constexpr int nBunches = 120;
@@ -247,10 +279,12 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   bool require_mbd_trigger_bit = false;
   bool trigger_mbd_any_vtx = false; // Event with MinBias trigger (no vtx requirement)
   bool trigger_mbd_vtx_10 = false; // Event with MinBias trigger (|vertex| < 10 cm requirement)
+  bool mbd_trigger_bit_event = false;
   bool require_photon_trigger_bit = false;
   bool trigger_mbd = false; // Event with MinBias detector trigger (scaled)
   bool trigger_mbd_photon_3 = false; // Event with photon 3 GeV trigger (scaled)
   bool trigger_mbd_photon_4 = false; // Event with photon 4 GeV trigger (scaled)
+  bool photon_trigger_bit_event = false;
   
   // Cluster level cuts
   int n_chi2_cuts = 0;
@@ -261,8 +295,10 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   std::vector<std::string> ecore_cuts_labels;
   
   // diphoton level cuts
-  float alphacut = 1.0;
-  float pTcut = 1.0;
+  float alphaCut = 1.0;
+  float pTCutMin = 1.0;
+  float pTCutMax = 1000.0;
+  float pTCutThreshold = 0;
 
   // trigger selection (emulator)
   bool require_emulator_matching = false;
@@ -285,13 +321,16 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   // 95 -> 4.2/5.3
   // 70 -> 3.5/4.3
   static constexpr int nThresholds = 10;
-  const float efficiency_thresholds[nThresholds] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 95};
-  const float array_energy_threshold_3[nThresholds] = {2.4, 2.7, 2.9, 3.1, 3.2, 3.4, 3.5, 3.7, 4.0, 4.3}; // 70% efficiency for the photon 3 GeV trigger
-  const float array_energy_threshold_4[nThresholds] = {2.9, 3.3, 3.6, 3.7, 3.9, 4.1, 4.3, 4.5, 4.9, 5.3}; // 70% efficiency for the photon 4 GeV trigger
+  const float efficiency_thresholds[nThresholds] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 95}; // efficiency thresholds
+  const float array_energy_threshold_3[nThresholds] = {2.4, 2.7, 2.9, 3.1, 3.2, 3.4, 3.5, 3.7, 4.0, 4.3}; // energy thresholds for the photon 3 GeV trigger
+  const float array_energy_threshold_4[nThresholds] = {2.9, 3.3, 3.6, 3.7, 3.9, 4.1, 4.3, 4.5, 4.9, 5.3}; // energy thresholds for the photon 4 GeV trigger
   static constexpr float delta_eta_threshold = 0.192; // pseudo-rapidity distance between 8 towers
   static constexpr float delta_phi_threshold = 0.192; // azimuthal distance between 8 towers
   
   // Histograms
+
+  bool store_qa = false; // Store QA histograms in output ROOT file
+  
   // Trigger histograms
   TH1I *h_emulator_selection;
   TH1F *h_trigger_live;
@@ -312,6 +351,7 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   // False positive histograms
 
   TH1I *h_efficiency_x_matching = nullptr;
+  TH1I *h_efficiency_x_matching_pt[nPtBins] = {nullptr};
 
   // Misc QA histograms
   TH1I *h_count_diphoton_nomatch;
@@ -354,6 +394,7 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   TH1F *h_pair_theta_12;
   TH1F *h_pair_DeltaR;
   TH1F *h_pair_alpha;
+  TH2F *h_pair_alpha_pt;
   TH1F *h_pair_pi0_eta_pt_1;
   TH1F *h_pair_pi0_eta_pt_2;
   TH1F *h_pair_pi0_eta_pt_3;
@@ -418,12 +459,14 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   TH1F *h_pair_mass_zvtx[nZvtxBins];
   TH1F *h_pair_mass_eta[nEtaBins];
   TH1F *h_pair_mass_xf[nXfBins];
+  TH1F *h_pair_mass_mixing;
+  TH1F *h_pair_mass_mixing_pt[nPtBins];
 
   // Beam- spin- and kinematic-dependent yields -> pT dependent
   TH1F *h_yield_1[nBeams][nParticles][nRegions][nPtBins][nEtaRegions][nSpins]; // low vs high |eta|
   TH1F *h_yield_2[nBeams][nParticles][nRegions][nPtBins][nDirections][nSpins]; // forward vs backward
   TH1F *h_yield_3[nBeams][nParticles][nRegions][nPtBins][nEtaRegions][nDirections][nSpins]; // altogether
-
+  
   // Beam- spin- and kinematic-dependent yields -> eta dependent
   TH1F *h_yield_eta[nBeams][nParticles][nRegions][nEtaBins][nSpins];
 
@@ -436,7 +479,7 @@ class AnNeutralMeson_micro_dst : public SubsysReco
 
   // Geometry (for tile matching)
   RawTowerGeomContainer *towergeom;
-  static constexpr double radius = 103;
+  static constexpr double radius = 103; // cm
   
   int count_1 = 0;
   int count_2 = 0;
@@ -454,7 +497,37 @@ class AnNeutralMeson_micro_dst : public SubsysReco
   std::string db_name = "daq";
   std::string user_name = "phnxrc";
   std::string table_name = "gl1_scaledown";
-  
+
+
+  // For event mixing
+  bool use_event_mixing = false;
+  static constexpr float dR_min = 0.034; // Minimum distance between two clusters in reconstruction (unused)
+  static constexpr int nPoolZvtxBins = 10;
+  const float poolZvtxBins[nPoolZvtxBins + 1] = {-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50};
+  static constexpr int nMultiplicityBins = 9;
+  const float multiplicityBins[nMultiplicityBins + 1] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+  static constexpr int nPoolEtaBins = 12;
+  const float poolEtaBins[nPoolEtaBins + 1] = {-1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2};
+  static constexpr int Nmix = 10;
+  std::deque<EventInPool> pool[nPoolZvtxBins][nMultiplicityBins][nPoolEtaBins];
+
+  // Event mixing diagnosis
+  TH1F *h_current_E = nullptr;
+  TH1F *h_current_eta = nullptr;
+  TH1F *h_current_phi = nullptr;
+  TH1F *h_pool_E = nullptr;
+  TH1F *h_pool_eta = nullptr;
+  TH1F *h_pool_phi = nullptr;
+
+  TH1F *h_same_delta_eta = nullptr;
+  TH1F *h_same_delta_phi = nullptr;
+  TH1F *h_same_delta_R = nullptr;
+  TH1F *h_same_alpha = nullptr;
+  TH1F *h_mixed_delta_eta = nullptr;
+  TH1F *h_mixed_delta_phi = nullptr;
+  TH1F *h_mixed_delta_R = nullptr;
+  TH1F *h_mixed_alpha = nullptr;
+
   SyncObject *syncobject{nullptr};
 };
 
