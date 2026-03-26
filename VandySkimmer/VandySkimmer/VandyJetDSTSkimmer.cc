@@ -192,18 +192,21 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   if(vtxMap->empty())
   {
     if(Verbosity())  std::cout << "no vertex found" << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   std::vector<GlobalVertex*> vertices = vtxMap->get_gvtxs_with_type(vtxTypes);
   if(vertices.empty() || !vertices.at(0))
   {
     if(Verbosity()) std::cout << "no MBD vertex found" << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   m_vtx_z = vertices.at(0)->get_z();
   if (std::abs(m_vtx_z) > m_vtx_cut)
   {
     if(Verbosity()) std::cout << "reco vertex not in range \n vertex is " <<m_vtx_z<<" cm off of nominal 0"  << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
 
