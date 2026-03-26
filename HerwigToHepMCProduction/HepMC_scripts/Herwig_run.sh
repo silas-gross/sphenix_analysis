@@ -21,7 +21,10 @@ if [[ $triggervalue -gt 0 || $photontriggervalue -gt 0 ]]; then
 fi
 if [[ $triggervalue -gt 30 ]]; then 
 	run_events=$(( run_events * 10 )) # based on known issue with 50 GeV jets
-fi 
+	if [[ $triggervalue -gt 40 ]]; then 
+		run_events=$(( run_events * 10 ))
+	fi 
+fi
 outfile_nameseed=$outfile_name"-S"$seedn"-"$filetag".hepmc"
 outfile_namestem=$outfile_name
 outfile_name=$outfile_name"-"$filetag".hepmc"
@@ -31,7 +34,7 @@ if [[ $1 == *"MB"* && $triggervalue -gt 0 ]]; then
 	outfile_nameseed="Herwig_MB-S"$seedn"-"$filetag".hepmc"
 	run_events=$(( run_events * 3 )) #the fact that this uses MB causes a problem
 	if [[ $triggervalue -ge 10 ]]; then 
-		run_events=$(( run_events * 2000 )) #the fact that this uses MB causes a problem
+		run_events=$(( run_events * 1000 )) #the fact that this uses MB causes a problem
 	fi 
 fi
 /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/Herwig/bin/Herwig run $1 -N $run_events -t $filetag --seed=$seedn
@@ -42,16 +45,16 @@ mv $infile_namestem"-S"$seedn"-"$filetag".tex" $outfile_namestem"-"$filetag".tex
 mv $outfile_nameseed $outfile_name
 if [[ $triggervalue -gt -0 ]]; then 
 	seg0="none"
-	if [[ $filenumber -le 20 ]]; then 
+	#if [[ $filenumber -le 20 ]]; then 
 		seg0=$outfile_namestem"-"$filetag".out"
-	fi
+	#fi
 	${config_dir}/../HerwigHepMCFilter/RunHerwigHepMCFilter.sh $outfile_name "jet" $triggervalue $goalevents $run_events $seg0 ${config_dir}/../HerwigHepMCFilter/
 	rm $outfile_name
 elif [[ $photontriggervalue -gt -0 ]]; then 
 	seg0="none"
-	if [[ $filenumber -le 20 ]]; then 
+	#if [[ $filenumber -le 20 ]]; then 
 		seg0=$outfile_namestem"-"$filetag".out"
-	fi
+	#fi
 	${config_dir}/../HerwigHepMCFilter/RunHerwigHepMCFilter.sh $outfile_name "photon" $photontriggervalue $goalevents $run_events $seg0 ${config_dir}/../HerwigHepMCFilter/
 	rm $outfile_name
 else 

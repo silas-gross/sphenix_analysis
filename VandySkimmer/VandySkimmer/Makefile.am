@@ -27,7 +27,6 @@ libVandySkimmer_la_LIBADD = \
   -lodbc++ \
   -lSubsysReco \
   -lfun4all \
-  -lg4eval \
   -lcalo_io \
   -lg4jets \
   -lVandyClasses \

@@ -6,12 +6,12 @@ export USER="$(id -u -n)"
 export LOGNAME=${USER}
 export HOME=/sphenix/u/${LOGNAME}
 
-export SPHENIX=${HOME}/sPHENIX
-export MYINSTALL=$SPHENIX/install
-export LD_LIBRARY_PATH=$MYINSTALL/lib:$LD_LIBRARY_PATH
-export ROOT_INCLUDE_PATH=$MYINSTALL/include:$ROOT_INCLUDE_PATH
-
-source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
+#export SPHENIX=${HOME}/sPHENIX
+#export MYINSTALL=$SPHENIX/install
+#export LD_LIBRARY_PATH=$MYINSTALL/lib:$LD_LIBRARY_PATH
+#export ROOT_INCLUDE_PATH=$MYINSTALL/include:$ROOT_INCLUDE_PATH
+#
+#source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 
 root.exe -q -b Fun4All_HFG.C\(\"$1\",\"Lambda2ppi\"\)
 root.exe -q -b Fun4All_HFG.C\(\"$1\"\)

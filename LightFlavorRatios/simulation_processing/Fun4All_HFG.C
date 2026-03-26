@@ -41,8 +41,8 @@ R__LOAD_LIBRARY(libsimqa_modules.so)
 
 int Fun4All_HFG(std::string processID = "0", std::string channel = "Kshort2pipi")
 {
-  int nEvents = 4e2;
-  std::string outDir = "./" + channel + "_20260320_DetroitMB_CR_2_mode_pTref_3p0_high_pT_boost/";
+  int nEvents = 100;
+  std::string outDir = "./" + channel + "_20260324/";
 
   string makeDirectory = "mkdir -p " + outDir + "hfEff";
   system(makeDirectory.c_str());
@@ -51,26 +51,22 @@ int Fun4All_HFG(std::string processID = "0", std::string channel = "Kshort2pipi"
   Fun4AllServer *se = Fun4AllServer::instance();
   se->Verbosity(1);
 
+  Fun4AllInputManager *infile = new Fun4AllDstInputManager("DSTin");
+  infile->AddListFile("lists/g4hits.list");
+  se->registerInputManager(infile);
+
   PHRandomSeed::Verbosity(1);
   recoConsts *rc = recoConsts::instance();
 
-  //Generator setup
-
-  Input::PYTHIA8 = true;
   int particleID = 421;
-  PYTHIA8::config_file[0] = "steeringCards/pythia8_MB_Detroit.cfg";
   if (channel == "Kshort2pipi")
   {
-    //run_pipi_reco = true;
-    //PYTHIA8::config_file[0] = "steeringCards/pythia8_K2pipi_Detroit.cfg";
-    //EVTGENDECAYER::DecayFile = "decFiles/K2pipi.DEC";
+    run_pipi_reco = true;
     particleID = 310;
   }
   else if (channel == "Lambda2ppi")
   {
-    //run_ppi_reco = true;
-    //PYTHIA8::config_file[0] = "steeringCards/pythia8_L02ppi_Detroit.cfg";
-    //EVTGENDECAYER::DecayFile = "decFiles/L02ppi.DEC";
+    run_ppi_reco = true;
     particleID = 3122;
   }
   else if (channel == "minBias")
@@ -82,30 +78,9 @@ int Fun4All_HFG(std::string processID = "0", std::string channel = "Kshort2pipi"
     std::cout << "Your decay channel " << channel << " is not known" << std::endl;
     exit(1); 
   }
-  Input::BEAM_CONFIGURATION = Input::pp_COLLISION;
+  //Input::BEAM_CONFIGURATION = Input::pp_COLLISION;
 
-  InputInit();
-
-  float abs_eta = 10;
-
-  PHPy8ParticleTrigger * p8_hf_signal_trigger = new PHPy8ParticleTrigger();
-  p8_hf_signal_trigger->SetPtLow(3.);
-  p8_hf_signal_trigger->SetPtHigh(4.);
-  p8_hf_signal_trigger->SetEtaHighLow(abs_eta, -1*abs_eta); // sample a rapidity range higher than the sPHENIX tracking pseudorapidity
-  p8_hf_signal_trigger->SetStableParticleOnly(false); // process unstable particles that include quarks
-
-  if (channel != "minBias")
-  {
-    p8_hf_signal_trigger->AddParticles(particleID);
-    p8_hf_signal_trigger->AddParticles(-1*particleID);
-    p8_hf_signal_trigger->PrintConfig();
-    INPUTGENERATOR::Pythia8[0]->register_trigger(p8_hf_signal_trigger);
-    INPUTGENERATOR::Pythia8[0]->set_trigger_OR();
-  
-    Input::ApplysPHENIXBeamParameter(INPUTGENERATOR::Pythia8);
-  }
-
-  InputRegister();
+  //InputInit();
 
   //CDB flags and such
 
@@ -113,7 +88,7 @@ int Fun4All_HFG(std::string processID = "0", std::string channel = "Kshort2pipi"
   rc->set_StringFlag("CDB_GLOBALTAG","ProdA_2024");
   rc->set_uint64Flag("TIMESTAMP",1);
   rc->set_IntFlag("RUNNUMBER",1);
-
+/*
   Enable::MVTX_APPLYMISALIGNMENT = true;
   ACTSGEOM::mvtx_applymisalignment = Enable::MVTX_APPLYMISALIGNMENT;
 
@@ -142,8 +117,9 @@ int Fun4All_HFG(std::string processID = "0", std::string channel = "Kshort2pipi"
   MagnetFieldInit();
 
   G4Setup();
-
+*/
   //Tagging stuff
+  float abs_eta = 1.2;
   DecayFinder *myFinder = new DecayFinder("myFinder");
   myFinder->Verbosity(INT_MAX);
   if (channel == "Kshort2pipi") myFinder->setDecayDescriptor("K_S0 -> pi^- pi^+");
@@ -204,42 +180,7 @@ int Fun4All_HFG(std::string processID = "0", std::string channel = "Kshort2pipi"
 
   if (run_pipi_reco) reconstruct_pipi_mass();
   if (run_ppi_reco) reconstruct_ppi_mass();
-/*
-  //Output file handling
-  makeDirectory = "mkdir -p " + outDir + "DST";
-  system(makeDirectory.c_str());
 
-  string FullOutFile = outDir + "/DST/" + channel + "_DST_" + processID + ".root";
-  Fun4AllDstOutputManager *out = new Fun4AllDstOutputManager("DSTOUT", FullOutFile);
-  out->StripNode("G4HIT_PIPE");
-  out->StripNode("G4HIT_SVTXSUPPORT");
-  //out->StripNode("PHG4INEVENT");
-  //out->StripNode("Sync");
-  out->StripNode("myFinder_DecayMap");
-  out->StripNode("G4HIT_PIPE");
-  out->StripNode("G4HIT_MVTX");
-  out->StripNode("G4HIT_INTT");
-  out->StripNode("G4HIT_TPC");
-  out->StripNode("G4HIT_MICROMEGAS");
-  out->StripNode("TRKR_HITSET");
-  out->StripNode("TRKR_HITTRUTHASSOC");
-  //out->StripNode("TRKR_CLUSTER");
-  //out->StripNode("TRKR_CLUSTERHITASSOC");
-  out->StripNode("TRKR_CLUSTERCROSSINGASSOC");
-  out->StripNode("TRAINING_HITSET");
-  out->StripNode("TRKR_TRUTHTRACKCONTAINER");
-  out->StripNode("TRKR_TRUTHCLUSTERCONTAINER");
-  out->StripNode("alignmentTransformationContainer");
-  out->StripNode("alignmentTransformationContainerTransient");
-  //out->StripNode("SiliconTrackSeedContainer");
-  //out->StripNode("TpcTrackSeedContainer");
-  //out->StripNode("SvtxTrackSeedContainer");
-  out->StripNode("ActsTrajectories");
-  //out->StripNode("SvtxTrackMap");
-  out->StripNode("SvtxAlignmentStateMap");
-  //out->SaveRunNode(0);
-  se->registerOutputManager(out);
-*/
   se->run(nEvents);
 
   se->End();

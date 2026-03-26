@@ -100,11 +100,12 @@ class VandyJetDSTSkimmer : public SubsysReco
     const float jetR[4]={0.2,0.3,0.4,0.5};
     const std::string jetRStr[4]={"02","03","04","05"};
     const float jetR_pTMin[4] = {12.0, 14.0, 15.5, 17.0};
-
     const std::string sampleNames[8] = {"MB","Jet5","Jet12","Jet20","Jet30","Jet40","Jet50","Jet60"};
-    const float truthJetR_pTMin[4][8] = {{0,5, 12, 20, 30, 40, 50, 60}, {0,6, 13, 21, 31, 41, 51, 61}, {0,7, 14, 21, 32, 42, 52, 62}, {0,10, 19, 27, 38, 49, 58, 68}};
+    const float truthJetR_pTMin[4][9] = {{0, 5, 12, 20, 30, 40, 50, 60, 100}, {0, 6, 13, 21, 31, 41, 51, 61, 100}, {0, 7, 14, 21, 32, 42, 52, 62, 100}, {0, 10, 19, 27, 38, 49, 58, 68, 100}};
+    const float cs[8] = {4.1970e+10, 1.3878e+08, 1.4903e+06, 6.2623e+04, 2.5298e+03, 1.3553e+02, 7.3113, 3.3261e-01};
 
-    float m_minJetPt{0.0};
+
+    float m_minJetPt{5.0};
     float m_vtx_cut{60.0};
 
     bool m_doCalib{true};
@@ -114,11 +115,9 @@ class VandyJetDSTSkimmer : public SubsysReco
     int sampleNumber{-999};
 
     int m_runnumber{0};
-    double m_ZDC_coincidence{0.0};
+    float m_ZDC_coincidence{0.0};
 
-    int nRemSim{0};
-    int nRemNoSim{0};
-    int nRem_dT{0};
+    int nRem{0};
 
     float m_vtx_z{-999};
     float m_vtx_z_truth{-999};
@@ -127,6 +126,7 @@ class VandyJetDSTSkimmer : public SubsysReco
     TowerInfoContainer *towerInfoContainers[4]{nullptr};
     RawTowerGeomContainer_Cylinderv1 *geoms[4]{nullptr};
     JetContainer *jets[4]{nullptr};
+    JetContainer *jetsUncalib[4]{nullptr};
     RawClusterContainer *clusters{nullptr};
 
     PHG4TruthInfoContainer *truthParticles;
@@ -150,10 +150,17 @@ class VandyJetDSTSkimmer : public SubsysReco
     std::string outfileName{"VandyJetDST.root"};
     TTree *T{nullptr};
 
-    std::pair<float, float> isGoodDijet();
-    std::pair<float, float> isGoodTruthDijet();
+    std::pair<float, float> isGoodDijet(int jetR_index);
+    std::pair<float, float> isGoodTruthDijet(int jetR_index, PHCompositeNode* topNode);
     float correct_eta(float eta, float r);
     fastjet::PseudoJet get_PseudoJet(double eta, double phi, double E);
+    float getHCalFracTruth(Jet* jet, PHCompositeNode* topNode);
+    float getDeltatTruth(float lead_ratio, float subl_ratio);
+    float OHCALrat2t(float ohcal_ratio){
+	    float t = -1.059;
+	    t += -(2.015+0.784*ohcal_ratio)*ohcal_ratio;
+	    return t;
+    }
 
     PHParameters m_cutParams{"TimingCutParams"}; //variable name is arbitrary
 
