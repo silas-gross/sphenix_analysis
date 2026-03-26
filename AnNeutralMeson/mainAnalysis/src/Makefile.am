@@ -17,6 +17,7 @@ AM_CPPFLAGS = \
 pkginclude_HEADERS = \
   AnNeutralMeson.h \
   AnNeutralMeson_micro_dst.h \
+  AnNeutralMeson_nano.h \
   ClusterSmallInfo.h \
   ClusterSmallInfoContainer.h
 
@@ -33,6 +34,7 @@ libanneutral_la_SOURCES = \
   $(ROOTDICTS) \
   AnNeutralMeson.cc \
   AnNeutralMeson_micro_dst.cc \
+  AnNeutralMeson_nano.cc \
   ClusterSmallInfo.cc \
   ClusterSmallInfoContainer.cc
 
