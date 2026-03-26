@@ -214,7 +214,6 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   m_eventInfo->set_z_vtx(m_vtx_z);
   m_eventInfo->set_ZDC_rate(m_ZDC_coincidence);
 
-
   if(m_doSim)
   {
     //get leading truth pT and skip events where it is outside the range for each sample for ALL jet R
@@ -315,12 +314,13 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
             cons.push_back(m_towerInfoTruth_map[lookup_key]);
           }
         }
-        JetInfo tmpJet;
+        
+	JetInfo tmpJet;
         tmpJet.set_px(jet->get_px());
         tmpJet.set_py(jet->get_py());
         tmpJet.set_pz(jet->get_pz());
         tmpJet.set_e(jet->get_e());
-	      tmpJet.set_pt(jet->get_pt());
+	tmpJet.set_pt(jet->get_pt());
         tmpJet.set_pt_uncalib(jet->get_pt());
         tmpJet.set_hCaloFrac(getHCalFracTruth(jet, topNode));
         tmpJet.set_constituents(cons);
@@ -562,19 +562,24 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     m_topoclusters.push_back(topocluster);
   }
 
+ 
   // jet loop
   for(int r=0; r<4; r++)
   {
     Jet* jetUncalib;
-    Jet::IterJetTCA jetUncalibIter {NULL};
-    if (m_doCalib) jetUncalibIter = jetsUncalib[r]->begin();
+    std::vector<Jet*> jetUncalibVec;
+    if (m_doCalib)
+    {
+	    for(auto jet:*jetsUncalib[r]) jetUncalibVec.push_back(jet);
+    }
+    int i=0;
     for(auto jet : *jets[r])
     {
       double posEta = 1.1 - jetR[r];
       double posEtaCorr = correct_eta(posEta, 90.0);
       double negEta = -1.1 + jetR[r];
       double negEtaCorr = correct_eta(negEta, 90.0);
-      jetUncalib = *jetUncalibIter;
+      jetUncalib = jetUncalibVec.at(i);
 
       if (jet->get_pt() < m_minJetPt || jet->get_eta() > posEtaCorr || jet->get_eta() < negEtaCorr)
       {
@@ -608,7 +613,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         
         if(calo == -999)
         {
-	  if(m_doCalib) ++jetUncalibIter;
+	  if(m_doCalib) i++;
 	  continue;
         }
 
@@ -632,6 +637,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 				//is it a jet by jet quanity or just an event quantity?
       tmpJet.set_constituents(cons);
       m_jetInfo[r].push_back(tmpJet);
+      i++;
     }
   }
 

@@ -16,6 +16,7 @@
 
 #include <jetbase/JetReco.h>
 #include <jetbase/TowerJetInput.h>
+#include <jetbase/JetCalib.h>
 #include <jetbackground/FastJetAlgoSub.h>
 
 #include <g4jets/TruthJetInput.h>
