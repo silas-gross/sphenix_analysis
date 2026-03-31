@@ -16,4 +16,4 @@ outputHepMCFile    = $(outputDir)/pythia_ppMinBias_$(Process).hepmc
 NeventsPerJob      = 500000
 outputROOTFile     = $(outputDir)/ppMinBias_Xi_fraction_$(Process).root
 Arguments          = $(outputHepMCFile) $(NeventsPerJob) $(Process) $(outputROOTFile)
-Queue 20
+Queue 5000
