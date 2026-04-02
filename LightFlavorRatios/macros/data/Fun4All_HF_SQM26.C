@@ -148,6 +148,10 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
 
     if (IsListFile)
     {
+        auto *hitsin = new Fun4AllDstInputManager("InputManager");
+        hitsin->AddListFile(inputDST);
+        se->registerInputManager(hitsin);
+
         std::ifstream ifs(inputDST);
         std::string filepath;
         int i = 0;
@@ -161,11 +165,8 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
                 segment = runseg.second;
                 runspecies = GetRunInfo(filepath);
                 CheckDstType(filepath);
+                break;
             }
-            std::string inputname = "InputManager" + std::to_string(i);
-            auto *hitsin = new Fun4AllDstInputManager(inputname);
-            hitsin->fileopen(filepath);
-            se->registerInputManager(hitsin);
             i++;
         }
     }
@@ -509,8 +510,10 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         create_hf_directories(ppi_reconstruction_name, ppi_output_dir, ppi_output_reco_file);
     //if (run_ee_reco)
     //    create_hf_directories(ee_reconstruction_name, ee_output_dir, ee_output_reco_file);
+    if (run_Lambdapi_reco)
+        create_hf_directories(Lambdapi_reconstruction_name, Lambdapi_output_dir, Lambdapi_output_reco_file);
 
-    if (run_pipi_reco || run_Kpi_reco || run_KK_reco || run_ppi_reco)// || run_ee_reco)
+    if (run_pipi_reco || run_Kpi_reco || run_KK_reco || run_ppi_reco || run_Lambdapi_reco)// || run_ee_reco)
         init_kfp_dependencies();
 
     if (run_pipi_reco)
@@ -523,6 +526,8 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         reconstruct_ppi_mass();
     //if (run_ee_reco)
         //reconstruct_ee_mass();
+    if (run_Lambdapi_reco)
+        reconstruct_Lambdapi_mass();
 
     se->skip(nSkip);
     se->run(nEvents);
@@ -557,6 +562,11 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         qaname = ee_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
         makeDirectory = "mkdir -p " + ee_output_dir + "qaOut";
     }
+    else if (run_Lambdapi_reco)
+    {
+        qaname = Lambdapi_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
+        makeDirectory = "mkdir -p " + Lambdapi_output_dir + "qaOut";
+    }
     std::cout << "Output QA file: " << qaname << std::endl;
     system(makeDirectory.c_str());
     std::string qaOutputFileName(qaname.Data());
@@ -573,6 +583,8 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         end_kfparticle(ppi_output_reco_file, ppi_output_dir);
     //if (run_ee_reco)
     //    end_kfparticle(ee_output_reco_file, ee_output_dir);
+    if (run_Lambdapi_reco)
+        end_kfparticle(Lambdapi_output_reco_file, Lambdapi_output_dir);
 
     delete se;
 
