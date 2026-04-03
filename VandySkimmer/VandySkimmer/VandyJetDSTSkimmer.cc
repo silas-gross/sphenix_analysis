@@ -641,7 +641,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       tmpJet.set_px(jet->get_px());
       tmpJet.set_py(jet->get_py());
       tmpJet.set_pz(jet->get_pz());
-      tmpJet.set_e(jet->get_e());
+      tmpJet.set_e(sqrt(pow(jet->get_px(),2) + pow(jet->get_py(),2) + pow(jet->get_pz(),2)));
       tmpJet.set_pt(jet->get_pt()); 
       if(m_doCalib) tmpJet.set_pt_uncalib(jetUncalib->get_pt());
       else tmpJet.set_pt_uncalib(jet->get_pt()); 
