@@ -123,7 +123,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
 {
     auto se = Fun4AllServer::instance();
     se->Verbosity(1);
-    // se->VerbosityDownscale(100);
     auto rc = recoConsts::instance();
 
     if (inputDST.find(".list") != std::string::npos)
@@ -209,48 +208,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
 
     std::stringstream nice_skip;
     nice_skip << std::setw(5) << std::setfill('0') << to_string(nSkip);
-
-    /*
-    if (!DoSeeding && (get_dEdx_info || get_detector_info))
-    {
-        //std::string clus_anacdbver = "ana534_2025p009_v001";
-        //std::string clus_anacdbver = "new_newcdbtag_v001";
-        std::string clus_anacdbver = "ana532_2025p009_v001";
-       
-        std::string clus_file = "";
-        if (runspecies == "run3pp" || runspecies == "run3auau" || runspecies == "run3oo")
-        {
-            clus_file = "/sphenix/lustre01/sphnxpro/production/" + runspecies + "/physics/" + clus_anacdbver + "/DST_TRKR_CLUSTER/run_" + nice_rounded_down.str() + "_" + nice_rounded_up.str() + "/DST_TRKR_CLUSTER_" + runspecies + "_" + clus_anacdbver + "-" + nice_runnumber.str() + "-" + nice_segment.str() + ".root";
-        }
-        if (runspecies == "run2pp")
-        {
-            clus_file = "/sphenix/lustre01/sphnxpro/production/" + runspecies + "/physics/" + clus_anacdbver + "/DST_TRKR_CLUSTER/run_" + nice_rounded_down.str() + "_" + nice_rounded_up.str() + "/dst/DST_TRKR_CLUSTER_" + runspecies + "_" + clus_anacdbver + "-" + nice_runnumber.str() + "-" + nice_segment.str() + ".root";
-        }
-        std::cout << "Input cluster DST: " << clus_file << std::endl;
-
-        auto hitsinclus = new Fun4AllDstInputManager("ClusterInputManager");
-        hitsinclus->fileopen(clus_file);
-        se->registerInputManager(hitsinclus);
-    }
-        */
-        
-    /*
-    if (get_calo_info)
-    {
-        int ratio_nCalo_over_nTrkr = 10; // number of events per calo DST divided by number of events per tracking DST
-        std::stringstream nice_segment_calo;
-        nice_segment_calo << std::setw(5) << std::setfill('0') << to_string(segment / ratio_nCalo_over_nTrkr);
-
-        std::string calo_anacdbver = "ana509_2024p022_v001";
-        std::string calo_file = "";
-        calo_file = "/sphenix/lustre01/sphnxpro/production2/" + runspecies + "/physics/calofitting/" + calo_anacdbver + "/run_" + nice_rounded_down.str() + "_" + nice_rounded_up.str() + "/DST_CALOFITTING_" + runspecies + "_" + calo_anacdbver + "-" + nice_runnumber.str() + "-" + nice_segment_calo.str() + ".root";
-        std::cout << "Input calo DST: " << calo_file << std::endl;
-
-        auto hitsincalo = new Fun4AllDstInputManager("CaloInputManager");
-        hitsincalo->fileopen(calo_file);
-        se->registerInputManager(hitsincalo);
-    }
-    */
 
     std::string geofile = CDBInterface::instance()->getUrl("Tracking_Geometry");
 
@@ -342,10 +299,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         }
 
         Micromegas_HitUnpacking();
-
-        //se->registerSubsystem(new MvtxRawHitQA);
-        //se->registerSubsystem(new InttRawHitQA);
-        //se->registerSubsystem(new TpcRawHitQA);
     }
 
     if (DoClustering)
@@ -361,11 +314,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         Micromegas_Clustering();
 
         Reject_Laser_Events();
-
-        //se->registerSubsystem(new MvtxClusterQA);
-        //se->registerSubsystem(new InttClusterQA);
-        //se->registerSubsystem(new TpcClusterQA);
-        //se->registerSubsystem(new MicromegasClusterQA);
     }
 
     if (DoSeeding)
@@ -393,11 +341,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         finder->setVertexMapName("SiliconSvtxVertexMap");
         se->registerSubsystem(finder);
 
-        //auto siliconqa = new SiliconSeedsQA;
-        //siliconqa->setTrackMapName("SiliconSvtxTrackMap");
-        //siliconqa->setVertexMapName("SiliconSvtxVertexMap");
-        //se->registerSubsystem(siliconqa);
-
         auto convertertpc = new TrackSeedTrackMapConverter("TpcSeedConverter");
         // Default set to full SvtxTrackSeeds. Can be set to
         // SiliconTrackSeedContainer or TpcTrackSeedContainer
@@ -419,12 +362,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         findertpc->setTrackMapName("TpcSvtxTrackMap");
         findertpc->setVertexMapName("TpcSvtxVertexMap");
         se->registerSubsystem(findertpc);
-
-        //auto tpcqa = new TpcSeedsQA;
-        //tpcqa->setTrackMapName("TpcSvtxTrackMap");
-        //tpcqa->setVertexMapName("TpcSvtxVertexMap");
-        //tpcqa->setSegment(rc->get_IntFlag("RUNSEGMENT"));
-        //se->registerSubsystem(tpcqa);
     }
 
     if (DoFitting)
@@ -454,49 +391,7 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
 
         // vertexing and propagation to vertex
         Tracking_Reco_Vertex_run2pp();
-
-        //se->registerSubsystem(new TpcSiliconQA);
-        //se->registerSubsystem(new TrackFittingQA);
-        //se->registerSubsystem(new VertexQA);
     }
-
-    /*
-    if (get_calo_info)
-    {
-        std::cout << "Begin my calo reco" << std::endl;
-
-        Process_Calo_Calib();
-
-        Global_Reco();
-
-        bool doEMcalRadiusCorr = true;
-        auto projection = new PHActsTrackProjection("CaloProjection");
-        if (doEMcalRadiusCorr)
-        {
-            projection->setLayerRadius(SvtxTrack::CEMC, cemc_proj_radius);
-        }
-        se->registerSubsystem(projection);
-
-        CaloGeomMapping *cgm = new CaloGeomMapping();
-        cgm->set_detector_name("CEMC");
-        cgm->set_UseDetailedGeometry(true);
-        se->registerSubsystem(cgm);
-
-        //////////////////
-        // Clusters
-        std::cout << "Building clusters" << std::endl;
-        RawClusterBuilderTemplate *ClusterBuilder = new RawClusterBuilderTemplate("EmcRawClusterBuilderTemplate");
-        ClusterBuilder->Detector("CEMC");
-        ClusterBuilder->set_UseDetailedGeometry(true);
-        ClusterBuilder->set_threshold_energy(0.070); // for when using basic calibration
-        std::string emc_prof = getenv("CALIBRATIONROOT");
-        emc_prof += "/EmcProfile/CEMCprof_Thresh30MeV.root";
-        // ClusterBuilder->set_UseAltZVertex(3); //0: GlobalVertexMap, 1: MbdVertexMap, 2: Nothing, 3: G4TruthInfo
-        ClusterBuilder->LoadProfile(emc_prof);
-        ClusterBuilder->set_UseTowerInfo(1); // to use towerinfo objects rather than old RawTower
-        se->registerSubsystem(ClusterBuilder);
-    }
-        */
 
     output_dir = outDir;
 
@@ -508,8 +403,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         create_hf_directories(KK_reconstruction_name, KK_output_dir, KK_output_reco_file);
     if (run_ppi_reco)
         create_hf_directories(ppi_reconstruction_name, ppi_output_dir, ppi_output_reco_file);
-    //if (run_ee_reco)
-    //    create_hf_directories(ee_reconstruction_name, ee_output_dir, ee_output_reco_file);
     if (run_Lambdapi_reco)
         create_hf_directories(Lambdapi_reconstruction_name, Lambdapi_output_dir, Lambdapi_output_reco_file);
 
@@ -524,8 +417,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         reconstruct_KK_mass();
     if (run_ppi_reco)
         reconstruct_ppi_mass();
-    //if (run_ee_reco)
-        //reconstruct_ee_mass();
     if (run_Lambdapi_reco)
         reconstruct_Lambdapi_mass();
 
@@ -533,45 +424,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
     se->run(nEvents);
     se->End();
     se->PrintTimer();
-
-    /*
-    TString qaname = output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-    std::string makeDirectory = "mkdir -p " + output_dir + "qaOut";
-    if (run_pipi_reco)
-    {
-        qaname = pipi_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-        makeDirectory = "mkdir -p " + pipi_output_dir + "qaOut";
-    }
-    else if (run_Kpi_reco)
-    {
-        qaname = Kpi_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-        makeDirectory = "mkdir -p " + Kpi_output_dir + "qaOut";
-    }
-    else if (run_KK_reco)
-    {
-        qaname = KK_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-        makeDirectory = "mkdir -p " + KK_output_dir + "qaOut";
-    }
-    else if (run_ppi_reco)
-    {
-        qaname = ppi_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-        makeDirectory = "mkdir -p " + ppi_output_dir + "qaOut";
-    }
-    else if (run_ee_reco)
-    {
-        qaname = ee_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-        makeDirectory = "mkdir -p " + ee_output_dir + "qaOut";
-    }
-    else if (run_Lambdapi_reco)
-    {
-        qaname = Lambdapi_output_dir + "qaOut/HIST_" + nice_runnumber.str() + "_" + nice_segment.str() + "_" + nice_skip.str() + "_QA.root";
-        makeDirectory = "mkdir -p " + Lambdapi_output_dir + "qaOut";
-    }
-    std::cout << "Output QA file: " << qaname << std::endl;
-    system(makeDirectory.c_str());
-    std::string qaOutputFileName(qaname.Data());
-    QA_Output(qaOutputFileName);
-    */
 
     if (run_pipi_reco)
         end_kfparticle(pipi_output_reco_file, pipi_output_dir);
@@ -581,8 +433,6 @@ void Fun4All_HF_SQM26(const int nEvents = 50,                                   
         end_kfparticle(KK_output_reco_file, KK_output_dir);
     if (run_ppi_reco)
         end_kfparticle(ppi_output_reco_file, ppi_output_dir);
-    //if (run_ee_reco)
-    //    end_kfparticle(ee_output_reco_file, ee_output_dir);
     if (run_Lambdapi_reco)
         end_kfparticle(Lambdapi_output_reco_file, Lambdapi_output_dir);
 
