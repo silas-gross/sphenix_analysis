@@ -84,6 +84,29 @@ void draw1Dhistogram(TH1 *hist,                        //
     delete c;
 }
 
+void draw2Dhistogram(TH2 *hist, bool logz, std::string xtitle, std::string ytitle, std::vector<std::string> addinfo, std::string drawoption, std::string filename)
+{
+    TCanvas *c = new TCanvas("c", "c", 800, 700);
+    gPad->SetRightMargin(0.15);
+    c->cd();
+    c->SetLogz(logz);
+    hist->GetXaxis()->SetTitle(xtitle.c_str());
+    hist->GetYaxis()->SetTitle(ytitle.c_str());
+    hist->Draw(drawoption.c_str());
+    // Add additional information to the histogram title using TLatex
+    TLatex *latex = new TLatex();
+    latex->SetTextSize(0.04);
+    latex->SetTextAlign(12);
+    latex->SetNDC();
+    for (size_t i = 0; i < addinfo.size(); ++i)
+    {
+        latex->DrawLatex(0.2, 0.88 - i * 0.05, addinfo[i].c_str());
+    }
+    c->SaveAs(Form("%s.png", filename.c_str()));
+    c->SaveAs(Form("%s.pdf", filename.c_str()));
+    delete c;
+}
+
 void cascade_feeddown()
 {
     const std::string base_dir = "/sphenix/tg/tg01/hf/hjheng/HF-analysis/simulation/Pythia_ppMinBias/"; // <-- change here to your directory
@@ -105,6 +128,8 @@ void cascade_feeddown()
     std::vector<TH1 *> v_h_lambda_phi_from_xi_charged;
     std::vector<TH1 *> v_h_lambda_phi_from_xi_neutral;
     std::vector<TH1 *> v_h_event_counter;
+    std::vector<TH2 *> v_h_phi_decaylengthcut;
+    std::vector<TH1 *> v_h_lambda_transverse_decay_length_cm;
 
     for (const auto &entry : std::filesystem::directory_iterator(base_dir))
     {
@@ -129,12 +154,14 @@ void cascade_feeddown()
             TH1D *h_lambda_phi_from_xi_charged = getObject<TH1D>(entry.path().string(), "h_lambda_phi_from_xi_charged");
             TH1D *h_lambda_phi_from_xi_neutral = getObject<TH1D>(entry.path().string(), "h_lambda_phi_from_xi_neutral");
             TH1D *h_event_counter = getObject<TH1D>(entry.path().string(), "h_event_counter");
+            TH2D *h_phi_decaylengthcut = getObject<TH2D>(entry.path().string(), "h_phi_decaylengthcut");
+            TH1D *h_lambda_transverse_decay_length_cm = getObject<TH1D>(entry.path().string(), "h_lambda_transverse_decay_length_cm");
 
             if (!h_lambda_pt_all || !h_lambda_pt_from_xi_all || !h_lambda_pt_from_xi_charged || !h_lambda_pt_from_xi_neutral ||
                 !h_lambda_rapidity_all || !h_lambda_rapidity_from_xi_all || !h_lambda_rapidity_from_xi_charged || !h_lambda_rapidity_from_xi_neutral ||
                 !h_lambda_eta_all || !h_lambda_eta_from_xi_all || !h_lambda_eta_from_xi_charged || !h_lambda_eta_from_xi_neutral ||
                 !h_lambda_phi_all || !h_lambda_phi_from_xi_all || !h_lambda_phi_from_xi_charged || !h_lambda_phi_from_xi_neutral ||
-                !h_event_counter)
+                !h_event_counter || !h_phi_decaylengthcut || !h_lambda_transverse_decay_length_cm)
             {
                 std::cerr << "Skipping file with missing histograms: " << filename << std::endl;
                 delete h_lambda_pt_all;
@@ -154,6 +181,8 @@ void cascade_feeddown()
                 delete h_lambda_phi_from_xi_charged;
                 delete h_lambda_phi_from_xi_neutral;
                 delete h_event_counter;
+                delete h_phi_decaylengthcut;
+                delete h_lambda_transverse_decay_length_cm;
                 continue;
             }
 
@@ -174,6 +203,8 @@ void cascade_feeddown()
             v_h_lambda_phi_from_xi_charged.push_back(h_lambda_phi_from_xi_charged);
             v_h_lambda_phi_from_xi_neutral.push_back(h_lambda_phi_from_xi_neutral);
             v_h_event_counter.push_back(h_event_counter);
+            v_h_phi_decaylengthcut.push_back(h_phi_decaylengthcut);
+            v_h_lambda_transverse_decay_length_cm.push_back(h_lambda_transverse_decay_length_cm);
         }
     }
 
@@ -201,6 +232,8 @@ void cascade_feeddown()
     TH1D *h_lambda_phi_from_xi_charged = (TH1D *)v_h_lambda_phi_from_xi_charged[0]->Clone("h_lambda_phi_from_xi_charged");
     TH1D *h_lambda_phi_from_xi_neutral = (TH1D *)v_h_lambda_phi_from_xi_neutral[0]->Clone("h_lambda_phi_from_xi_neutral");
     TH1D *h_event_counter = (TH1D *)v_h_event_counter[0]->Clone("h_event_counter");
+    TH2D *h_phi_decaylengthcut = (TH2D *)v_h_phi_decaylengthcut[0]->Clone("h_phi_decaylengthcut");
+    TH1D *h_lambda_transverse_decay_length_cm = (TH1D *)v_h_lambda_transverse_decay_length_cm[0]->Clone("h_lambda_transverse_decay_length_cm");
 
     h_lambda_pt_all->Reset();
     h_lambda_pt_from_xi_all->Reset();
@@ -219,6 +252,8 @@ void cascade_feeddown()
     h_lambda_phi_from_xi_charged->Reset();
     h_lambda_phi_from_xi_neutral->Reset();
     h_event_counter->Reset();
+    h_phi_decaylengthcut->Reset();
+    h_lambda_transverse_decay_length_cm->Reset();
 
     for (size_t i = 0; i < v_h_lambda_pt_all.size(); ++i)
     {
@@ -239,6 +274,8 @@ void cascade_feeddown()
         h_lambda_phi_from_xi_charged->Add(v_h_lambda_phi_from_xi_charged[i]);
         h_lambda_phi_from_xi_neutral->Add(v_h_lambda_phi_from_xi_neutral[i]);
         h_event_counter->Add(v_h_event_counter[i]);
+        h_phi_decaylengthcut->Add(v_h_phi_decaylengthcut[i]);
+        h_lambda_transverse_decay_length_cm->Add(v_h_lambda_transverse_decay_length_cm[i]);
     }
 
     TH1D *h_feeddown_frac_xi_all = (TH1D *)h_lambda_pt_from_xi_all->Clone("h_feeddown_frac_xi_all");
@@ -259,7 +296,7 @@ void cascade_feeddown()
 
     std::string plotdir = base_dir + "/cascade_feeddown/figure/"; // <-- change here if you want to save plots in a different directory
     system(("mkdir -p " + plotdir).c_str());
-    std::string cutinfo = "#Lambda^{0} |#eta| < 1.3; decay length #leq 2.5 cm";
+    std::string cutinfo = "#Lambda^{0} |#eta| < 1.3; #phi-dependent L_{xy} cut";
     draw1Dhistogram(h_feeddown_frac_xi_all, false, false, false, "#Lambda^{0}(+c.c) p_{T} [GeV]", "f_{#Xi feeddown}=N_{#Lambda^{0}(+c.c)}^{#Xi feedown}/N_{#Lambda^{0}(+c.c)}^{Inclusive}", {"PYTHIA8 p+p minimum bias (w. Detroit tune)", cutinfo}, "PE1", plotdir + "feeddown_fraction_xi_all");
     draw1Dhistogram(h_feeddown_frac_xi_rapidity_all, false, false, false, "#Lambda^{0}(+c.c) rapidity", "f_{#Xi feeddown}=N_{#Lambda^{0}(+c.c)}^{#Xi feedown}/N_{#Lambda^{0}(+c.c)}^{Inclusive}", {"PYTHIA8 p+p minimum bias (w. Detroit tune)", cutinfo}, "PE1", plotdir + "feeddown_fraction_xi_rapidity_all");
     draw1Dhistogram(h_feeddown_frac_xi_eta_all, false, false, false, "#Lambda^{0}(+c.c) #eta", "f_{#Xi feeddown}=N_{#Lambda^{0}(+c.c)}^{#Xi feedown}/N_{#Lambda^{0}(+c.c)}^{Inclusive}", {"PYTHIA8 p+p minimum bias (w. Detroit tune)", cutinfo}, "PE1", plotdir + "feeddown_fraction_xi_eta_all");
@@ -295,21 +332,24 @@ void cascade_feeddown()
     h_lambda_phi_from_xi_all->Scale(1.0 / n_pythia_events);
     h_lambda_phi_from_xi_charged->Scale(1.0 / n_pythia_events);
     h_lambda_phi_from_xi_neutral->Scale(1.0 / n_pythia_events);
+    h_lambda_transverse_decay_length_cm->Scale(1.0 / n_pythia_events);
 
-    draw1Dhistogram(h_lambda_pt_all, false, false, true, "#Lambda^{0}(+c.c) p_{T} [GeV]", "Normalized entries", {"Inclusive #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_pt_all");
+    draw1Dhistogram(h_lambda_pt_all, false, false, true, "#Lambda^{0}(+c.c) p_{T} [GeV]", "Normalized entries", {"Prompt + non-prompt (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_pt_all");
     draw1Dhistogram(h_lambda_pt_from_xi_all, false, false, true, "#Lambda^{0}(+c.c) p_{T} [GeV]", "Normalized entries", {"From #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_pt_from_xi_all");
     draw1Dhistogram(h_lambda_pt_from_xi_charged, false, false, true, "#Lambda^{0}(+c.c) p_{T} [GeV]", "Normalized entries", {"From #Xi^{-} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_pt_from_xi_charged");
     draw1Dhistogram(h_lambda_pt_from_xi_neutral, false, false, true, "#Lambda^{0}(+c.c) p_{T} [GeV]", "Normalized entries", {"From #Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_pt_from_xi_neutral");
-    draw1Dhistogram(h_lambda_rapidity_all, false, false, false, "#Lambda^{0}(+c.c) rapidity", "Normalized entries", {"Inclusive #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_rapidity_all");
+    draw1Dhistogram(h_lambda_rapidity_all, false, false, false, "#Lambda^{0}(+c.c) rapidity", "Normalized entries", {"Prompt + non-prompt (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_rapidity_all");
     draw1Dhistogram(h_lambda_rapidity_from_xi_all, false, false, false, "#Lambda^{0}(+c.c) rapidity", "Normalized entries", {"From #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_rapidity_from_xi_all");
     draw1Dhistogram(h_lambda_rapidity_from_xi_charged, false, false, false, "#Lambda^{0}(+c.c) rapidity", "Normalized entries", {"From #Xi^{-} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_rapidity_from_xi_charged");
     draw1Dhistogram(h_lambda_rapidity_from_xi_neutral, false, false, false, "#Lambda^{0}(+c.c) rapidity", "Normalized entries", {"From #Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_rapidity_from_xi_neutral");
-    draw1Dhistogram(h_lambda_eta_all, false, false, false, "#Lambda^{0}(+c.c) #eta", "Normalized entries", {"Inclusive #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_eta_all");
+    draw1Dhistogram(h_lambda_eta_all, false, false, false, "#Lambda^{0}(+c.c) #eta", "Normalized entries", {"Prompt + non-prompt (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_eta_all");
     draw1Dhistogram(h_lambda_eta_from_xi_all, false, false, false, "#Lambda^{0}(+c.c) #eta", "Normalized entries", {"From #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_eta_from_xi_all");
     draw1Dhistogram(h_lambda_eta_from_xi_charged, false, false, false, "#Lambda^{0}(+c.c) #eta", "Normalized entries", {"From #Xi^{-} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_eta_from_xi_charged");
     draw1Dhistogram(h_lambda_eta_from_xi_neutral, false, false, false, "#Lambda^{0}(+c.c) #eta", "Normalized entries", {"From #Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_eta_from_xi_neutral");
-    draw1Dhistogram(h_lambda_phi_all, false, false, false, "#Lambda^{0}(+c.c) #phi [rad]", "Normalized entries", {"Inclusive #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_phi_all");
+    draw1Dhistogram(h_lambda_phi_all, false, false, false, "#Lambda^{0}(+c.c) #phi [rad]", "Normalized entries", {"Prompt + non-prompt (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_phi_all");
     draw1Dhistogram(h_lambda_phi_from_xi_all, false, false, false, "#Lambda^{0}(+c.c) #phi [rad]", "Normalized entries", {"From #Xi^{-}+#Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_phi_from_xi_all");
     draw1Dhistogram(h_lambda_phi_from_xi_charged, false, false, false, "#Lambda^{0}(+c.c) #phi [rad]", "Normalized entries", {"From #Xi^{-} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_phi_from_xi_charged");
     draw1Dhistogram(h_lambda_phi_from_xi_neutral, false, false, false, "#Lambda^{0}(+c.c) #phi [rad]", "Normalized entries", {"From #Xi^{0} (+c.c)", cutinfo, "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_phi_from_xi_neutral");
+    draw2Dhistogram(h_phi_decaylengthcut, false, "#phi [rad]", "#Lambda^{0}(+c.c) transverse decay length cut [cm]", {}, "colz", plotdir + "phi_decaylengthcut");
+    draw1Dhistogram(h_lambda_transverse_decay_length_cm, false, false, false, "#Lambda^{0}(+c.c) transverse decay length [cm]", "Normalized entries", {"Prompt + non-prompt (+c.c)", "(Normalized by N_{PYTHIA events})"}, "hist e1", plotdir + "lambda_transverse_decay_length_cm");
 }
