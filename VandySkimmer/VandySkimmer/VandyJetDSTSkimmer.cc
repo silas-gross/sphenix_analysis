@@ -192,18 +192,21 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   if(vtxMap->empty())
   {
     if(Verbosity())  std::cout << "no vertex found" << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   std::vector<GlobalVertex*> vertices = vtxMap->get_gvtxs_with_type(vtxTypes);
   if(vertices.empty() || !vertices.at(0))
   {
     if(Verbosity()) std::cout << "no MBD vertex found" << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   m_vtx_z = vertices.at(0)->get_z();
   if (std::abs(m_vtx_z) > m_vtx_cut)
   {
     if(Verbosity()) std::cout << "reco vertex not in range \n vertex is " <<m_vtx_z<<" cm off of nominal 0"  << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
 
@@ -277,7 +280,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       tmpTower.set_calo(4);
 
       m_truthParticles.push_back(tmpTower);
-      m_towerInfoTruth_map[std::make_pair(4, p->get_track_id())] = m_towerInfo.size() - 1;
+      m_towerInfoTruth_map[std::make_pair(4, p->get_track_id())] = m_truthParticles.size() - 1;
     }
 
     for(int r=0; r<4; r++)
@@ -312,12 +315,12 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
           }
         }
         
-	JetInfo tmpJet;
+	      JetInfo tmpJet;
         tmpJet.set_px(jet->get_px());
         tmpJet.set_py(jet->get_py());
         tmpJet.set_pz(jet->get_pz());
         tmpJet.set_e(jet->get_e());
-	tmpJet.set_pt(jet->get_pt());
+	      tmpJet.set_pt(jet->get_pt());
         tmpJet.set_pt_uncalib(jet->get_pt());
         tmpJet.set_hCaloFrac(getHCalFracTruth(jet, topNode));
         tmpJet.set_constituents(cons);
@@ -335,6 +338,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       m_eventInfo->set_subleadTruth_pT(r,-999);
     }
   }
+
+  if(Verbosity()) std::cout << "done with sim" << std::endl;
 
   PHNodeIterator itNode(topNode);
   PHCompositeNode* parNode = dynamic_cast<PHCompositeNode*>(itNode.findFirst("PHCompositeNode","PAR"));
@@ -451,6 +456,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     return Fun4AllReturnCodes::ABORTEVENT;
   }
 
+  if(Verbosity()) std::cout << "good reco event" << std::endl;
+
   for(int r=0; r<4; r++)
   {
     std::pair<float, float> dijet = isGoodDijet(r);
@@ -458,6 +465,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     m_eventInfo->set_lead_pT(r, dijet.first);
     m_eventInfo->set_sublead_pT(r, dijet.second);
   }
+
+  if(Verbosity()) std::cout << "done with reco dijet" << std::endl;
 
   //store calorimeter towers in vector<Tower> object
   for(int calo = 0; calo < 4; calo++)
@@ -497,6 +506,9 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       m_towerInfo_map2[std::array<int,3> {calo, etaBin, phiBin}] = m_towerInfo.size() - 1;
     }
   }
+
+  if(Verbosity()) std::cout << "done with towers" << std::endl;
+
 
   RawClusterContainer::Map clusterMap = clusters->getClustersMap();
   for(auto entry : clusterMap)
@@ -559,6 +571,9 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     m_topoclusters.push_back(topocluster);
   }
 
+  if(Verbosity()) std::cout << "done with clusters" << std::endl;
+
+
  
   // jet loop
   for(int r=0; r<4; r++)
@@ -584,7 +599,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       }
 
       std::vector<int> cons;
-      for(auto comp : jet->get_comp_vec())
+      for(auto comp : jetUncalib->get_comp_vec())
       {
         int calo = -999;
         
@@ -610,8 +625,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         
         if(calo == -999)
         {
-	  if(m_doCalib) i++;
-	  continue;
+	        if(m_doCalib) i++;
+	        continue;
         }
 
         //std::cout << "calo: " << calo << "   calo from id: " << unique_id / 10000 << "   channel: " << unique_id - (unique_id / 10000) << std::endl;
@@ -638,7 +653,13 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     }
   }
 
+  if(Verbosity()) std::cout << "done with jets" << std::endl;
+
+
   T->Fill();
+
+  if(Verbosity()) std::cout << "Filled tree" << std::endl;
+
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
