@@ -718,6 +718,11 @@ std::pair<float, float> VandyJetDSTSkimmer::isGoodDijet(int jetR_index)
       leadJet = j;
       lead_pT = pT;
     }
+    else if(pT > sublead_pT)
+    {
+      subleadJet = j;
+      sublead_pT = pT;
+    }
   }
 
   if(!leadJet || !subleadJet)
@@ -855,6 +860,11 @@ std::pair<float, float> VandyJetDSTSkimmer::isGoodTruthDijet(int jetR_index, PHC
       }
       leadJet = j;
       lead_pT = pT;
+    }
+    else if(pT > sublead_pT)
+    {
+      subleadJet = j;
+      sublead_pT = pT;
     }
   }
 
