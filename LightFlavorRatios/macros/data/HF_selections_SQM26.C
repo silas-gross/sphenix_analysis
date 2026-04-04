@@ -26,6 +26,7 @@ namespace HeavyFlavorReco
   bool run_ppi_reco = true; // set to true if needed
   bool run_KK_reco = false; // set to true if needed
   bool run_Kpi_reco = true; // set to true if needed
+  bool run_Lambdapi_reco = false; // set to true if needed
 
   std::string output_dir = "./"; //Top dir of where the output nTuples will be written
   std::string kfp_header = "outputKFParticle_";
@@ -52,6 +53,11 @@ namespace HeavyFlavorReco
   std::string Kpi_reconstruction_name = "Kpi_reco"; //Used for naming output folder, file and node
   std::string Kpi_output_reco_file;
   std::string Kpi_output_dir;
+
+  std::string Lambdapi_decay_descriptor = "[Xi- -> {Lambda0 -> proton^+ pi^-} pi^-]cc"; //See twiki on how to set this
+  std::string Lambdapi_reconstruction_name = "Lambdapi_reco"; //Used for naming output folder, file and node
+  std::string Lambdapi_output_reco_file;
+  std::string Lambdapi_output_dir;
 
   bool save_kfpntuple = true;
   bool use_pid = false;
@@ -395,6 +401,96 @@ void reconstruct_Kpi_mass()
   QAKFParticle *kfpqa = new QAKFParticle("QAKFParticle_D0","D0",1.75,1.95);
   kfpqa->setKFParticleNodeName(Kpi_reconstruction_name);
   //se->registerSubsystem(kfpqa);
+}
+
+void reconstruct_Lambdapi_mass()
+{
+  Fun4AllServer *se = Fun4AllServer::instance();
+
+  KFParticle_sPHENIX *kfparticle = new KFParticle_sPHENIX(Lambdapi_reconstruction_name);
+  kfparticle->Verbosity(VERBOSITY_HF);
+
+  kfparticle->setDecayDescriptor(Lambdapi_decay_descriptor);
+
+  kfparticle->usePID(use_pid);
+  //kfparticle->setPIDacceptFraction(pid_frac);
+  kfparticle->dontUseGlobalVertex(dont_use_global_vertex);
+  kfparticle->requireTrackVertexBunchCrossingMatch(require_track_and_vertex_match);
+  kfparticle->getAllPVInfo(save_all_vtx_info);
+  kfparticle->allowZeroMassTracks();
+  kfparticle->use2Dmatching(use_2D_matching);
+  kfparticle->getTriggerInfo(get_trigger_info);
+  kfparticle->getDetectorInfo(get_detector_info);
+  kfparticle->saveDST(save_tracks_to_DST);
+  kfparticle->setContainerName(Lambdapi_reconstruction_name);
+  kfparticle->magFieldFile("FIELDMAP_TRACKING");
+
+  //PV to SV cuts
+  kfparticle->constrainToPrimaryVertex(true);
+  kfparticle->setMotherIPchi2(100);
+  kfparticle->setFlightDistancechi2(-1.);
+  kfparticle->setMinDIRA(-1.1);
+  kfparticle->setDecayLengthRange(-1*FLT_MAX, FLT_MAX);
+
+  //Track parameters
+  kfparticle->setMinimumTrackPT(0.1);
+  kfparticle->setMaximumTrackchi2nDOF(400.);
+  kfparticle->setMinTPChits(20);
+  kfparticle->setMinMVTXhits(1);
+  kfparticle->setMinINTThits(1);
+  kfparticle->setMinimumTrackIP_XY(-100.);
+  kfparticle->setMinimumTrackIPchi2_XY(-1000.);
+  kfparticle->setMinimumTrackIP(-100.);
+  kfparticle->setMinimumTrackIPchi2(-1000.);
+
+  //Vertex parameters
+  kfparticle->setMaximumVertexchi2nDOF(50);
+  kfparticle->setMaximumDaughterDCA(0.5); //1 mm
+
+  //Parent parameters
+  kfparticle->setMotherPT(0);
+  kfparticle->setMinimumMass(1.2); //Check mass ranges
+  kfparticle->setMaximumMass(1.5);
+  kfparticle->setMaximumMotherVertexVolume(0.1);
+
+  //Intermediate parameters
+  kfparticle->constrainIntermediateMasses(constrain_lambda_mass);
+
+  std::vector<std::pair<float, float>> intermediate_mass_range;
+  intermediate_mass_range.push_back(make_pair(1.08, 1.15));
+  kfparticle->setIntermediateMassRange(intermediate_mass_range);
+
+  std::vector<float> intermediate_min_pt = {0.0};
+  kfparticle->setIntermediateMinPT(intermediate_min_pt);
+
+  std::vector<std::pair<float, float>> intermediate_IP_range;
+  intermediate_IP_range.push_back(make_pair(-1., FLT_MAX));
+  kfparticle->setIntermediateIPRange(intermediate_IP_range);
+
+  std::vector<std::pair<float, float>> intermediate_IPchi2_range;
+  intermediate_IPchi2_range.push_back(make_pair(-1., FLT_MAX));
+  kfparticle->setIntermediateIPchi2Range(intermediate_IPchi2_range);
+
+  std::vector<float> intermediate_min_dira = {-1.1};
+  kfparticle->setIntermediateMinDIRA(intermediate_min_dira);
+
+  std::vector<float> intermediate_min_FDchi2 = {-1.};
+  kfparticle->setIntermediateMinFDchi2(intermediate_min_FDchi2);
+
+  std::vector<float> intermediate_max_vertex_vol = {1.1};
+  kfparticle->setIntermediateMaxVertexVolume(intermediate_max_vertex_vol);
+
+  std::vector<std::pair<float, float>> intermediate_IPxy_range;
+  intermediate_IPxy_range.push_back(make_pair(-1., FLT_MAX));
+  kfparticle->setIntermediateIPRange_XY(intermediate_IPxy_range);
+
+  std::vector<std::pair<float, float>> intermediate_IPchi2xy_range;
+  intermediate_IPchi2xy_range.push_back(make_pair(-1., FLT_MAX));
+  kfparticle->setIntermediateIPchi2Range_XY(intermediate_IPchi2xy_range);
+
+  kfparticle->setOutputName(Lambdapi_output_reco_file);
+
+  se->registerSubsystem(kfparticle);
 }
 
 void end_kfparticle(std::string full_file_name, std::string final_path)
