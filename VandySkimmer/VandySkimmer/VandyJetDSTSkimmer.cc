@@ -599,6 +599,9 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         continue;
       }
 
+      double HCalE = 0.0;
+      double totalE = 0.0;
+
       std::vector<int> cons;
       for(auto comp : jetUncalib->get_comp_vec())
       {
@@ -634,6 +637,11 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         if(m_towerInfo_map.find(lookup_key) != m_towerInfo_map.end())
         {
           cons.push_back(m_towerInfo_map[lookup_key]);
+          totalE += m_towerInfo[m_towerInfo_map[lookup_key]].e();
+          if(calo == 2 || calo == 3)
+          {
+            HCalE += m_towerInfo[m_towerInfo_map[lookup_key]].e();
+          }
         }
       }
       JetInfo tmpJet;
@@ -644,7 +652,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       tmpJet.set_pt(jet->get_pt()); 
       if(m_doCalib) tmpJet.set_pt_uncalib(jetUncalib->get_pt());
       else tmpJet.set_pt_uncalib(jet->get_pt()); 
-      tmpJet.set_hCaloFrac(0); 	//need to look at the TF doc to do this properly 
+      tmpJet.set_hCaloFrac(HCalE / totalE); 	//need to look at the TF doc to do this properly 
 				//is it a jet by jet quanity or just an event quantity?
       tmpJet.set_constituents(cons);
       m_jetInfo[r].push_back(tmpJet);
