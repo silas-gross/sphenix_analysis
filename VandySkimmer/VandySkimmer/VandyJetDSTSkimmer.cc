@@ -578,12 +578,6 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   // jet loop
   for(int r=0; r<4; r++)
   {
-    Jet* jetUncalib;
-    std::vector<Jet*> jetUncalibVec;
-    if (m_doCalib)
-    {
-	    for(auto jet:*jetsUncalib[r]) jetUncalibVec.push_back(jet);
-    }
     int i=0;
     for(auto jet : *jets[r])
     {
@@ -591,10 +585,17 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       double posEtaCorr = correct_eta(posEta, 90.0);
       double negEta = -1.1 + jetR[r];
       double negEtaCorr = correct_eta(negEta, 90.0);
-      jetUncalib = jetUncalibVec.at(i);
+      Jet *jetUncalib = jetsUncalib[r]->get_jet(i);
+      if(Verbosity())
+      {
+        std::cout << "i: " << i << std::endl;
+        std::cout << "   calib pT: " << jet->get_pt() << "   eta: " << jet->get_eta() << "   phi: " << jet->get_phi() << std::endl;
+        std::cout << "  uncalib pT: " << jetUncalib->get_pt() << "   eta: " << jetUncalib->get_eta() << "   phi: " << jetUncalib->get_phi() << "   nCons: " << jetUncalib->get_comp_vec().size() << std::endl;
+      }
 
       if (jet->get_pt() < m_minJetPt || jet->get_eta() > posEtaCorr || jet->get_eta() < negEtaCorr)
       {
+        i++;
         continue;
       }
 
@@ -625,13 +626,11 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         
         if(calo == -999)
         {
-	        if(m_doCalib) i++;
+          i++;
 	        continue;
         }
 
-        //std::cout << "calo: " << calo << "   calo from id: " << unique_id / 10000 << "   channel: " << unique_id - (unique_id / 10000) << std::endl;
         std::pair<int, int> lookup_key {calo, tower_id};
-        //std::pair<int, int> lookup_key {calo, static_cast<int>(unique_id - (unique_id / 10000))};
         if(m_towerInfo_map.find(lookup_key) != m_towerInfo_map.end())
         {
           cons.push_back(m_towerInfo_map[lookup_key]);
