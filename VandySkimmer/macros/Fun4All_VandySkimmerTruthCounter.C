@@ -97,8 +97,10 @@ void Fun4All_VandySkimmerTruthCounter(const std::string caloDSTlist, const std::
   se->run(12);
   se->End();
   int n_events=dm->n_evts;
-  std::string end_text=std::format("~/{}_starting_seg_{}.txt", sample_name, seg);
-  std::fstream outfile (end_text);
+  std::string end_text=sample_name+"_starting_seg_"+std::to_string(seg)+".txt";
+  std::cout<<end_text<<std::endl;
+  ofstream outfile (end_text.c_str());
+  if(!outfile.is_open()) std::cout<<"Couldn't open the file" <<std::endl;
   outfile<<n_events<<std::endl;
   std::cout<<dm->n_evts<<std::endl;
   outfile.close();

@@ -121,7 +121,7 @@ void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string 
   se->registerSubsystem(rtcemc);
 
   JetReco *towerjetreco = new JetReco("towerJetReco");
-  TowerJetInput* emtji = new TowerJetInput(Jet::CEMC_TOWERINFO_RETOWER,"TOWERINFO_CALIB_RETOWER");
+  TowerJetInput* emtji = new TowerJetInput(Jet::CEMC_TOWERINFO_RETOWER,"TOWERINFO_CALIB");
   TowerJetInput* ohtji = new TowerJetInput(Jet::HCALIN_TOWERINFO,"TOWERINFO_CALIB");
   TowerJetInput* ihtji = new TowerJetInput(Jet::HCALOUT_TOWERINFO,"TOWERINFO_CALIB");
   emtji->set_GlobalVertexType(GlobalVertex::VTXTYPE::MBD);
