@@ -17,6 +17,12 @@
 
 #include "/sphenix/user/hjheng/sPHENIXRepo/analysis/LightFlavorRatios/util/binning.h"
 
+// Hardcoded MVTX global displacement (x,y,z)= (6.2955, -1.06874, -6.66289) mm, and the minimum radius of MVTX from simulation/g4simulation/g4mvtx/PHG4MvtxDefs.h
+const double MVTX_global_displacement_x_cm = 6.2955 / 10.0;  // convert mm to cm
+const double MVTX_global_displacement_y_cm = -1.06874 / 10.0;
+const double MVTX_global_displacement_z_cm = -6.66289 / 10.0;
+const double MVTX_rmin_cm = 24.610 / 10.0; // convert mm to cm, innermost layer
+
 // Return true if this particle is the last copy in a same-PID chain
 // This helps avoid double counting intermediate copies in HepMC records
 bool is_last_copy(const HepMC3::ConstGenParticlePtr &p)
@@ -51,8 +57,8 @@ double length_unit_to_cm(const HepMC3::GenEvent &event)
     return 1.0;
 }
 
-// 3D decay length in cm, using production and decay vertices of the particle
-double decay_length_cm(const HepMC3::ConstGenParticlePtr &p, const HepMC3::GenEvent &event)
+// decay length in cm, using production and decay vertices of the particle, option for transverse or 3D
+double decay_length_cm(const HepMC3::ConstGenParticlePtr &p, const HepMC3::GenEvent &event, bool transverse = true)
 {
     if (!p)
         return -999.0;
@@ -70,8 +76,41 @@ double decay_length_cm(const HepMC3::ConstGenParticlePtr &p, const HepMC3::GenEv
     const double dy = dec.y() - prod.y();
     const double dz = dec.z() - prod.z();
 
-    const double L = std::sqrt(dx * dx + dy * dy + dz * dz);
-    return L * length_unit_to_cm(event);
+    if (transverse)
+    {
+        const double L = std::sqrt(dx * dx + dy * dy);
+        return L * length_unit_to_cm(event);
+    }
+    else
+    {
+        const double L = std::sqrt(dx * dx + dy * dy + dz * dz);
+        return L * length_unit_to_cm(event);
+    }
+}
+
+// Distance from the origin to the displaced inner MVTX boundary along azimuth phi.
+double mvtx_inner_radius_at_phi_cm(const double phi)
+{
+    // convert this phi in HEP definition to [0, 2pi]
+    double phi_local = phi;
+    if (phi_local < 0)
+    {
+        phi_local += 2 * M_PI;
+    }
+
+    const double cos_phi = std::cos(phi_local);
+    const double sin_phi = std::sin(phi_local);
+
+    // calculate the angle for the displacement vector, make it in the range of [0, 2pi] as well
+    double disp_phi = std::atan2(MVTX_global_displacement_y_cm, MVTX_global_displacement_x_cm);
+    if (disp_phi < 0)
+    {
+        disp_phi += 2 * M_PI;
+    }
+    double d = std::sqrt(MVTX_global_displacement_x_cm * MVTX_global_displacement_x_cm + MVTX_global_displacement_y_cm * MVTX_global_displacement_y_cm);
+    double rho = d * std::cos(phi_local - disp_phi) + std::sqrt(std::pow(MVTX_rmin_cm, 2) - std::pow(d * std::sin(phi_local - disp_phi), 2));
+
+    return rho;
 }
 
 // Check whether this Lambda comes directly from a Xi parent at its production vertex
@@ -130,7 +169,7 @@ int main(int argc, char *argv[])
     double lambda_y = -999.;
     double lambda_phi = -999.;
     double lambda_mass = -999.;
-    double lambda_decay_length_cm = -999.;
+    double lambda_transverse_decay_length_cm = -999.;
 
     tree->Branch("event", &event_id, "event/I");
     tree->Branch("lambda_pid", &lambda_pid, "lambda_pid/I");
@@ -139,7 +178,7 @@ int main(int argc, char *argv[])
     tree->Branch("lambda_eta", &lambda_eta, "lambda_eta/D");
     tree->Branch("lambda_y", &lambda_y, "lambda_y/D");
     tree->Branch("lambda_mass", &lambda_mass, "lambda_mass/D");
-    tree->Branch("lambda_decay_length_cm", &lambda_decay_length_cm, "lambda_decay_length_cm/D");
+    tree->Branch("lambda_transverse_decay_length_cm", &lambda_transverse_decay_length_cm, "lambda_transverse_decay_length_cm/D");
 
     const auto &lambda_pt_bins = BinInfo::final_pt_bins.bins;
     const auto &lambda_rapidity_bins = BinInfo::final_rapidity_bins.bins;
@@ -166,6 +205,9 @@ int main(int argc, char *argv[])
     TH1D *h_lambda_phi_from_xi_neutral = new TH1D("h_lambda_phi_from_xi_neutral", ";#Lambda^{0}(+c.c) #phi;Counts", lambda_phi_bins.size() - 1, lambda_phi_bins.data());
     // Event counter (for check)
     TH1D *h_event_counter = new TH1D("h_event_counter", ";dummy;events", 1, 0.5, 1.5);
+    // Diagnostic histograms
+    TH1D *h_lambda_transverse_decay_length_cm = new TH1D("h_lambda_transverse_decay_length_cm", ";#Lambda transverse decay length [cm];Counts", 100, 0, 5);
+    TH2D *h_phi_decaylengthcut = new TH2D("h_phi_decaylengthcut", ";#Lambda #phi [rad];Transverse decay length cut [cm]", 128, -3.2, 3.2, 100, 0, 4);
 
     int iev = 0;
 
@@ -208,14 +250,19 @@ int main(int argc, char *argv[])
             lambda_y = p->momentum().rap();
             lambda_phi = p->momentum().phi();
             lambda_mass = p->momentum().m();
-            lambda_decay_length_cm = decay_length_cm(p, event);
+            lambda_transverse_decay_length_cm = decay_length_cm(p, event, true); // transverse decay length
+            h_lambda_transverse_decay_length_cm->Fill(lambda_transverse_decay_length_cm);
 
             // Kinematic selection on Lambda
             if (std::abs(lambda_eta) >= 1.3)
                 continue;
 
-            // Topological selection on decay length: only consider Lambda with a decay length <= 2.5 cm (decay before the first layer of MVTX)
-            if (lambda_decay_length_cm > 2.5 || lambda_decay_length_cm < 0)
+            // Topological selection on transverse decay length: require the decay to occur before the displaced inner MVTX boundary at this azimuth.
+            const double mvtx_transverse_cut_cm = mvtx_inner_radius_at_phi_cm(lambda_phi);
+            h_phi_decaylengthcut->Fill(lambda_phi, mvtx_transverse_cut_cm);
+            if (mvtx_transverse_cut_cm < 0 ||
+                lambda_transverse_decay_length_cm > mvtx_transverse_cut_cm ||
+                lambda_transverse_decay_length_cm < 0)
                 continue;
 
             // Denominator
@@ -266,7 +313,7 @@ int main(int argc, char *argv[])
     TH1D *h_feeddown_frac_xi_neutral = (TH1D *)h_lambda_pt_from_xi_neutral->Clone("h_feeddown_frac_xi_neutral");
     h_feeddown_frac_xi_neutral->SetTitle(";#Lambda^{0}(+c.c) p_{T} [GeV];#Lambda from neutral Xi / all #Lambda");
 
-    // Binomial errors are appropriate since numerator is a subset of denominator
+    // Binomial errors are appropriate since numerator is a subset of denominator.
     h_feeddown_frac_xi_all->Divide(h_lambda_pt_from_xi_all, h_lambda_pt_all, 1.0, 1.0, "B");
     h_feeddown_frac_xi_charged->Divide(h_lambda_pt_from_xi_charged, h_lambda_pt_all, 1.0, 1.0, "B");
     h_feeddown_frac_xi_neutral->Divide(h_lambda_pt_from_xi_neutral, h_lambda_pt_all, 1.0, 1.0, "B");

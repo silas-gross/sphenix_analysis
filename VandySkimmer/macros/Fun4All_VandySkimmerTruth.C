@@ -16,6 +16,7 @@
 
 #include <jetbase/JetReco.h>
 #include <jetbase/TowerJetInput.h>
+#include <jetbase/JetCalib.h>
 #include <jetbackground/FastJetAlgoSub.h>
 
 #include <g4jets/TruthJetInput.h>
@@ -39,7 +40,7 @@ R__LOAD_LIBRARY(libjetbase.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libg4dst.so)
 
-void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string jetDSTlist, const std::string g4HitsDSTlist, const std::string globalDSTlist, const std::string outDir = "/sphenix/tg/tg01/jets/bkimelman/wEEC/", const std::string nfiles="25")
+void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string jetDSTlist, const std::string g4HitsDSTlist, const std::string globalDSTlist, const std::string outDir = "/sphenix/tg/tg01/jets/bkimelman/wEEC/", const std::string nfiles="25", const bool P_or_H=true)
 {
 
   bool doSim = true;
@@ -71,6 +72,7 @@ void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string 
 	  {
 		  if(temp2.find("data") == std::string::npos){
 			  sample_name = temp2;
+			  if(!P_or_H) sample_name="Herwig_"+sample_name;
 			  break;
 		  }
 	  }
@@ -120,7 +122,7 @@ void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string 
   se->registerSubsystem(rtcemc);
 
   JetReco *towerjetreco = new JetReco("towerJetReco");
-  TowerJetInput* emtji = new TowerJetInput(Jet::CEMC_TOWERINFO_RETOWER,"TOWERINFO_CALIB_RETOWER");
+  TowerJetInput* emtji = new TowerJetInput(Jet::CEMC_TOWERINFO_RETOWER,"TOWERINFO_CALIB");
   TowerJetInput* ohtji = new TowerJetInput(Jet::HCALIN_TOWERINFO,"TOWERINFO_CALIB");
   TowerJetInput* ihtji = new TowerJetInput(Jet::HCALOUT_TOWERINFO,"TOWERINFO_CALIB");
   emtji->set_GlobalVertexType(GlobalVertex::VTXTYPE::MBD);

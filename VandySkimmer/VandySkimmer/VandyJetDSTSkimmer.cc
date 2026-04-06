@@ -98,12 +98,19 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
         return Fun4AllReturnCodes::ABORTRUN;
       }
     }
-
+    std::cout<<m_sampleName<<std::endl;
     for(int s=0; s<8; s++)
     {
       if(m_sampleName == sampleNames[s])
       {
         sampleNumber = s;
+      }
+      else if(m_sampleName.find("Herwig") != std::string::npos)
+      {
+	 if(m_sampleName == HerwigsampleNames[s])
+	      {
+		sampleNumber = s;
+	      }
       }
     }
     if(sampleNumber == -999)
@@ -192,25 +199,27 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   if(vtxMap->empty())
   {
     if(Verbosity())  std::cout << "no vertex found" << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   std::vector<GlobalVertex*> vertices = vtxMap->get_gvtxs_with_type(vtxTypes);
   if(vertices.empty() || !vertices.at(0))
   {
     if(Verbosity()) std::cout << "no MBD vertex found" << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   m_vtx_z = vertices.at(0)->get_z();
   if (std::abs(m_vtx_z) > m_vtx_cut)
   {
     if(Verbosity()) std::cout << "reco vertex not in range \n vertex is " <<m_vtx_z<<" cm off of nominal 0"  << std::endl;
+    nRem++;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
 
   //set event info
   m_eventInfo->set_z_vtx(m_vtx_z);
   m_eventInfo->set_ZDC_rate(m_ZDC_coincidence);
-
 
   if(m_doSim)
   {
@@ -235,9 +244,9 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       nRem++;
       return Fun4AllReturnCodes::ABORTEVENT;
     }
-
+    
     m_eventInfo->set_cross_section(cs[sampleNumber]);
-
+    if(m_sampleName.find("Herwig") != std::string::npos) m_eventInfo->set_cross_section(Herwigcs[sampleNumber]);
     int truthVtxIndex = truthParticles->GetPrimaryVertexIndex();
     if(truthParticles->GetPrimaryVtx(truthVtxIndex))
     {
@@ -278,7 +287,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       tmpTower.set_calo(4);
 
       m_truthParticles.push_back(tmpTower);
-      m_towerInfoTruth_map[std::make_pair(4, p->get_track_id())] = m_towerInfo.size() - 1;
+      m_towerInfoTruth_map[std::make_pair(4, p->get_track_id())] = m_truthParticles.size() - 1;
     }
 
     for(int r=0; r<4; r++)
@@ -312,7 +321,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
             cons.push_back(m_towerInfoTruth_map[lookup_key]);
           }
         }
-        JetInfo tmpJet;
+        
+	      JetInfo tmpJet;
         tmpJet.set_px(jet->get_px());
         tmpJet.set_py(jet->get_py());
         tmpJet.set_pz(jet->get_pz());
@@ -335,6 +345,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       m_eventInfo->set_subleadTruth_pT(r,-999);
     }
   }
+
+  if(Verbosity()) std::cout << "done with sim" << std::endl;
 
   PHNodeIterator itNode(topNode);
   PHCompositeNode* parNode = dynamic_cast<PHCompositeNode*>(itNode.findFirst("PHCompositeNode","PAR"));
@@ -451,6 +463,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     return Fun4AllReturnCodes::ABORTEVENT;
   }
 
+  if(Verbosity()) std::cout << "good reco event" << std::endl;
+
   for(int r=0; r<4; r++)
   {
     std::pair<float, float> dijet = isGoodDijet(r);
@@ -458,6 +472,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     m_eventInfo->set_lead_pT(r, dijet.first);
     m_eventInfo->set_sublead_pT(r, dijet.second);
   }
+
+  if(Verbosity()) std::cout << "done with reco dijet" << std::endl;
 
   //store calorimeter towers in vector<Tower> object
   for(int calo = 0; calo < 4; calo++)
@@ -497,6 +513,9 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       m_towerInfo_map2[std::array<int,3> {calo, etaBin, phiBin}] = m_towerInfo.size() - 1;
     }
   }
+
+  if(Verbosity()) std::cout << "done with towers" << std::endl;
+
 
   RawClusterContainer::Map clusterMap = clusters->getClustersMap();
   for(auto entry : clusterMap)
@@ -559,27 +578,39 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     m_topoclusters.push_back(topocluster);
   }
 
+  if(Verbosity()) std::cout << "done with clusters" << std::endl;
+
+
+ 
   // jet loop
   for(int r=0; r<4; r++)
   {
-    Jet* jetUncalib;
-    Jet::IterJetTCA jetUncalibIter {NULL};
-    if (m_doCalib) jetUncalibIter = jetsUncalib[r]->begin();
+    int i=0;
     for(auto jet : *jets[r])
     {
       double posEta = 1.1 - jetR[r];
       double posEtaCorr = correct_eta(posEta, 90.0);
       double negEta = -1.1 + jetR[r];
       double negEtaCorr = correct_eta(negEta, 90.0);
-      jetUncalib = *jetUncalibIter;
+      Jet *jetUncalib = jetsUncalib[r]->get_jet(i);
+      if(Verbosity())
+      {
+        std::cout << "i: " << i << std::endl;
+        std::cout << "   calib pT: " << jet->get_pt() << "   eta: " << jet->get_eta() << "   phi: " << jet->get_phi() << std::endl;
+        std::cout << "  uncalib pT: " << jetUncalib->get_pt() << "   eta: " << jetUncalib->get_eta() << "   phi: " << jetUncalib->get_phi() << "   nCons: " << jetUncalib->get_comp_vec().size() << std::endl;
+      }
 
       if (jet->get_pt() < m_minJetPt || jet->get_eta() > posEtaCorr || jet->get_eta() < negEtaCorr)
       {
+        i++;
         continue;
       }
 
+      double HCalE = 0.0;
+      double totalE = 0.0;
+
       std::vector<int> cons;
-      for(auto comp : jet->get_comp_vec())
+      for(auto comp : jetUncalib->get_comp_vec())
       {
         int calo = -999;
         
@@ -605,34 +636,44 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         
         if(calo == -999)
         {
-	  if(m_doCalib) ++jetUncalibIter;
-	  continue;
+          i++;
+	        continue;
         }
 
-        //std::cout << "calo: " << calo << "   calo from id: " << unique_id / 10000 << "   channel: " << unique_id - (unique_id / 10000) << std::endl;
         std::pair<int, int> lookup_key {calo, tower_id};
-        //std::pair<int, int> lookup_key {calo, static_cast<int>(unique_id - (unique_id / 10000))};
         if(m_towerInfo_map.find(lookup_key) != m_towerInfo_map.end())
         {
           cons.push_back(m_towerInfo_map[lookup_key]);
+          totalE += m_towerInfo[m_towerInfo_map[lookup_key]].e();
+          if(calo == 2 || calo == 3)
+          {
+            HCalE += m_towerInfo[m_towerInfo_map[lookup_key]].e();
+          }
         }
       }
       JetInfo tmpJet;
       tmpJet.set_px(jet->get_px());
       tmpJet.set_py(jet->get_py());
       tmpJet.set_pz(jet->get_pz());
-      tmpJet.set_e(jet->get_e());
+      tmpJet.set_e(sqrt(pow(jet->get_px(),2) + pow(jet->get_py(),2) + pow(jet->get_pz(),2)));
       tmpJet.set_pt(jet->get_pt()); 
       if(m_doCalib) tmpJet.set_pt_uncalib(jetUncalib->get_pt());
       else tmpJet.set_pt_uncalib(jet->get_pt()); 
-      tmpJet.set_hCaloFrac(0); 	//need to look at the TF doc to do this properly 
+      tmpJet.set_hCaloFrac(HCalE / totalE); 	//need to look at the TF doc to do this properly 
 				//is it a jet by jet quanity or just an event quantity?
       tmpJet.set_constituents(cons);
       m_jetInfo[r].push_back(tmpJet);
+      i++;
     }
   }
 
+  if(Verbosity()) std::cout << "done with jets" << std::endl;
+
+
   T->Fill();
+
+  if(Verbosity()) std::cout << "Filled tree" << std::endl;
+
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -690,6 +731,11 @@ std::pair<float, float> VandyJetDSTSkimmer::isGoodDijet(int jetR_index)
       }
       leadJet = j;
       lead_pT = pT;
+    }
+    else if(pT > sublead_pT)
+    {
+      subleadJet = j;
+      sublead_pT = pT;
     }
   }
 
@@ -828,6 +874,11 @@ std::pair<float, float> VandyJetDSTSkimmer::isGoodTruthDijet(int jetR_index, PHC
       }
       leadJet = j;
       lead_pT = pT;
+    }
+    else if(pT > sublead_pT)
+    {
+      subleadJet = j;
+      sublead_pT = pT;
     }
   }
 
