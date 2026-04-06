@@ -98,12 +98,19 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
         return Fun4AllReturnCodes::ABORTRUN;
       }
     }
-
+    std::cout<<m_sampleName<<std::endl;
     for(int s=0; s<8; s++)
     {
       if(m_sampleName == sampleNames[s])
       {
         sampleNumber = s;
+      }
+      else if(m_sampleName.find("Herwig") != std::string::npos)
+      {
+	 if(m_sampleName == HerwigsampleNames[s])
+	      {
+		sampleNumber = s;
+	      }
       }
     }
     if(sampleNumber == -999)
@@ -237,9 +244,9 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       nRem++;
       return Fun4AllReturnCodes::ABORTEVENT;
     }
-
+    
     m_eventInfo->set_cross_section(cs[sampleNumber]);
-
+    if(m_sampleName.find("Herwig") != std::string::npos) m_eventInfo->set_cross_section(Herwigcs[sampleNumber]);
     int truthVtxIndex = truthParticles->GetPrimaryVertexIndex();
     if(truthParticles->GetPrimaryVtx(truthVtxIndex))
     {

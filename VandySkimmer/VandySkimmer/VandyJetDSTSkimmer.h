@@ -101,8 +101,10 @@ class VandyJetDSTSkimmer : public SubsysReco
     const std::string jetRStr[4]={"02","03","04","05"};
     const float jetR_pTMin[4] = {12.0, 14.0, 15.5, 17.0};
     const std::string sampleNames[8] = {"MB","Jet5","Jet12","Jet20","Jet30","Jet40","Jet50","Jet60"};
+    const std::string HerwigsampleNames[8] = {"HerwigMB","HerwigJet5","HerwigJet12","HerwigJet20","HerwigJet30","HerwigJet40","HerwigJet50","HerwigJet60"};
     const float truthJetR_pTMin[4][9] = {{0, 5, 12, 20, 30, 40, 50, 60, 100}, {0, 6, 13, 21, 31, 41, 51, 61, 100}, {0, 7, 14, 21, 32, 42, 52, 62, 100}, {0, 10, 19, 27, 38, 49, 58, 68, 100}};
     const float cs[8] = {4.1970e+10, 1.3878e+08, 1.4903e+06, 6.2623e+04, 2.5298e+03, 1.3553e+02, 7.3113, 3.3261e-01};
+    const float Herwigcs[8] = {3.1909e+10, 1.8437e+08, 6.7108e+05, 5.2613e+04, 2.0694e+03, 1.0510e+02, 5.2089, 3.3261e-01};
 
 
     float m_minJetPt{5.0};

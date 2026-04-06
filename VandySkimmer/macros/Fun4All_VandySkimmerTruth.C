@@ -40,7 +40,7 @@ R__LOAD_LIBRARY(libjetbase.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libg4dst.so)
 
-void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string jetDSTlist, const std::string g4HitsDSTlist, const std::string globalDSTlist, const std::string outDir = "/sphenix/tg/tg01/jets/bkimelman/wEEC/", const std::string nfiles="25")
+void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string jetDSTlist, const std::string g4HitsDSTlist, const std::string globalDSTlist, const std::string outDir = "/sphenix/tg/tg01/jets/bkimelman/wEEC/", const std::string nfiles="25", const bool P_or_H=true)
 {
 
   bool doSim = true;
@@ -72,6 +72,7 @@ void Fun4All_VandySkimmerTruth(const std::string caloDSTlist, const std::string 
 	  {
 		  if(temp2.find("data") == std::string::npos){
 			  sample_name = temp2;
+			  if(!P_or_H) sample_name="Herwig_"+sample_name;
 			  break;
 		  }
 	  }
