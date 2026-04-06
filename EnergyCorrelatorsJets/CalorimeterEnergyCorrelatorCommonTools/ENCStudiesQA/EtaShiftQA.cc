@@ -1,4 +1,6 @@
-EtaShiftQA::EtaShiftQA()
+#include "EtaShiftQA.h"
+
+EtaShiftQA::EtaShiftQA(TTree* T)
 {
 	EMCALQA = new PerCaloQAPlots("EMCAL");
 	IHCALQA	= new PerCaloQAPlots("IHCAL");
@@ -33,4 +35,50 @@ EtaShiftQA::EtaShiftQA()
 		MetaI_Z_QA->at(i)  	= new PerCaloQAPlots(std::format("Meta Calo, IHCAL radius, |z|_{vtx} < {}", z_range));
 		MetaO_Z_QA->at(i)  	= new PerCaloQAPlots(std::format("Meta Calo, OHCAL radius, |z|_{vtx} < {}", z_range));
 	}
+	//initialize variables from the tree
+	T->SetBranchAddress("EventInfo",&eventInfo);
+	T->SetBranchAddress("JetInfo_r04",&recoJets);
+	T->SetBranchAddress("TowerInfo",&recoTowers);
+	if(sim)
+	{
+		T->SetBranchAddress("TruthParticles",&truthParticles);
+		T->SetBranchAddress("TruthJetInfo_r04",&truthJets);
+	}
+	emMetaTowerBuilder = new BuildMetaTowers();
+	ihMetaTowerBuilder = new BuildMetaTowers();
+	ohMetaTowerBuilder = new BuildMetaTowers();
+
+	emMetaTowerBuilder->setCaloRadius(BuildMetaTowers::CALO::EMCAL)
+	ihMetaTowerBuilder->setCaloRadius(BuildMetaTowers::CALO::IHCAL)
+	ohMetaTowerBuilder->setCaloRadius(BuildMetaTowers::CALO::OHCAL)
 }
+
+float EtaShiftQA::CalculateJetPt(std::vector<stdd::array<float,2>> const_pxy )
+{
+	//using E scheme
+	float jet_pt=0.;
+	std::array<float,2> jet_pxy {0., 0.};
+	for(auto c:const_pt) jet_pxy+=c;
+	jet_pt=std::sqrt(std::pow(jet_pxy[0], 2) + std::pow(jet_pxy[1], 2));
+	return jet_pt;
+}
+
+void EtaShiftQA::AnalyzeEvent(int n_evt)
+{
+	T->GetEntry(n_evt);
+	float zvtx = eventInfo->get_z_vtx();
+	//Load in the recoTowers, handle seperating the calos offline
+	emMetaTowerBuilder->LoadVandyTowers(*recoTowers, zvtx);
+	ihMetaTowerBuilder->LoadVandyTowers(*recoTowers, zvtx);
+	ohMetaTowerBuilder->LoadVandyTowers(*recoTowers, zvtx);
+	//Build the MetaTowers	
+	emMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
+	ihMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
+	ohMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
+
+	//Get the tower info and load it in 
+	
+}	
+
+
+

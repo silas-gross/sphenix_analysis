@@ -28,6 +28,8 @@ class PerCaloQAPlots
 		~PerCaloQAPlots(){};
 		TH1F* Deltaetabin;
 		TH1F* deltaEt;
+		TH1F* avgeta;
+		TH1F* Et;
 		TH1F* shifteta;
 		TH2F* etaDeltaetabin;
 		TH2F* zVTXdeltaeta;
@@ -41,10 +43,19 @@ class PerCaloQAPlots
 						std::format("{} bin shift; #Delta #eta_{bin}; N_{bins}", calo).c_str(),
 						100, -2, 2
 					);
+			avgeta	 	= new TH1F(
+						std::format("h_{}_eta", calo).c_str(), 
+						std::format("{} average #eta; <#eta >; N_{bins}", calo).c_str(),
+						100, -2, 2
 			deltaEt		= new TH1F(
 						std::format("h_{}_dEt", calo).c_str(),
 						std::format("Change in calculated E_{T} for {} ; #Sum_{{}} #Delta E_{T}; N_{events}", calo, calo).c_str(),
-						2000, -1000.5, 999.5
+						2000, -100.5, 99.5
+					);
+			Et		= new TH1F(
+						std::format("h_{}_Et", calo).c_str(),
+						std::format("Transverse Energy for {}; #Sum{{}} E_{T}; N_{evts}", calo, calo).c_str(),
+						1000, 0, 200
 					);
 			shifteta	= new TH1F(
 						std::format("h_{}_shift", calo).c_str(),
@@ -63,6 +74,7 @@ class PerCaloQAPlots
 						120, -60.5, 59.5,
 						100, -4, 4
 					);
+			
 
 		}
 };
@@ -85,8 +97,15 @@ class EtaShiftQA
 			avgeta = avgeta / (double)n;
 			return avgeta;
 		}
-
+		void setSim(bool isSim){
+			this->sim=isSim;
+			return;
+		}
+		float CalculateJetPt(std::vector<std::array<float, 2>>);
+		void AnalyzeEvent();
+			
 	private:
+		bool sim {false};
 		//over all z 
 		PerCaloQAPlots* EMCALQA;
 		PerCaloQAPlots* IHCALQA;
@@ -100,7 +119,8 @@ class EtaShiftQA
 		TH1F* calculatedShiftedJetpt;
 		
 		TH1F* hzVTX;
-		
+		//meta tower builder and shifter
+
 		//restricted z ranges
 		std::array<PerCaloQAPlots*, 6>* EMCAL_Z_QA;
 		std::array<PerCaloQAPlots*, 6>* IHCAL_Z_QA;
@@ -109,10 +129,15 @@ class EtaShiftQA
 		std::array<PerCaloQAPlots*, 6>* MetaI_Z_QA;
 		std::array<PerCaloQAPlots*, 6>* MetaO_Z_QA;
 
-		BuildMetaTowers* emMetaTowerBuilder;
-		BuildMetaTowers* ihMetaTowerBuilder;
-		BuildMetaTowers* ohMetaTowerBuilder;
+		BuildMetaTowers* emMetaTowerBuilder 	{ nullptr };
+		BuildMetaTowers* ihMetaTowerBuilder	{ nullptr };
+		BuildMetaTowers* ohMetaTowerBuilder	{ nullptr };
 
+		EventInfo *eventInfo 			{ nullptr };
+		std::vector<JetInfo> *truthJets 	{ nullptr };
+		std::vector<JetInfo> *recoJets 		{ nullptr };
+		std::vector<Tower> *recoTowers 		{ nullptr };
+		std::vector<Tower> *truthParticles 	{ nullptr };
 };
 #endif
 

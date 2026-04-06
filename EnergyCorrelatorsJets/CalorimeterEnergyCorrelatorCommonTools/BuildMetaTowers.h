@@ -237,7 +237,24 @@ class BuildMetaTowers
 			}
 			return;
 		}	
-
+		void LoadVandyTowers(
+				std::vector<Tower> towers, 
+				float zVTX
+		)
+		{
+			std::vector<Tower*> emcal {};
+			std::vector<Tower*> ihcal {};
+			std::vector<Tower*> ohcal {};
+			for(auto t:towers){
+				if(t.calo == 1 ) 	emcal.push_back(&t);
+				else if(t.calo == 2)  	ihcal.push_back(&t);
+				else if(t.calo == 3)  	ohcal.push_back(&t);
+			}
+			GetEMCALTowers(emcal, true, zVTX);
+			GetHCALTowers(ihcal, false, zVTX);
+			GetHCALTowers (ohcal, true, zVTX);
+			return;
+		}	
 		//Just basic array 
 		void GetEMCALTowers(
 				std::vector<TowerArrayEntry*> EMCAL,
