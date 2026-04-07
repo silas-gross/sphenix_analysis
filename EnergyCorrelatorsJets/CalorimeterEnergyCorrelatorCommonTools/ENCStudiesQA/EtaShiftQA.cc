@@ -77,8 +77,28 @@ void EtaShiftQA::AnalyzeEvent(int n_evt)
 	ohMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
 
 	//Get the tower info and load it in 
+	std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* emMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};    	
+	std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ihMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};    	
+	std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ohMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};    	
 	
+	grabTowerArray(emMetaTowerBuilder, emMetaTowers);
+	grabTowerArray(ihMetaTowerBuilder, ihMetaTowers);
+	grabTowerArray(ohMetaTowerBuilder, ohMetaTowers);
+	
+		
 }	
 
-
+void EtaShiftQA::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+{
+	caloSet->at(0)	= MTB->getEMReTowers();
+	caloSet->at(1)	= MTB->getIHCaTowers();
+	caloSet->at(2)	= MTB->getOHCaTowers();
+	caloSet->at(3)	= MTB->getMetaTowers();
+	return;
+}
+void compareTowerValue()
+{
+	//aaaa
+}
+		
 
