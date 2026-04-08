@@ -74,6 +74,7 @@ class BuildMetaTowers
 			double Energy;
 			double phi; //center of tower phi 
 			double eta; //center of tower eta
+			
 		};
 		enum CALO
 		{
@@ -88,16 +89,17 @@ class BuildMetaTowers
 			for( int i = 0; i < 24; i++ ) shiftedetaEdges.at(i)=calculateEtaShift(etaEdges.at(i), zVTX);
 			for( int i = 0; i < 24; i++ )
 			{
-				double eta =10.; 
+				double eta = 10.; 
+				double phi = 0.;
 				if(i < (int) shiftedetaEdges.size() - 1 )
-					eta = 0.5*(shiftedEtaEdges.at(i),  shiftedEtaEdges.at(i+1));
+					eta = 0.5*(shiftedetaEdges.at(i),  shiftedetaEdges.at(i+1));
 				else 
-					eta = 0.5*(shiftedEtaEdges.at(i),  1.1);
+					eta = 0.5*(shiftedetaEdges.at(i),  1.1);
 				for( int j = 0; j < 64; j++)
 				{
 					double pt =100.; 
 					TowerArrayEntry* tower = 
-						new TowerArrayEntry* {0., shiftedEtaEdges.at(i), phiEdges.at(i)};
+						new TowerArrayEntry* {0., shiftedetaEdges.at(i), phiEdges.at(i)};
 					if(i < (int) phiEdges.size() - 1 ) 
 						phi = 0.5*(phiEdges.at(i),  phiEdges.at(i+1));
 					else 	
@@ -118,10 +120,53 @@ class BuildMetaTowers
 
 		}
 		//Fun4All load in 
+		std::array<std::array<TowerArrayEntry*, 1536>*, 4>* LoadFun4AllTower(
+				PHCompositeNode* topNode,
+				double zVTX
+			)
+		{
+			std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowers = new std::array<std::array<TowerArrayEntry*, 1536>*, 4>{};
+			//Calo towers
+			auto emcalTowers
+				= findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_CEMC_RETOWER" );
+			auto ihcalTowers
+				= findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALIN" );
+			auto ohcalTowers
+				= findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALOUT" );
+
+			//Calo Geom
+			auto emcalGeom	
+				= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC" );
+			auto ihcalGeom	
+				= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN" );
+			auto ohcalGeom	
+				= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT" );
+			//convert to TowerArrayEntries
+			std::array<TowerArrayEntry*, 1536>* rawEM	= new std::array<TowerArrayEntry*, 1536> {};
+			std::array<TowerArrayEntry*, 1536>* rawIH	= new std::array<TowerArrayEntry*, 1536> {};
+			std::array<TowerArrayEntry*, 1536>* rawOH	= new std::array<TowerArrayEntry*, 1536> {};
+			std::array<TowerArrayEntry*, 1536>* rawMt	= new std::array<TowerArrayEntry*, 1536> {};
+			GetFun4AllTowers(emcalTowers, emcalGeom, rawEM, 0, CALO::EMCAL);
+			GetFun4AllTowers(ihcalTowers, ihcalGeom, rawIH, 0, CALO::IHCAL);
+			GetFun4AllTowers(ohcalTowers, ohcalGeom, rawOH, 0, CALO::OHCAL);
+			for(int i = 0; i < (int) rawMT->size(); i++)
+			{
+				rawMT->at(i) = rawEM->at(i);
+				rawMT->at(i)->Energy += rawIH->at(i)->Energy;
+				rawMT->at(i)->Energy += rawOH->at(i)->Energy;
+			}
+			rawTowers->at(0) = rawEM;
+			rawTowers->at(1) = rawIH;
+			rawTowers->at(2) = rawOH;
+			rawTowers->at(3) = rawMt;
+			return rawTowers;
+					
+		}
+
 		void GetFun4AllTowers( 
 				TowerInfoContainerv2 CAL, 
 				RawTowerGeomContainer_Cylinderv1 geom, 
-				std::array<TowerArrayEntry*, 1536>* Towers
+				std::array<TowerArrayEntry*, 1536>* Towers,
 				double zVTX,
 				CALO calo
 				)
@@ -309,7 +354,7 @@ class BuildMetaTowers
 		std::array<TowerArrayEntry*, 1536>* getIHCaTowers() { return this->IHCaTowers; };
 		std::array<TowerArrayEntry*, 1536>* getOHCaTowers() { return this->OHCaTowers; };
 		std::array<TowerArrayEntry*, 1536>* getMetaTowers() { return this->MetaTowers; };
-
+		std::array<double, 25> getShiftedEdges() { return this->shiftedetaEdges; };
 	private:
 		//Private variables
 		float 		R { 1245 }; //IHCAL half radius in cm
@@ -329,7 +374,7 @@ class BuildMetaTowers
 		std::array <TowerArrayEntry*, 1536>* OHCaTowers = new std::array <TowerArrayEntry*, 1536> {};
 		
 		//HCAL eta-phi physical geometry
-		const std::array <double, 24> etaEdges 	
+		const std::array <double, 25> etaEdges 	
 			{ -1.1000000, -1.0083333, -0.91666667, -0.82500000, -0.73333333, -0.64166667, 
 				-0.55000000, -0.45833333, -0.36666667, -0.27500000, -0.18333333, -0.091666667, 
 				1.1102230e-16, 0.091666667, 0.18333333, 0.27500000, 0.36666667, 0.45833333, 
@@ -347,7 +392,7 @@ class BuildMetaTowers
 				5.2478178, 5.3459926, 5.4441674, 5.5423421, 5.6405169, 5.7386917, 5.8368664, 
 				5.9350412, 6.0332160, 6.1313908, 6.2295655 };	
 		
-		std::array<double ,24> shiftedetaEdges {};
+		std::array<double ,25> shiftedetaEdges {};
 
 		//Private Methods
 		double calculateEtaShift(double eta, double zVtx)
@@ -388,8 +433,8 @@ class BuildMetaTowers
 			int binN=0;
 			if(isEta && useSlant)
 			{
-				for(int i = 0; i<(int) shiftedEtaEdges.size(); i++){
-					tempBottom.push_back(shiftedEtaEdges.at(i));
+				for(int i = 0; i<(int) shiftedetaEdges.size(); i++){
+					tempBottom.push_back(shiftedetaEdges.at(i));
 				}
 			}
 			else if (isEta)

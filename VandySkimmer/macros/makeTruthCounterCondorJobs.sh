@@ -117,7 +117,7 @@ chunk_dst_list()
 	base_dir=$(pwd)
 	cd ${triggertype}_data
 	if [ "$verbose" = true ]; then 
-		echo "Checking if lookup file and file list exist for a per job density of ${filedensity} exists"
+		echo "Checking if lookup file and file list exist for a per job density of ${filedensity} exists for tag ${triggertype}"
 	fi 
 	listdir=lists_${filedensity}_per_file
 	if [ ! -d ${listdir} ]; then
@@ -201,7 +201,7 @@ submit_condor_jobs(){
 		if [ $n -ge ${nfiles} ]; then
 			break
 		fi	
-		i=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$n".job"
+		i=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$n"_counter.job"
 		condor_submit $i
 	done
 }
@@ -278,7 +278,7 @@ handle_options()
 			-G | --generator) 
 				gen=$(extract_argument $@)
 				if [[ $gen = *"Herwig"* ]]; then
-					trigger_type=${gen}${trigger_type}
+					triggertype=${gen}${triggertype}
 				fi
 				shift
 				shift

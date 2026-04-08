@@ -96,9 +96,16 @@ void EtaShiftQA::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<Towe
 	caloSet->at(3)	= MTB->getMetaTowers();
 	return;
 }
-void compareTowerValue()
+void compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::vector<TowerArrayEntry>* CaloBase)
 {
-	//aaaa
+	for(auto tow: *CaloBase)
+	{
+		double phi = std::atan2(tow.py, tow.px);
+		double eta = 
+		TowerArrayEntry* tae = new TowerArrayEntry { tow.E, phi, eta };	
+		int index = emMetaTowerBuilder->calculateIndex( 
+
+	
 }
 		
 

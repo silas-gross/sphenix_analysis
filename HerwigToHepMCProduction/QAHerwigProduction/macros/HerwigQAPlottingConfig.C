@@ -144,34 +144,34 @@ std::vector<TH2F*>* HerwigQAPlottingConfig::GetRatioPlots(std::vector<TH2F*>* si
 	}
 	return ratios;
 }
-void HerwigQAPlottingConfig::ScaleXS(std::vector<TH1I*>* histograms, bool isHerwig)
+void HerwigQAPlottingConfig::ScaleXS(std::vector<TH1I*>* histograms, bool isHerwig, int N_evts)
 {
 	for(int i=0; i<(int)histograms->size(); i++)
 	{
-		if(isHerwig) histograms->at(i)->Scale(HW_XS);
-		else histograms->at(i)->Scale(PY_XS);
+		if(isHerwig) histograms->at(i)->Scale(HW_XS/(float)N_evts);
+		else histograms->at(i)->Scale(PY_XS/(float)N_evts);
 		histograms->at(i)->SetYTitle("#sigma [pb]");
 	}
 }
-void HerwigQAPlottingConfig::ScaleXS(std::vector<TH1F*>* histograms, bool isHerwig)
+void HerwigQAPlottingConfig::ScaleXS(std::vector<TH1F*>* histograms, bool isHerwig, int N_evts)
 {
 	for(int i=0; i<(int)histograms->size(); i++)
 	{
-		if(isHerwig) histograms->at(i)->Scale(HW_XS);
-		else histograms->at(i)->Scale(PY_XS);
+		if(isHerwig) histograms->at(i)->Scale(HW_XS/(float)N_evts);
+		else histograms->at(i)->Scale(PY_XS/(float)N_evts);
 		histograms->at(i)->SetYTitle("#sigma [pb]");
 	}
 }
-void HerwigQAPlottingConfig::ScaleXS(TH1I* histograms, bool isHerwig)
+void HerwigQAPlottingConfig::ScaleXS(TH1I* histograms, bool isHerwig, int N_evts)
 {
-	if(isHerwig) histograms->Scale(HW_XS);
-	else histograms->Scale(PY_XS);	
+	if(isHerwig) histograms->Scale(HW_XS/(float)N_evts);
+	else histograms->Scale(PY_XS/(float)N_evts);	
 	histograms->SetYTitle("#sigma [pb]");
 }
-void HerwigQAPlottingConfig::ScaleXS(TH1F* histograms, bool isHerwig)
+void HerwigQAPlottingConfig::ScaleXS(TH1F* histograms, bool isHerwig, int N_evts)
 {
-	if(isHerwig) histograms->Scale(HW_XS);
-	else histograms->Scale(PY_XS);
+	if(isHerwig) histograms->Scale(HW_XS/(float)N_evts);
+	else histograms->Scale(PY_XS/(float)N_evts);
 	histograms->SetYTitle("#sigma [pb]");
 }
 

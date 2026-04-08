@@ -837,6 +837,7 @@ void CollectJets(TDirectory* jets, std::array<std::vector<TH1F*>*, 4>* all_jets,
 	for(int i=2; i<7; i++)
 	{
 		jets->cd();
+		if(i%2 == 1) continue;
 		TDirectory* r_dir=(TDirectory*)jets->GetDirectory(std::format("R0{}Jets", i).c_str());
 		r_dir->cd();
 		all_jets->at(0)->push_back((TH1F*)r_dir->Get(std::format("h_jet_r0{}_pt", i).c_str()));
@@ -914,11 +915,11 @@ void CollectPhotons(TDirectory* photons, std::array<TH1F*, 4>* all_photons, std:
 	return;
 
 }
-void PlotJetObs(std::vector<TH1F*>* herwig_obs, std::vector<TH1F*>* pythia_obs, TCanvas* obs_canv)
+void PlotJetObs(std::vector<TH1F*>* herwig_obs, int n_herwig, std::vector<TH1F*>* pythia_obs, int n_pythia, TCanvas* obs_canv)
 {
 	//just does the plotting of one variable at a time
 	if(!herwig_obs || !pythia_obs) return;
-	TLegend* l_data=new TLegend(0.7, 0.4, 1, 0.58);
+	TLegend* l_data=new TLegend(0.5, 0.4, 1, 0.58);
 	TLegend* l_header=new TLegend(0.5, 0.6, 0.7, 1);
 	conf->SetsPhenixHeaderLegend(l_header, tag);
 	l_header->AddEntry("", std::format("Jet {}", herwig_obs->at(0)->GetXaxis()->GetTitle()).c_str(), "");
@@ -927,11 +928,11 @@ void PlotJetObs(std::vector<TH1F*>* herwig_obs, std::vector<TH1F*>* pythia_obs, 
 	std::vector<TPad*>* pads=conf->AddPads(obs_canv);
 	std::string var=herwig_obs->at(0)->GetXaxis()->GetTitle();
 	bool ispt = false;
-	if(var.find("p_{T}") !=std::string::npos) ispt=true;
+	if(var.find("GeV") !=std::string::npos) ispt=true;
 	if(ispt)
 	{
-		conf->ScaleXS(herwig_obs, true);
-		conf->ScaleXS(pythia_obs, false);
+		conf->ScaleXS(herwig_obs, true, n_herwig);
+		conf->ScaleXS(pythia_obs, false, n_pythia);
 		pads->at(1)->SetLogy();
 	}
 	else if(var.find("[GeV]") != std::string::npos) pads->at(1)->SetLogy();
@@ -962,8 +963,8 @@ void PlotJetObs(std::vector<TH1F*>* herwig_obs, std::vector<TH1F*>* pythia_obs, 
 	pads->at(1)->cd();
 	bool herwig_high = false;
 	if (herwig->GetMaximum() > pythia->GetMaximum() ) herwig_high=true;
-	if (herwig_high) herwig->Draw("axis nostack");
-	else pythia->Draw("axis nostack");
+	if (herwig_high) herwig_obs->at(0)->Draw("axis");
+	else pythia_obs->at(0)->Draw("axis");
 	herwig->Draw("plc pmc nostack same e1");
 	pythia->Draw("plc pmc same nostack e1");
 	pythia->GetXaxis()->SetTitle(herwig_obs->at(0)->GetXaxis()->GetTitle());
@@ -976,7 +977,7 @@ void PlotJetObs(std::vector<TH1F*>* herwig_obs, std::vector<TH1F*>* pythia_obs, 
 	pads->at(1)->Draw();
 	return;
 }
-void PlotJetObs(std::vector<TH1I*>* herwig_obs, std::vector<TH1I*>* pythia_obs, TCanvas* obs_canv)
+void PlotJetObs(std::vector<TH1I*>* herwig_obs, int n_herwig, std::vector<TH1I*>* pythia_obs, int n_pythia, TCanvas* obs_canv)
 {
 	//just does the plotting of one variable at a time
 	if(!herwig_obs || !pythia_obs) return;
@@ -986,8 +987,8 @@ void PlotJetObs(std::vector<TH1I*>* herwig_obs, std::vector<TH1I*>* pythia_obs, 
 	conf->SetLegend(l_data);
 	l_data->SetNColumns(3);
 	std::vector<TPad*>* pads=conf->AddPads(obs_canv);
-	conf->ScaleXS(herwig_obs, true);
-	conf->ScaleXS(pythia_obs, false);
+	conf->ScaleXS(herwig_obs, true, n_herwig);
+	conf->ScaleXS(pythia_obs, false, n_pythia);
 	THStack* herwig = new THStack("herwig", "herwig");
 	THStack* pythia = new THStack("herwig", "herwig");
 	for(int i=0; i<(int)herwig_obs->size(); i++)
@@ -1015,8 +1016,8 @@ void PlotJetObs(std::vector<TH1I*>* herwig_obs, std::vector<TH1I*>* pythia_obs, 
 	l_header->Draw();
 	bool herwig_high = false;
 	if (herwig->GetMaximum() > pythia->GetMaximum() ) herwig_high=true;
-	if (herwig_high) herwig->Draw("axis");
-	else pythia->Draw("axis");
+	if (herwig_high) herwig_obs->at(0)->Draw("axis");
+	else pythia_obs->at(0)->Draw("axis");
 	herwig->Draw("plc pmc nostack same e1");
 	pythia->Draw("plc pmc same nostack e1");
 	pythia->GetXaxis()->SetTitle(herwig_obs->at(0)->GetXaxis()->GetTitle());
@@ -1037,8 +1038,8 @@ void PlotPhotonObs(TH1F* herwig_obs, TH1F* pythia_obs, TCanvas* obs_canv, int i)
 	conf->SetLegend(l_data);
 	l_data->SetNColumns(3);
 	std::vector<TPad*>* pads=conf->AddPads(obs_canv);
-	conf->ScaleXS(herwig_obs, true);
-	conf->ScaleXS(pythia_obs, false);
+	conf->ScaleXS(herwig_obs, true, 1);
+	conf->ScaleXS(pythia_obs, false, 1);
 	pads->at(1)->cd();
 	herwig_obs->SetMarkerStyle(i+20);
 	herwig_obs->SetMarkerSize(2);
@@ -1075,8 +1076,8 @@ void PlotPhotonObs(TH1I* herwig_obs, TH1I* pythia_obs, TCanvas* obs_canv, int i)
 	conf->SetLegend(l_data);
 	l_data->SetNColumns(3);
 	std::vector<TPad*>* pads=conf->AddPads(obs_canv);
-	conf->ScaleXS(herwig_obs, true);
-	conf->ScaleXS(pythia_obs, false);
+	conf->ScaleXS(herwig_obs, true, 1);
+	conf->ScaleXS(pythia_obs, false, 1);
 	pads->at(1)->cd();
 	herwig_obs->SetLineColor((i)*22+1);
 	herwig_obs->SetMarkerColor(i*22+1);
@@ -1154,33 +1155,36 @@ void PlotJetPlots(TDirectory* herwig_jets, TDirectory* pythia_jets, std::vector<
 	pythia_lead_jet_array->at(1)=pythia_lead_e;
 	pythia_lead_jet_array->at(2)=pythia_lead_phi;
 	pythia_lead_jet_array->at(3)=pythia_lead_eta;
+
 	CollectJets(pythia_jets, pythia_jet_array, pythia_lead_jet_array, pythia_n_jets, pythia_n_comp, pythia_lead_n_comp);
+	int n_herwig = herwig_lead_jet_array->at(0)->at(0)->GetEntries();
+	int n_pythia = pythia_lead_jet_array->at(0)->at(0)->GetEntries();
 	TCanvas* J_pt=new TCanvas("jet_pt", "jet_pt");
-	PlotJetObs(herwig_jet_array->at(0), pythia_jet_array->at(0), J_pt);
+	PlotJetObs(herwig_jet_array->at(0), n_herwig, pythia_jet_array->at(0), n_pythia, J_pt);
 	J_pt->SetLogy();
 	TCanvas* J_l_pt=new TCanvas("jet_l_pt", "jet_l_pt");
-	PlotJetObs(herwig_lead_jet_array->at(0), pythia_lead_jet_array->at(0), J_l_pt);
+	PlotJetObs(herwig_lead_jet_array->at(0), n_herwig, pythia_lead_jet_array->at(0), n_pythia, J_l_pt);
 	J_l_pt->SetLogy();
 	TCanvas* J_e=new TCanvas("jet_e", "jet_e");
-	PlotJetObs(herwig_jet_array->at(1), pythia_jet_array->at(1), J_e);
+	PlotJetObs(herwig_jet_array->at(1), n_herwig, pythia_jet_array->at(1), n_pythia, J_e);
 	J_e->SetLogy();
 	TCanvas* J_l_e=new TCanvas("jet_l_e", "jet_l_e");
-	PlotJetObs(herwig_lead_jet_array->at(1), pythia_lead_jet_array->at(1), J_l_e);
+	PlotJetObs(herwig_lead_jet_array->at(1), n_herwig, pythia_lead_jet_array->at(1), n_pythia, J_l_e);
 	J_l_e->SetLogy();
 	TCanvas* J_phi=new TCanvas("jet_phi", "jet_phi");
-	PlotJetObs(herwig_jet_array->at(2), pythia_jet_array->at(2), J_phi);
+	PlotJetObs(herwig_jet_array->at(2), n_herwig, pythia_jet_array->at(2), n_pythia, J_phi);
 	TCanvas* J_l_phi=new TCanvas("jet_l_phi", "jet_l_phi");
-	PlotJetObs(herwig_lead_jet_array->at(2), pythia_lead_jet_array->at(2), J_l_phi);
+	PlotJetObs(herwig_lead_jet_array->at(2), n_herwig, pythia_lead_jet_array->at(2), n_pythia, J_l_phi);
 	TCanvas* J_eta=new TCanvas("jet_eta", "jet_eta");
-	PlotJetObs(herwig_jet_array->at(3), pythia_jet_array->at(3), J_eta);
+	PlotJetObs(herwig_jet_array->at(3), n_herwig, pythia_jet_array->at(3), n_pythia, J_eta);
 	TCanvas* J_l_eta=new TCanvas("jet_l_eta", "jet_l_eta");
-	PlotJetObs(herwig_lead_jet_array->at(3), pythia_lead_jet_array->at(3), J_l_eta);
+	PlotJetObs(herwig_lead_jet_array->at(3), n_herwig, pythia_lead_jet_array->at(3), n_pythia, J_l_eta);
 	TCanvas* J_n_comp=new TCanvas("jet_n_comp", "jet_n_comp");
-	PlotJetObs(herwig_n_comp, pythia_n_comp, J_n_comp);
+	PlotJetObs(herwig_n_comp, n_herwig, pythia_n_comp, n_pythia, J_n_comp);
 	TCanvas* J_l_n_comp=new TCanvas("jet_l_n_comp", "jet_l_n_comp");
-	PlotJetObs(herwig_lead_n_comp, pythia_lead_n_comp, J_l_n_comp);
+	PlotJetObs(herwig_lead_n_comp, n_herwig, pythia_lead_n_comp, n_pythia, J_l_n_comp);
 	TCanvas* J_N=new TCanvas("jet_N", "jet_N");
-	PlotJetObs(herwig_n_jets, pythia_n_jets, J_N);
+	PlotJetObs(herwig_n_jets, n_herwig, pythia_n_jets, n_pythia, J_N);
 
 	Canvi->push_back(J_pt);
 	Canvi->push_back(J_l_pt);
@@ -1405,7 +1409,7 @@ void PlotPhotonJetPlots(TDirectory* herwig_photons, TDirectory* pythia_photons, 
 	PlotPhotonJetObs(herwig_e, pythia_e, J_e, J_h_e, J_p_e); 
 
        	TCanvas* J_dphi=new TCanvas("photon_jet_dphi");
-	PlotJetObs(herwig_dphi, pythia_dphi, J_dphi);
+	PlotJetObs(herwig_dphi, 1., pythia_dphi, 1., J_dphi);
 	Canvi->push_back(J_dphi);
 	return;
 }

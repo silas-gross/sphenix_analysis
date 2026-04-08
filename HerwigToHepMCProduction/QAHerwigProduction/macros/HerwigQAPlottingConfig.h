@@ -29,10 +29,10 @@ class HerwigQAPlottingConfig
 		TH1I* GetRatioPlot(TH1I*, TH1I*);
 		TH2F* GetRatioPlot(TH2F*, TH2F*);
 		std::vector<TH2F*>* GetRatioPlots(std::vector<TH2F*>*, std::vector<TH2F*>*);
-		void ScaleXS(std::vector<TH1F*>*, bool);
-		void ScaleXS(std::vector<TH1I*>*, bool);
-		void ScaleXS(TH1F*, bool);
-		void ScaleXS(TH1I*, bool);
+		void ScaleXS(std::vector<TH1F*>*, bool, int);
+		void ScaleXS(std::vector<TH1I*>*, bool, int);
+		void ScaleXS(TH1F*, bool, int);
+		void ScaleXS(TH1I*, bool, int);
 		bool isJet(){return jet;}
 		bool isPhoton(){return photon;}
 	private:
