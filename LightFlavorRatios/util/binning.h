@@ -116,9 +116,9 @@ namespace BinInfo
 {
   //static const HistogramInfo final_pt_bins("pT","pT",10,0.2,3.,"pT [GeV/c]");
   // special bins to sync with Tony's tracking efficiency
-  static const HistogramInfo final_pt_bins("pT","pT",{0.5,0.8,1.1,1.4,1.8,2.2,3.,4.},"pT [GeV/c]");
-  static const HistogramInfo final_rapidity_bins("rapidity","rapidity",15,-1.1,1.1,"rapidity");
-  static const HistogramInfo final_eta_bins("pseudorapidity","#eta",15,-1.1,1.1,"#eta");
+  static const HistogramInfo final_pt_bins("pT","pT",{0.5,0.8,1.1,1.4,1.8,2.2,3.,3.9999},"pT [GeV/c]");
+  static const HistogramInfo final_rapidity_bins("rapidity","rapidity",15,-1.,1.,"rapidity");
+  static const HistogramInfo final_eta_bins("pseudorapidity","#eta",15,-1.,1.,"#eta");
   static const HistogramInfo final_phi_bins("phi","#phi",15,-M_PI,M_PI,"#phi");
   static const HistogramInfo final_ntrack_bins("ntrk","nTracks",makeLogBins(5,1.,20),"number of tracks");
 
