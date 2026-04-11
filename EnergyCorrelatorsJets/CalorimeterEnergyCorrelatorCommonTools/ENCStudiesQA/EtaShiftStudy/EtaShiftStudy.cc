@@ -69,7 +69,7 @@
 
 #include <phool/PHCompositeNode.h>
 
-EtaShiftStudy::EtaShiftQA()
+EtaShiftStudy::EtaShiftStudy(const std::string &name)
 {
 	EMCALQA = new PerCaloQAPlots("EMCAL");
 	IHCALQA	= new PerCaloQAPlots("IHCAL");
@@ -264,9 +264,16 @@ void compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::arr
                         }
                 }
 	}
-			
+	delete CPQA;
+	delete ZRest;
+	return;	
 }
-		
+void grabJetConsitents( PHCompositeNode* topNode, std::vector<std::vector<std::array<float, 2>*>*>* jetConstiituents )
+{
+	//grab the jet consituents and save the momentum 
+	std::array<float, 2>* pxy {nullptr};
+	auto jetConts	= findNode::getClass<JetContainerv1>(topNode, "Antikt_unsubtracted_r04");
+	for(auto jet: *jetConts}
 int EtaShiftStudy::process_event(PHCompositeNode *topNode)
 {
 	if(vebose) std::cout << "EtaShiftStudy::process_event(PHCompositeNode *topNode) Processing Event" << std::endl;
@@ -277,7 +284,7 @@ int EtaShiftStudy::process_event(PHCompositeNode *topNode)
 //____________________________________________________________________________..
 
 int EtaShiftStudy::End([[maybe_unused]] PHCompositeNode *topNode)
-{
+/////{
   std::cout << "EtaShiftStudy::End(PHCompositeNode *topNode) This is the End..." << std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
 }

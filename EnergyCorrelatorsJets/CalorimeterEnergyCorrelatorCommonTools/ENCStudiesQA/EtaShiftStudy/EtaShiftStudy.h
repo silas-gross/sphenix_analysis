@@ -123,7 +123,9 @@ class EtaShiftStudy : public SubsysReco
 		int Reset(PHCompositeNode * /*topNode*/) override;
 
 		void Print(const std::string &what = "ALL") const override;
-		double caluclatedAvgEta(std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* calovals)
+		double caluclatedAvgEta(
+				std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* calovals
+		)
 		{
 			double avgeta=0.;
 			int n=0;
@@ -135,11 +137,26 @@ class EtaShiftStudy : public SubsysReco
 			}
 			avgeta = avgeta / (double)n;
 			return avgeta;
-		}
-		float CalculateJetPt(std::vector<std::array<float, 2>>);
-		void AnalyzeEvent();
-			
-
+		};
+		float CalculateJetPt(
+				std::vector<std::array<float, 2>>
+				);
+		void AnalyzeEvent(PHCompositeNode*);
+		void grabTowerArray(
+				BuildMetaTowers*, 
+				std::array<std::array<TowerArrayEntry*, 1536>* 4>*
+				);
+		void compareTowerValue( 
+				std::array<TowerArrayEntry*, 1536>*, 
+				std::array<TowerArrayEntry*, 1536>*,
+				float,
+				int,
+				BuildMetaTowers*
+				);
+		void grabJetConsitents(
+			PHCompositeNode*,
+			std::vector<std::array<float, 2>*>*
+			);
 	private:
 		//over all z 
 		PerCaloQAPlots* EMCALQA;
