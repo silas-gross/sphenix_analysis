@@ -18,6 +18,7 @@
 #include <trackbase_historic/SvtxTrackMap.h>
 #include <trackbase_historic/TrackAnalysisUtils.h>
 #include <trackbase_historic/SvtxTrackState.h>
+//#include <trackbase_historic/SvtxTrackState_v1.h>
 
 // vertex include
 #include <globalvertex/SvtxVertex.h>
@@ -82,16 +83,20 @@ public:
       setClusterContainerName("TOPOCLUSTER_EMCAL");
     }
   }
+
+
+  
   void setMC(bool input) { isMC = input; }
   void setVtxSkip(bool input) { b_skipvtx = input; }
   void setCaloSkip(bool input) { b_skipcalo = input; }
 
+
 protected:
-  //std::tuple<float, float, float> getClusterPos(TrkrDefs::cluskey cluskey, TrkrClusterContainer *clusterContainer);
+  //--std::tuple<float, float, float> getClusterPos(TrkrDefs::cluskey cluskey, TrkrClusterContainer *clusterContainer);
+  std::string getHistoPrefix() const;
 
   void createTree();
   void createHistos();
-  std::string getHistoPrefix() const;
 
   void fillTruthTree(PHCompositeNode *topNode);
   void processTrackMap(PHCompositeNode *topNode);
@@ -101,10 +106,13 @@ protected:
 
   // Utility functions for track vector management and EMCal state
   void clearTrackVectors();
-  void fillEMCalState(SvtxTrackState* state, SvtxTrackState* ostate);
+  void fillEMCalState(SvtxTrackState* state, SvtxTrackState* ostate, SvtxTrackState* rvsState);
   void initTrackTreeBranches();
   void clearCaloVectors();
   void initCaloTreeBranches();
+  SvtxTrackState* projectToEMCal(PHCompositeNode* topNode, SvtxTrack* trk);
+
+  void getCaloPosition(RawCluster *calo, float &x, float &y, float &z);
 
   std::string m_clusterContainerName = "TRKR_CLUSTER";
   std::string m_actsgeometryName     = "ActsGeometry";
@@ -122,19 +130,17 @@ protected:
   SvtxTrack    *track       = nullptr;
   TrackSeed    *si_seed     = nullptr;
   TrkrCluster  *trkrCluster = nullptr;
-
+ 
+  // Truth info tree and vectors
   TFile *m_outfile = nullptr;
 
-  // Truth info tree and vectors
   TTree *truthTree = nullptr;
-  std::vector<int>   truth_pid;
+  std::vector<int>   truth_pid, truth_id;
   std::vector<float> truth_px, truth_py, truth_pz, truth_e;
   std::vector<float> truth_pt, truth_eta, truth_phi;
   std::vector<int>   truth_vtxid;
-  std::vector<float> truth_vtx_x, truth_vtx_y, truth_vtx_z;
+  std::vector<float> truth_vtx_x, truth_vtx_y, truth_vtx_z; // indix vtxid, not trackid
 
-
-  // SiSeed info tree and vectors
   TTree *trackTree = nullptr;
   int evt = 0;
   std::vector<unsigned int> track_id;
@@ -149,6 +155,7 @@ protected:
   std::vector<int> track_innerintt;
   std::vector<int> track_outerintt;
 
+  // track projection to EMC
   std::vector<float> track_px_emc, track_py_emc, track_pz_emc;
   std::vector<float> track_x_emc;
   std::vector<float> track_y_emc;
@@ -159,8 +166,25 @@ protected:
   std::vector<float> track_x_oemc;
   std::vector<float> track_y_oemc;
   std::vector<float> track_z_oemc;
+  std::vector<float> track_rv_x_emc;
+  std::vector<float> track_rv_y_emc;
+  std::vector<float> track_rv_z_emc;
 
-  // SiCluster associated to SiSeed info tree and vectors
+  // --- Matched EMCal cluster info for each track ---
+  std::vector<float> sicalo_pt;
+  std::vector<float> sicalo_phi;
+  std::vector<float> sicalo_eta;
+  std::vector<float> sicalo_dphi;
+  std::vector<float> sicalo_dz;
+  std::vector<float> sicalo_emc_x;
+  std::vector<float> sicalo_emc_y;
+  std::vector<float> sicalo_emc_z;
+  std::vector<float> sicalo_emc_r;
+  std::vector<float> sicalo_emc_phi;
+  std::vector<float> sicalo_emc_energy;
+  std::vector<float> sicalo_emc_chi2;
+  std::vector<float> sicalo_emc_prob;
+
   TTree *SiClusTree    = nullptr;
   TTree *SiClusAllTree = nullptr;
   std::vector<int>   SiClus_trackid;
@@ -170,7 +194,6 @@ protected:
   std::vector<float> SiClus_z;
   std::vector<int>   SiClus_t;
 
-  // EMC cluster info tree and vectors
   TTree *caloTree = nullptr;
   int calo_evt = 0;
   std::vector<float> calo_x;
@@ -183,7 +206,6 @@ protected:
   std::vector<float> calo_chi2;
   std::vector<float> calo_prob;
 
-  // Event based variable info tree 
   TTree *evtTree = nullptr;
   //int trk_evt = 0;
   //int calo_evt = 0;
@@ -201,8 +223,10 @@ protected:
   float     evt_zvtx;
 
 
-  double m_emcal_low_cut = 0.3;
-  float _caloRadiusEMCal = 93.5;
+
+
+  double m_emcal_low_cut = 0.18;
+  float _caloRadiusEMCal    = 93.5;
   float _caloThicknessEMCal = 20.4997;
 
   bool isMC = false;
@@ -240,12 +264,3 @@ protected:
 
 #endif  // SILICONSEEDSANA_H
 
-  // --- Matched EMCal cluster info for each track ---
-  std::vector<float> matched_calo_x;
-  std::vector<float> matched_calo_y;
-  std::vector<float> matched_calo_z;
-  std::vector<float> matched_calo_r;
-  std::vector<float> matched_calo_phi;
-  std::vector<float> matched_calo_eta;
-  std::vector<float> matched_calo_energy;
-  std::vector<float> matched_calo_dR;

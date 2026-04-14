@@ -1,4 +1,6 @@
 #include "SiliconSeedsAna.h"
+#include "SiliconCaloTrack.h"
+#include "SiliconCaloTrackMap.h"
 
 #include <ffarawobjects/Gl1Packet.h>
 #include <ffaobjects/EventHeader.h>
@@ -10,6 +12,12 @@
 #include <phool/PHCompositeNode.h>
 #include <phool/getClass.h>
 #include <qautils/QAHistManagerDef.h>
+
+#include <Acts/Surfaces/CylinderSurface.hpp>
+#include <trackreco/ActsPropagator.h>
+#include <trackbase_historic/ActsTransformations.h>
+#include <trackbase_historic/SvtxTrackState_v1.h>
+
 
 #include <TH2.h>
 #include <TProfile.h>
@@ -29,26 +37,31 @@ SiliconSeedsAna::SiliconSeedsAna(const std::string &name)
 #define LOG(msg) std::cout << "[SiliconSeedsAna] " << msg << std::endl;
 
 void SiliconSeedsAna::clearTrackVectors() {
-  track_id.clear(); 
-  track_x.clear(); track_y.clear(); track_z.clear();
+  track_id.clear(); track_x.clear(); track_y.clear(); track_z.clear();
   track_px.clear(); track_py.clear(); track_pz.clear();
   track_eta.clear(); track_phi.clear(); track_pt.clear();
   track_chi2ndf.clear(); track_charge.clear(); track_crossing.clear();
   track_nmaps.clear(); track_nintt.clear(); track_innerintt.clear(); track_outerintt.clear();
   track_x_emc.clear(); track_y_emc.clear(); track_z_emc.clear();
   track_x_oemc.clear(); track_y_oemc.clear(); track_z_oemc.clear();
+  track_rv_x_emc.clear(); track_rv_y_emc.clear(); track_rv_z_emc.clear();
   track_px_emc.clear(); track_py_emc.clear(); track_pz_emc.clear();
   track_eta_emc.clear(); track_phi_emc.clear(); track_pt_emc.clear();
 
   // Clear matched calo vectors
-  matched_calo_x.clear();
-  matched_calo_y.clear();
-  matched_calo_z.clear();
-  matched_calo_r.clear();
-  matched_calo_phi.clear();
-  matched_calo_eta.clear();
-  matched_calo_energy.clear();
-  matched_calo_dR.clear();
+  sicalo_pt.clear();
+  sicalo_phi.clear();
+  sicalo_eta.clear();
+  sicalo_dphi.clear();
+  sicalo_dz.clear();
+  sicalo_emc_x.clear();
+  sicalo_emc_y.clear();
+  sicalo_emc_z.clear();
+  sicalo_emc_r.clear();
+  sicalo_emc_phi.clear();
+  sicalo_emc_energy.clear();
+  sicalo_emc_chi2.clear();
+  sicalo_emc_prob.clear();
 }
 
 void SiliconSeedsAna::clearCaloVectors() {
@@ -63,21 +76,24 @@ void SiliconSeedsAna::clearCaloVectors() {
   calo_prob.clear();
 }
 
-void SiliconSeedsAna::fillEMCalState(SvtxTrackState* state, SvtxTrackState* ostate) {
-  track_x_emc.push_back(  state ? state->get_x()  : NAN);
-  track_y_emc.push_back(  state ? state->get_y()  : NAN);
-  track_z_emc.push_back(  state ? state->get_z()  : NAN);
-  track_px_emc.push_back( state ? state->get_px() : NAN);
-  track_py_emc.push_back( state ? state->get_py() : NAN);
-  track_pz_emc.push_back( state ? state->get_pz() : NAN);
-  track_eta_emc.push_back(state ? state->get_eta(): NAN);
-  track_phi_emc.push_back(state ? state->get_phi(): NAN);
-  track_pt_emc.push_back( state ? state->get_pt() : NAN);
+void SiliconSeedsAna::fillEMCalState(SvtxTrackState* state, SvtxTrackState* ostate, SvtxTrackState* rvsState) {
+  track_x_emc.push_back(  state ?  state->get_x()  : NAN);
+  track_y_emc.push_back(  state ?  state->get_y()  : NAN);
+  track_z_emc.push_back(  state ?  state->get_z()  : NAN);
+  track_px_emc.push_back( state ?  state->get_px() : NAN);
+  track_py_emc.push_back( state ?  state->get_py() : NAN);
+  track_pz_emc.push_back( state ?  state->get_pz() : NAN);
+  track_eta_emc.push_back(state ?  state->get_eta(): NAN);
+  track_phi_emc.push_back(state ?  state->get_phi(): NAN);
+  track_pt_emc.push_back( state ?  state->get_pt() : NAN);
   track_x_oemc.push_back(ostate ? ostate->get_x()  : NAN);
   track_y_oemc.push_back(ostate ? ostate->get_y()  : NAN);
   track_z_oemc.push_back(ostate ? ostate->get_z()  : NAN);
+  track_rv_x_emc.push_back(rvsState ? rvsState->get_x()  : NAN);
+  track_rv_y_emc.push_back(rvsState ? rvsState->get_y()  : NAN);
+  track_rv_z_emc.push_back(rvsState ? rvsState->get_z()  : NAN);
 
-
+/*
   // --- EMCal cluster matching ---
   // Find the closest EMCal cluster in eta/phi to this state
   float best_dR = 9999.0;
@@ -116,6 +132,7 @@ void SiliconSeedsAna::fillEMCalState(SvtxTrackState* state, SvtxTrackState* osta
     matched_calo_energy.push_back(NAN);
     matched_calo_dR.push_back(NAN);
   }
+*/
 }
 
 void SiliconSeedsAna::initTrackTreeBranches() {
@@ -147,30 +164,41 @@ void SiliconSeedsAna::initTrackTreeBranches() {
   trackTree->Branch("eta_proj_emc", &track_eta_emc);
   trackTree->Branch("phi_proj_emc", &track_phi_emc);
   trackTree->Branch("pt_proj_emc", &track_pt_emc);
+  trackTree->Branch("x_proj_oemc", &track_x_oemc);
+  trackTree->Branch("y_proj_oemc", &track_y_oemc);
+  trackTree->Branch("z_proj_oemc", &track_z_oemc);
+  trackTree->Branch("x_rv_proj_emc", &track_rv_x_emc);
+  trackTree->Branch("y_rv_proj_emc", &track_rv_y_emc);
+  trackTree->Branch("z_rv_proj_emc", &track_rv_z_emc);
   // Add matched EMCal cluster branches
-  trackTree->Branch("matched_calo_x", &matched_calo_x);
-  trackTree->Branch("matched_calo_y", &matched_calo_y);
-  trackTree->Branch("matched_calo_z", &matched_calo_z);
-  trackTree->Branch("matched_calo_r", &matched_calo_r);
-  trackTree->Branch("matched_calo_phi", &matched_calo_phi);
-  trackTree->Branch("matched_calo_eta", &matched_calo_eta);
-  trackTree->Branch("matched_calo_energy", &matched_calo_energy);
-  trackTree->Branch("matched_calo_dR", &matched_calo_dR);
+  trackTree->Branch("sicalo_pt",         &sicalo_pt);
+  trackTree->Branch("sicalo_phi",        &sicalo_phi);
+  trackTree->Branch("sicalo_eta",        &sicalo_eta);
+  trackTree->Branch("sicalo_dphi",       &sicalo_dphi);
+  trackTree->Branch("sicalo_dz",         &sicalo_dz);
+  trackTree->Branch("sicalo_emc_x",      &sicalo_emc_x);
+  trackTree->Branch("sicalo_emc_y",      &sicalo_emc_y);
+  trackTree->Branch("sicalo_emc_z",      &sicalo_emc_z);
+  trackTree->Branch("sicalo_emc_r",      &sicalo_emc_r);
+  trackTree->Branch("sicalo_emc_phi",    &sicalo_emc_phi);
+  trackTree->Branch("sicalo_emc_energy", &sicalo_emc_energy);
+  trackTree->Branch("sicalo_emc_chi2",   &sicalo_emc_chi2);
+  trackTree->Branch("sicalo_emc_prob",   &sicalo_emc_prob);
   trackTree->SetBasketSize("*", 50000);
 }
 
 void SiliconSeedsAna::initCaloTreeBranches() {
   caloTree = new TTree("caloTree", "Calo Data");
   caloTree->Branch("calo_evt", &calo_evt, "calo_evt/I");
-  caloTree->Branch("x",     &calo_x);
-  caloTree->Branch("y",     &calo_y);
-  caloTree->Branch("z",     &calo_z);
-  caloTree->Branch("r",     &calo_r);
-  caloTree->Branch("phi",   &calo_phi);
-  caloTree->Branch("eta",   &calo_eta);
-  caloTree->Branch("energy",&calo_energy);
+  caloTree->Branch("x", &calo_x);
+  caloTree->Branch("y", &calo_y);
+  caloTree->Branch("z", &calo_z);
+  caloTree->Branch("r", &calo_r);
+  caloTree->Branch("phi", &calo_phi);
+  caloTree->Branch("eta", &calo_eta);
+  caloTree->Branch("energy", &calo_energy);
   caloTree->Branch("chi2",  &calo_chi2);
-  caloTree->Branch("prob",  &calo_prob);
+  caloTree->Branch("prob",   &calo_prob);
   caloTree->SetBasketSize("*",50000);
 }
 
@@ -178,11 +206,11 @@ void SiliconSeedsAna::initCaloTreeBranches() {
 int SiliconSeedsAna::InitRun(PHCompositeNode * /*unused*/)
 {
   m_outfile = new TFile(m_outputfilename.c_str(), "RECREATE");
-
+  
   createHistos();
   // Create a TTree to store track data and initialize branches
   initTrackTreeBranches();
-  SiClusTree = new TTree("SiClusTree", "Silicon Cluster Data");
+  SiClusTree = new TTree("SiClusTree", "Silicon Cluster used by track");
   SiClusTree->Branch("evt", &evt, "evt/I");
   SiClusTree->Branch("Siclus_trackid", &SiClus_trackid);
   SiClusTree->Branch("Siclus_layer", &SiClus_layer);
@@ -192,7 +220,7 @@ int SiliconSeedsAna::InitRun(PHCompositeNode * /*unused*/)
   SiClusTree->Branch("Siclus_t", &SiClus_t);
   SiClusTree->SetBasketSize("*",50000); // Set a larger basket size for better performance
 
-  SiClusAllTree = new TTree("SiClusAllTree", "Silicon Cluster Data");
+  SiClusAllTree = new TTree("SiClusAllTree", "All Silicon Cluster Data");
   SiClusAllTree->Branch("evt", &evt, "evt/I");
   SiClusAllTree->Branch("Siclus_trackid", &SiClus_trackid);
   SiClusAllTree->Branch("Siclus_layer", &SiClus_layer);
@@ -220,10 +248,12 @@ int SiliconSeedsAna::InitRun(PHCompositeNode * /*unused*/)
   evtTree->Branch("yvtx",    &evt_yvtx,  "yvtx/F");
   evtTree->Branch("zvtx",    &evt_zvtx,  "zvtx/F");
 
+
   // Truth tree and branches
   if(isMC){
     truthTree = new TTree("truthTree", "Truth Particle Data");
     truthTree->Branch("truth_pid",   &truth_pid);
+    truthTree->Branch("truth_id",    &truth_id); // for primary/secondary
     truthTree->Branch("truth_px",    &truth_px);
     truthTree->Branch("truth_py",    &truth_py);
     truthTree->Branch("truth_pz",    &truth_pz);
@@ -244,6 +274,7 @@ int SiliconSeedsAna::InitRun(PHCompositeNode * /*unused*/)
 //____________________________________________________________________________..
 int SiliconSeedsAna::process_event(PHCompositeNode* topNode)
 {
+ 
   if(isMC)
     fillTruthTree(topNode);
 
@@ -279,6 +310,8 @@ int SiliconSeedsAna::process_event(PHCompositeNode* topNode)
     else { std::cout<<"No EventHeader"<<std::endl; }
     std::cout<<std::endl;
 
+    std::cout<<"nintt "<<evt_nintt<<" "<<evt_nintt50<<std::endl;
+    std::cout<<"nmvtx "<<evt_nmaps<<std::endl;
 /*
     if(clustermap){
       int nclus_intt[2]={0,0};
@@ -303,7 +336,7 @@ int SiliconSeedsAna::process_event(PHCompositeNode* topNode)
               nclus_intt50[inout]++;
             }
           }
-          //      std::cout<<"nintt time : "<<layer<<" "<<intt_ldr<<" : "<<intt_time<<" "<<nclus_intt[inout]<<std::endl;
+  //      std::cout<<"nintt time : "<<layer<<" "<<intt_ldr<<" : "<<intt_time<<" "<<nclus_intt[inout]<<std::endl;
         }
       }
       evt_nintt   = (nclus_intt[0] + nclus_intt[1]);
@@ -331,15 +364,15 @@ int SiliconSeedsAna::process_event(PHCompositeNode* topNode)
                 nclusmvtx[layer]++;
               }
             }
-            //         std::cout<<"mvtx: "<<layer<<" "<<mvtx_ldr<<" : "<<strbid<<std::endl;
-
+   //         std::cout<<"mvtx: "<<layer<<" "<<mvtx_ldr<<" : "<<strbid<<std::endl;
+           
           }
 
           evt_nmaps+= nclusmvtx[layer];
           //std::cout<<"nmvtx "<<layer<<" "<<nclusmvtx[layer]<<" "<<evt_nmaps<<std::endl;
         }
         std::cout<<"nmvtx "<<evt_nmaps<<std::endl;
-        //}
+      //}
     }
 */
 
@@ -358,12 +391,13 @@ void SiliconSeedsAna::fillTruthTree(PHCompositeNode* topNode)
     std::cout << PHWHERE << "Warning: G4TruthInfo not found. Skipping truthTree filling for this event." << std::endl;
     return;
   }
-  truth_pid.clear();
+  truth_pid.clear(); truth_id.clear();
   truth_px.clear(); truth_py.clear(); truth_pz.clear(); truth_e.clear();
   truth_pt.clear(); truth_eta.clear(); truth_phi.clear();
   truth_vtxid.clear();
   truth_vtx_x.clear(); truth_vtx_y.clear(); truth_vtx_z.clear();
 
+  std::cout<<"truth"<<std::endl;
   const auto  vtxrng = m_truth_info->GetPrimaryVtxRange();
   for (auto viter = vtxrng.first; viter != vtxrng.second; ++viter)
   {
@@ -374,7 +408,8 @@ void SiliconSeedsAna::fillTruthTree(PHCompositeNode* topNode)
     std::cout<<" primVtxid: "<<viter->first<<", "<<Vtx->get_x()<<" "<<Vtx->get_y()<<" "<<Vtx->get_z()<<std::endl;
   }
 
-  const auto prange = m_truth_info->GetPrimaryParticleRange();
+  //const auto prange = m_truth_info->GetPrimaryParticleRange();
+  const auto prange = m_truth_info->GetParticleRange();
   for (auto iter = prange.first; iter != prange.second; ++iter)
   {
     PHG4Particle* ptcl = iter->second;
@@ -382,11 +417,34 @@ void SiliconSeedsAna::fillTruthTree(PHCompositeNode* topNode)
 
     int vtxid = ptcl->get_vtx_id();
     //auto primVtx = m_truth_info->GetPrimaryVtx(vtxid);
+    auto primVtx = m_truth_info->GetVtx(vtxid);
+    float vx = primVtx->get_x();
+    float vy = primVtx->get_y();
+    float vtx_r = sqrt(vx*vx+vy*vy);
+    if(vtx_r>5) continue;
+
+    int trackid = ptcl->get_track_id();
+    int pid     = ptcl->get_pid();
+    if(!(
+          abs(pid)==11 // e-
+       || abs(pid)==13 // mu-
+       || abs(pid)==211 // pi+
+       || abs(pid)==321 // K+
+       || abs(pid)==2212 // p
+       )
+       &&trackid<=0
+    ){
+      continue;
+    }
+
+
+
     //std::cout<<" vtxid: "<<vtxid<<", "<<primVtx->get_x()<<" "<<primVtx->get_y()<<" "<<primVtx->get_z()<<std::endl;
 
     TLorentzVector p(ptcl->get_px(), ptcl->get_py(), ptcl->get_pz(), ptcl->get_e());
 
     truth_pid.push_back(ptcl->get_pid());
+    truth_id.push_back(ptcl->get_track_id());
     truth_px.push_back(ptcl->get_px());
     truth_py.push_back(ptcl->get_py());
     truth_pz.push_back(ptcl->get_pz());
@@ -395,6 +453,8 @@ void SiliconSeedsAna::fillTruthTree(PHCompositeNode* topNode)
     truth_eta.push_back(p.Eta());
     truth_phi.push_back(p.Phi());
     truth_vtxid.push_back(vtxid);
+
+    //std::cout<<"pid :"<<ptcl->get_pid()<<", "<<ptcl->get_name()<<", "<<ptcl->get_primary_id()<<", "<<ptcl->get_parent_id()<<", "<<ptcl->get_track_id()<<std::endl;
   }
   truthTree->Fill();
 }
@@ -406,6 +466,8 @@ void SiliconSeedsAna::processTrackMap(PHCompositeNode* topNode)
   auto clustermap = findNode::getClass<TrkrClusterContainer>(topNode, m_clusterContainerName);
   auto geometry   = findNode::getClass<ActsGeometry>(topNode, m_actsgeometryName);
   auto vertexmap  = findNode::getClass<SvtxVertexMap>(topNode, m_vertexMapName);
+  auto sicalotrackmap = findNode::getClass<SiliconCaloTrackMap>(topNode, "SiliconCaloTrack");
+  auto emcalClusmap = findNode::getClass<RawClusterContainer>(topNode, m_emcalClusName);
 
   trackmap = findNode::getClass<SvtxTrackMap>(topNode, m_trackMapName);
   if (!trackmap)
@@ -452,11 +514,11 @@ void SiliconSeedsAna::processTrackMap(PHCompositeNode* topNode)
     track = iter.second;
     if (!track)
       continue;
-
     si_seed = track->get_silicon_seed();
     int trkcrossing = track->get_crossing();
     if (trkcrossing != 0 && !isMC)
       continue;
+
     int   t_id      = track->get_id();
     float t_eta     = track->get_eta();
     float t_phi     = track->get_phi();
@@ -546,7 +608,62 @@ void SiliconSeedsAna::processTrackMap(PHCompositeNode* topNode)
 
     SvtxTrackState *emcalState    = track->get_state(_caloRadiusEMCal);
     SvtxTrackState *emcalOutState = track->get_state(_caloRadiusEMCal+_caloThicknessEMCal);
-    fillEMCalState(emcalState, emcalOutState);
+
+    SvtxTrack *trkcp = (SvtxTrack*)track->CloneMe();
+    trkcp->set_charge((t_charge>0)?-1:1); // reverse
+    SvtxTrackState *rvsEmcalState = projectToEMCal(topNode, trkcp);
+
+    fillEMCalState(emcalState, emcalOutState, rvsEmcalState);
+
+    /////////////////////////
+    // --- matched cluster
+    float sic_pt=NAN, sic_phi=NAN, sic_eta=NAN, sic_dphi=NAN, sic_dz=NAN;
+    float sic_calo_x=NAN, sic_calo_y=NAN, sic_calo_z=NAN;
+    float sic_calo_r=NAN, sic_calo_phi=NAN, sic_calo_e=NAN, sic_calo_chi2=NAN, sic_calo_prob=NAN;
+    if(sicalotrackmap && emcalClusmap)
+    {
+
+      SiliconCaloTrack* sicalo = sicalotrackmap->get(track->get_id());
+      if(sicalo){
+        sic_pt   = sicalo->get_pt();
+        sic_phi  = sicalo->get_phi();
+        sic_eta  = sicalo->get_eta();
+        sic_dphi = sicalo->get_cal_dphi();
+        sic_dz   = sicalo->get_cal_dz();
+
+        int calo_id = sicalo->get_calo_id();
+        RawCluster *calo = emcalClusmap->getCluster(calo_id);
+        if(calo){
+          getCaloPosition(calo, sic_calo_x, sic_calo_y, sic_calo_z);
+          sic_calo_r    = calo->get_r();
+          sic_calo_phi  = calo->get_phi();
+          sic_calo_e    = calo->get_energy();
+          sic_calo_chi2 = calo->get_chi2();
+          sic_calo_prob = calo->get_prob();
+          std::cout<<"calo_chi2 : "<<sic_calo_chi2<<" "<<sic_calo_prob<<std::endl;
+        } 
+      }
+    }
+
+    sicalo_pt.push_back(sic_pt);
+    sicalo_phi.push_back(sic_phi);
+    sicalo_eta.push_back(sic_eta);
+    sicalo_dphi.push_back(sic_dphi);
+    sicalo_dz.push_back(sic_dz);
+    sicalo_emc_x.push_back(sic_calo_x);
+    sicalo_emc_y.push_back(sic_calo_y);
+    sicalo_emc_z.push_back(sic_calo_z);
+    sicalo_emc_r.push_back(sic_calo_r);
+    sicalo_emc_phi.push_back(sic_calo_phi);
+    sicalo_emc_energy.push_back(sic_calo_e);
+    sicalo_emc_chi2.push_back(sic_calo_chi2);
+    sicalo_emc_prob.push_back(sic_calo_prob);
+
+
+  /////////////////////////
+
+    delete rvsEmcalState;
+    delete trkcp;
 
     if (t_charge > 0)
       ntrack_isposcharge.second++;
@@ -652,6 +769,132 @@ void SiliconSeedsAna::processTrackMap(PHCompositeNode* topNode)
   evt++;
 }
 
+SvtxTrackState* SiliconSeedsAna::projectToEMCal(
+  PHCompositeNode* topNode, 
+  SvtxTrack* trk
+)
+{
+  // m_tGeometry
+  // caloRadius
+  // halfZ
+
+// *
+  const std::string towerGeoNodeName = "TOWERGEOM_CEMC";
+
+  // get tower geometry container
+  const auto towerGeomContainer = findNode::getClass<RawTowerGeomContainer>(topNode, towerGeoNodeName.c_str());
+
+  if( !towerGeomContainer )
+  {
+    std::cout << PHWHERE << "-"
+      << " Calo tower geometry container for " << towerGeoNodeName
+      << " not found on node tree. Track projections to calos won't be filled."
+      << std::endl;
+    return NULL;
+  }
+
+  // get calorimeter inner radius and store
+  double caloRadius = towerGeomContainer->get_radius();
+
+  // convert to ACTS units
+  caloRadius *= Acts::UnitConstants::cm;
+
+  /// Extend farther so that there is at least surface there, for high
+  /// curling tracks. Can always reject later
+  const auto eta = 2.5;
+  const auto theta = 2. * atan(exp(-eta));
+  const auto halfZ = caloRadius / tan(theta) * Acts::UnitConstants::cm;
+// * /
+
+  ActsGeometry* tGeometry = findNode::getClass<ActsGeometry>(topNode, m_actsgeometryName);
+  if (!tGeometry)
+  {
+    std::cout << "ActsTrackingGeometry not on node tree. Exiting."
+              << std::endl;
+
+    return NULL;
+  }
+  SvtxVertexMap* vertexMap  = findNode::getClass<SvtxVertexMap>(topNode, m_vertexMapName);
+  if (!vertexMap)
+  {
+    std::cout << PHWHERE << "Missing vertexmap, can't continue" << std::endl;
+    return NULL;
+  }
+
+
+
+  //double caloRadius = _caloRadiusEMCal;
+  //const auto eta = 2.5;
+  //const auto theta = 2. * atan(exp(-eta));
+  //const auto halfZ = caloRadius / tan(theta) * Acts::UnitConstants::cm;
+  std::cout<<"radius: "<<caloRadius<<" "<<halfZ<<std::endl;
+  //double halfZ      = 150.; // cm
+
+  auto transform = Acts::Transform3::Identity();
+
+  std::shared_ptr<Acts::CylinderSurface> cylSurf =
+      Acts::Surface::makeShared<Acts::CylinderSurface>(transform,
+                                                       caloRadius,
+                                                       halfZ);
+
+  // create propagator
+  ActsPropagator prop(tGeometry);
+  const double constFieldVal = 1.4;
+  prop.constField();
+  prop.verbosity(Verbosity());
+  prop.setConstFieldValue(constFieldVal * Acts::UnitConstants::T);
+  
+  //// loop over tracks
+  //for (const auto& [key, track] : *m_trackMap)
+  {
+    auto params = prop.makeTrackParams(trk, vertexMap);
+    if(!params.ok())
+    {
+      return NULL; //continue;
+    }
+    
+    // propagate
+    const auto result = prop.propagateTrackFast(params.value(), cylSurf);
+    if (result.ok())
+    {
+      // update track
+      //updateSvtxTrack(result.value(), trk, caloLayer);
+      const auto paramvalue = result.value().second;
+      SvtxTrackState_v1* out = new SvtxTrackState_v1(caloRadius);
+
+      const auto projectionPos = paramvalue.position(tGeometry->geometry().getGeoContext());
+      const auto momentum = paramvalue.momentum();
+      out->set_x(projectionPos.x() / Acts::UnitConstants::cm);
+      out->set_y(projectionPos.y() / Acts::UnitConstants::cm);
+      out->set_z(projectionPos.z() / Acts::UnitConstants::cm);
+      out->set_px(momentum.x());
+      out->set_py(momentum.y());
+      out->set_pz(momentum.z());
+
+      //--if (Verbosity() > 1)
+      //--{
+      //--  std::cout << "Adding track state for caloLayer " << caloLayer
+      //--            << " at pathlength " << pathlength << " with position " << projectionPos.transpose() << std::endl;
+      //--}
+
+      ActsTransformations transformer;
+      const auto globalCov = transformer.rotateActsCovToSvtxTrack(paramvalue);
+      for (int i = 0; i < 6; ++i)
+      {
+        for (int j = 0; j < 6; ++j)
+        {
+          out->set_error(i, j, globalCov(i, j));
+        }
+      }
+
+      trk->insert_state(out);
+
+      return out;
+    }
+  }
+  return NULL;
+}
+
 void SiliconSeedsAna::processSiCluster(PHCompositeNode* topNode)
 {
   evt_nintt = evt_nintt50 = evt_nmaps = 0;
@@ -692,6 +935,7 @@ void SiliconSeedsAna::processSiCluster(PHCompositeNode* topNode)
         const auto &cluster_key = clusIter->first;
         auto cluster            = clusIter->second;
 
+
         int timebkt=-9999;
         if(layer<3){
           timebkt = MvtxDefs::getStrobeId(cluster_key);
@@ -699,6 +943,7 @@ void SiliconSeedsAna::processSiCluster(PHCompositeNode* topNode)
         else {
           timebkt = InttDefs::getTimeBucketId(cluster_key);
         }
+
 
         if(-1<=timebkt&&timebkt<=1){
           Acts::Vector3 global(0., 0., 0.);
@@ -725,13 +970,12 @@ void SiliconSeedsAna::processSiCluster(PHCompositeNode* topNode)
 
 }
 
-
 void SiliconSeedsAna::processCaloClusters(PHCompositeNode* topNode)
 {
   auto EMCalClusmap = findNode::getClass<RawClusterContainer>(topNode, m_emcalClusName);
   clearCaloVectors();
   if((calo_evt%1000)==0) std::cout << "start calo map  EVENT " << calo_evt << " is OK" << std::endl;
-  
+
   evt_nemc = evt_nemc02=0;
 
   if (!b_skipcalo && EMCalClusmap)
@@ -786,8 +1030,7 @@ void SiliconSeedsAna::processCaloClusters(PHCompositeNode* topNode)
       calo_prob.push_back(clus->get_prob());
 
       if(energy>0.2) evt_nemc02++;
-
-      //--std::cout << "EMCal x : " << calo_x.back() << ", EMCal y :  " << calo_y.back() << ", EMCal z : " << calo_z.back() 
+      //--std::cout << "EMCal x : " << calo_x.back() << ", EMCal y :  " << calo_y.back() << ", EMCal z : " << calo_z.back()
       //--          << ", EMCal r : " << calo_r.back() << ", EMCal phi :  " << calo_phi.back() 
       //--          << ", EMCal eta : " << calo_eta.back() << ", EMcal E : " << calo_energy.back() << std::endl;
     }
@@ -852,7 +1095,6 @@ int SiliconSeedsAna::EndRun(const int /*runnumber*/)
     return Fun4AllReturnCodes::EVENT_OK;
   }
   m_outfile->cd();
-
   std::cout << "Writing histograms to " << m_outputfilename << std::endl;
   // Create a TFile to save histograms and TTree
   //  TFile outfile("output_histograms.root", "RECREATE");
@@ -1044,3 +1286,29 @@ void SiliconSeedsAna::createHistos()
 void SiliconSeedsAna::createTree()
 {
 }
+
+
+void SiliconSeedsAna::getCaloPosition(RawCluster *calo, float &x, float &y, float &z)
+{
+  if(calo==nullptr) {
+    x = y = z = std::numeric_limits<float>::quiet_NaN();
+    return;
+  }
+
+  x   = calo->get_x();
+  y   = calo->get_y();
+  z   = calo->get_z();
+  float r   = calo->get_r();
+  float phi = calo->get_phi();
+  float rr = sqrt(x*x + y*y);
+  std::cout<<"emc_x, y: "<<x<<" "<<y<<std::endl;
+  if(fabs(rr - r)>1) 
+  {
+    //std::cout<<"no emc_x, y: "<<x<<" "<<y<<" "<<rr
+    //         <<", replaced by r + phi"<<r<<" "<<phi<<" : ";
+    x = r * cos(phi);
+    y = r * sin(phi);
+    //std::cout<<emc_x<<" "<<emc_y<<std::endl;
+  }
+}
+
