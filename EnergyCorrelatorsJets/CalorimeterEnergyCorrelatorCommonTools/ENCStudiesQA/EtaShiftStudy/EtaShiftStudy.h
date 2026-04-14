@@ -155,7 +155,7 @@ class EtaShiftStudy : public SubsysReco
 				);
 		void grabJetConsitents(
 			PHCompositeNode*,
-			std::vector<std::array<float, 2>*>*
+			float			
 			);
 	private:
 		//over all z 

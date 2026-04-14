@@ -105,13 +105,11 @@ EtaShiftStudy::EtaShiftStudy(const std::string &name)
 		MetaO_Z_QA->at(i)  	= new PerCaloQAPlots(std::format("Meta Calo, OHCAL radius, |z|_{vtx} < {}", z_range));
 	}
 	//initialize variables from the tree
-	emMetaTowerBuilder = new BuildMetaTowers();
-	ihMetaTowerBuilder = new BuildMetaTowers();
-	ohMetaTowerBuilder = new BuildMetaTowers();
+	emMetaTowerBuilder = new BuildMetaTowers( BuildMetaTowers::CALO::EMCAL, "Fun4AllTowers" );
+	ihMetaTowerBuilder = new BuildMetaTowers( BuildMetaTowers::CALO::IHCAL, "Fum4AllTowers" );
+	ohMetaTowerBuilder = new BuildMetaTowers( BuildMetaTowers::CALO::OHCAL, "Fun4AllTowers" );
 
-	emMetaTowerBuilder->setCaloRadius(BuildMetaTowers::CALO::EMCAL)
-	ihMetaTowerBuilder->setCaloRadius(BuildMetaTowers::CALO::IHCAL)
-	ohMetaTowerBuilder->setCaloRadius(BuildMetaTowers::CALO::OHCAL)
+	
 }
 
 float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float,2>> const_pxy )
@@ -124,7 +122,7 @@ float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float,2>> const_pxy )
 	return jet_pt;
 }
 
-void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode, int n_evt)
+void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode)
 {
 	std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersEM	
 		= new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {}; 
@@ -134,7 +132,7 @@ void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode, int n_evt)
 		= new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {}; 
 	
 	float zvtx = 0.;
-	        try{
+        try{
                 GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
                 if(vertexmap){
                         if(vertexmap->empty())
@@ -175,10 +173,15 @@ void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode, int n_evt)
 	grabTowerArray(ohMetaTowerBuilder, ohMetaTowers);
 	
 	//need to hand it the full MetaTower set then break it down
-	compareMetaTowering(emMetaTowers, rawTowersEM, zvtx);
-	compareMetaTowering(ihMetaTowers, rawTowersIH, zvtx);
-	compareMetaTowering(ohMetaTowers, rawTowersOH, zvtx);
+	compareTowerValue( emMetaTowers, rawTowersEM, zvtx, 0, emMetaTowerBuilder );
+	compareTowerValue( ihMetaTowers, rawTowersIH, zvtx, 1, ihMetaTowerBuilder );
+	compareTowerValue( ohMetaTowers, rawTowersOH, zvtx, 2, ohMetaTowerBuilder );
+	
+	//do the jet analysis
+	grabJetConstituents(topNode, zvtx);	
+	
 		
+	return;
 }	
 
 void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
@@ -189,7 +192,7 @@ void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<T
 	caloSet->at(3)	= MTB->getMetaTowers();
 	return;
 }
-void compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
 {
 	PerCaloQAPlots* CPQA {nullptr};
 	std::array<PerCaloQAPlots*, 6>* ZRest {nullptr};
@@ -268,12 +271,209 @@ void compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::arr
 	delete ZRest;
 	return;	
 }
-void grabJetConsitents( PHCompositeNode* topNode, std::vector<std::vector<std::array<float, 2>*>*>* jetConstiituents )
+void EtaShiftStudy::grabJetConsitents( PHCompositeNode* topNode, float zVTX)
 {
 	//grab the jet consituents and save the momentum 
-	std::array<float, 2>* pxy {nullptr};
-	auto jetConts	= findNode::getClass<JetContainerv1>(topNode, "Antikt_unsubtracted_r04");
-	for(auto jet: *jetConts}
+	auto jetConts	= findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+	std::string ohcal_energy_towers	= "TOWERINFO_CALIB_HCALOUT";
+	std::string ihcal_energy_towers	="TOWERINFO_CALIB_HCALIN"; 
+	std::string emcal_energy_towers	="TOWERINFO_CALIB_CEMC_RETOWER";
+	auto emcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
+	auto ihcal_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
+	auto ohcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  ohcal_energy_towers );
+	auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT");
+	auto emcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC"   );
+	auto ihcal_geom= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN");
+	ohcal_geom->set_calorimeter_id(RawTowerDefs::HCALOUT);
+	ihcal_geom->set_calorimeter_id(RawTowerDefs::HCALIN);
+	emcal_geom->set_calorimeter_id(RawTowerDefs::CEMC);
+	for(auto jet: *jetConts){
+		std::vector< std::array< float, 2>* > jetC {}; 
+		std::array<float, 2> pxy {0., 0.};
+		std::vector< std::array< float, 2>* > jetCsft {}; 
+		std::array<float, 2> pxysft {0., 0.};
+		auto cmp_vec = jet->get_comp_vec();
+		for(auto iter:cmp_vec)
+		{
+			unsigned int tower_id=iter.second;
+			float px= 0.;
+		       	float py= 0.;
+			float e	= 0.;
+			float phicenter	= 0.;
+			float etacenter = 0.;
+			float r	= 1.;
+			Jet::SRC source=iter.first;
+			if( source == Jet::SRC::HCALOUT_TOWER)
+			{
+				try{
+					e		= ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					int phibin	= ohcal_tower_energy->getTowerPhiBin(tower_id);
+					int etabin	= ohcal_tower_energy->getTowerEtaBin(tower_id);
+					phicenter	= ohcal_geom->get_phicenter(phibin);
+					etacenter	= ohcal_geom->get_etacenter(etabin);	
+					r 		= ohMetaTowerBuilder->getRadius();
+				
+				}
+				catch(std::exception& e){
+					std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER 
+						<<" despite actual source being " <<source 
+					<<" and tower id is " <<tower_id<<std::endl;
+				}
+			}
+			else if( source == Jet::SRC::HCALIN_TOWER)
+			{
+				try{
+					e		= ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					int phibin	= ihcal_tower_energy->getTowerPhiBin(tower_id);
+					int etabin	= ihcal_tower_energy->getTowerEtaBin(tower_id);
+					phicenter	= ihcal_geom->get_phicenter(phibin);
+					etacenter	= ihcal_geom->get_etacenter(etabin);	
+					r 		= ihMetaTowerBuilder->getRadius();
+
+				}
+				catch(std::exception& e){
+					std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER 
+						<<" despite actual source being " <<source 
+					<<" and tower id is " <<tower_id<<std::endl;
+				}
+			}
+			else if( source == Jet::SRC::CEMC_TOWER)
+			{
+				try{
+					e		= emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					int phibin	= emcal_tower_energy->getTowerPhiBin(tower_id);
+					int etabin	= emcal_tower_energy->getTowerEtaBin(tower_id);
+					phicenter	= emcal_geom->get_phicenter(phibin);
+					etacenter	= emcal_geom->get_etacenter(etabin);	
+					r 		= emMetaTowerBuilder->getRadius();
+				}
+				catch(std::exception& e){
+					std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER 
+						<<" despite actual source being " <<source 
+					<<" and tower id is " <<tower_id<<std::endl;
+				}
+			}
+			else 
+				std::cout<<"Couldn't deal with the source: " <<source <<"\n Skipping this particle" <<std::endl;  
+			float sfteta	= asinh((r*sinh(etacenter)+zVTX)/r);
+			float pt	= E / cosh(etacenter); 
+			float ptsft	= E / cosh(sfteta);
+			px		= pt * cos(phicenter);
+			py		= pt * sin(phicenter);
+			pxy.first	= px;
+			pxy.second	= py;
+			jetC.push_back(&pxy);
+			px		= ptsft * cos(phicenter);
+			py		= ptsft * sin(phicenter);
+			pxysft.first	= px;
+			pxysft.second	= py;
+			jetCsft.push_back(&pxysft);	
+		}
+		caluclatedJetpt->Fill(CalculateJetPt(jetC);
+	//grab the jet consituents and save the momentum 
+	auto jetConts	= findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+	std::string ohcal_energy_towers	= "TOWERINFO_CALIB_HCALOUT";
+	std::string ihcal_energy_towers	="TOWERINFO_CALIB_HCALIN"; 
+	std::string emcal_energy_towers	="TOWERINFO_CALIB_CEMC_RETOWER";
+	auto emcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
+	auto ihcal_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
+	auto ohcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  ohcal_energy_towers );
+	auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT");
+	auto emcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC"   );
+	auto ihcal_geom= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN");
+	ohcal_geom->set_calorimeter_id(RawTowerDefs::HCALOUT);
+	ihcal_geom->set_calorimeter_id(RawTowerDefs::HCALIN);
+	emcal_geom->set_calorimeter_id(RawTowerDefs::CEMC);
+	for(auto jet: *jetConts){
+		std::vector< std::array< float, 2> > jetC {}; 
+		std::array<float, 2> pxy {0., 0.};
+		std::vector< std::array< float, 2> > jetCsft {}; 
+		std::array<float, 2> pxysft {0., 0.};
+		auto cmp_vec = jet->get_comp_vec();
+		for(auto iter:cmp_vec)
+		{
+			unsigned int tower_id=iter.second;
+			float px= 0.;
+		       	float py= 0.;
+			float e	= 0.;
+			float phicenter	= 0.;
+			float etacenter = 0.;
+			float r	= 1.;
+			Jet::SRC source=iter.first;
+			if( source == Jet::SRC::HCALOUT_TOWER)
+			{
+				try{
+					e		= ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					int phibin	= ohcal_tower_energy->getTowerPhiBin(tower_id);
+					int etabin	= ohcal_tower_energy->getTowerEtaBin(tower_id);
+					phicenter	= ohcal_geom->get_phicenter(phibin);
+					etacenter	= ohcal_geom->get_etacenter(etabin);	
+					r 		= ohMetaTowerBuilder->getRadius();
+				
+				}
+				catch(std::exception& e){
+					std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER 
+						<<" despite actual source being " <<source 
+					<<" and tower id is " <<tower_id<<std::endl;
+				}
+			}
+			else if( source == Jet::SRC::HCALIN_TOWER)
+			{
+				try{
+					e		= ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					int phibin	= ihcal_tower_energy->getTowerPhiBin(tower_id);
+					int etabin	= ihcal_tower_energy->getTowerEtaBin(tower_id);
+					phicenter	= ihcal_geom->get_phicenter(phibin);
+					etacenter	= ihcal_geom->get_etacenter(etabin);	
+					r 		= ihMetaTowerBuilder->getRadius();
+
+				}
+				catch(std::exception& e){
+					std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER 
+						<<" despite actual source being " <<source 
+					<<" and tower id is " <<tower_id<<std::endl;
+				}
+			}
+			else if( source == Jet::SRC::CEMC_TOWER)
+			{
+				try{
+					e		= emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+					int phibin	= emcal_tower_energy->getTowerPhiBin(tower_id);
+					int etabin	= emcal_tower_energy->getTowerEtaBin(tower_id);
+					phicenter	= emcal_geom->get_phicenter(phibin);
+					etacenter	= emcal_geom->get_etacenter(etabin);	
+					r 		= emMetaTowerBuilder->getRadius();
+				}
+				catch(std::exception& e){
+					std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER 
+						<<" despite actual source being " <<source 
+					<<" and tower id is " <<tower_id<<std::endl;
+				}
+			}
+			else 
+				std::cout<<"Couldn't deal with the source: " <<source <<"\n Skipping this particle" <<std::endl;  
+			float sfteta	= asinh((r*sinh(etacenter)+zVTX)/r);
+			float pt	= E / cosh(etacenter); 
+			float ptsft	= E / cosh(sfteta);
+			px		= pt * cos(phicenter);
+			py		= pt * sin(phicenter);
+			pxy.first	= px;
+			pxy.second	= py;
+			jetC.push_back(pxy);
+			px		= ptsft * cos(phicenter);
+			py		= ptsft * sin(phicenter);
+			pxysft.first	= px;
+			pxysft.second	= py;
+			jetCsft.push_back(pxysft);	
+		}
+		caluclatedJetpt->Fill(CalculateJetPt(jetC));
+		calculatedShiftedJetpt->Fill(CalculateJetPt(jetCsft);
+
+	}
+	return;
+
+}
+
 int EtaShiftStudy::process_event(PHCompositeNode *topNode)
 {
 	if(vebose) std::cout << "EtaShiftStudy::process_event(PHCompositeNode *topNode) Processing Event" << std::endl;
@@ -283,14 +483,14 @@ int EtaShiftStudy::process_event(PHCompositeNode *topNode)
 
 //____________________________________________________________________________..
 
-int EtaShiftStudy::End([[maybe_unused]] PHCompositeNode *topNode)
+int EtaShiftStudy::End( PHCompositeNode *topNode)
 /////{
   std::cout << "EtaShiftStudy::End(PHCompositeNode *topNode) This is the End..." << std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
 //____________________________________________________________________________..
-int EtaShiftStudy::Reset([[maybe_unused]] PHCompositeNode *topNode)
+int EtaShiftStudy::Reset( PHCompositeNode *topNode)
 {
  std::cout << "EtaShiftStudy::Reset(PHCompositeNode *topNode) being Reset" << std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
