@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 AM_CPPFLAGS = \
-  -I$(includedir) \
+  -isystem$(includedir) \
   -isystem$(OFFLINE_MAIN)/include \
   -isystem$(ROOTSYS)/include
 
@@ -11,17 +11,20 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  EtaShiftQA.h
+  EtaShiftStudy.h
 
 lib_LTLIBRARIES = \
-  libEtaShiftQA.la
+  libEtaShiftStudy.la
 
-libEtaShiftQA_la_SOURCES = \
-  EtaShiftQA.cc
+libEtaShiftStudy_la_SOURCES = \
+  EtaShiftStudy.cc
 
-libEtaShiftQA_la_LIBADD = \
+libEtaShiftStudy_la_LIBADD = \
   -lphool \
-  -lSubsysReco
+  -lSubsysReco \
+  -lfun4all \
+  -lcalo_io \
+  -lg4jets 
 
 BUILT_SOURCES = testexternals.cc
 
@@ -29,7 +32,7 @@ noinst_PROGRAMS = \
   testexternals
 
 testexternals_SOURCES = testexternals.cc
-testexternals_LDADD   = libEtaShiftQA.la
+testexternals_LDADD   = libEtaShiftStudy.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@

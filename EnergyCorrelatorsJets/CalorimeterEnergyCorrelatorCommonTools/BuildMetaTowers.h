@@ -244,7 +244,7 @@ class BuildMetaTowers
 				std::vector<Tower*> HCAL,
 				bool outer=false, 
 				double zVTX = 0.
-				);
+				)
 		{
 			if(outer)
 			{
@@ -260,7 +260,7 @@ class BuildMetaTowers
 		}
 		void GetVandyTowers(
 				std::vector<Tower*> CAL,
-				std::array<TowerArrayEntry*, 1536>* output_array
+				std::array<TowerArrayEntry*, 1536>* output_array, 
 				double zVTX,
 				CALO calo 
 				)
@@ -327,6 +327,7 @@ class BuildMetaTowers
 			if(!outer){
 			       	calo 	= CALO::IHCAL;
 				HC	= IHCaTowers;
+			}
 			for(int i = 0; i <(int)HCAL->size(); i++) 
 			{
 				HC->at(i)->eta 	= calculateEtaShift(HCAL->at(i)->eta, zVTX, calo);
@@ -534,7 +535,7 @@ class BuildMetaTowers
 			tower->eta = CalculateEtaShift(tower->eta, zVTX, calo);
 			return tower; 
 		}
+		
 
-};
-			
+};		
 #endif

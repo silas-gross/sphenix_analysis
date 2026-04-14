@@ -1,0 +1,1138 @@
+make  install-am
+make[1]: Entering directory '/gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/CalorimeterEnergyCorrelatorCommonTools/ENCStudiesQA/EtaShiftStudy/build'
+/bin/sh ./libtool  --tag=CXX   --mode=compile /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/bin/g++ -DPACKAGE_NAME=\"etashiftqa\" -DPACKAGE_TARNAME=\"etashiftqa\" -DPACKAGE_VERSION=\"1.00\" -DPACKAGE_STRING=\"etashiftqa\ 1.00\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"etashiftqa\" -DVERSION=\"1.00\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -I. -I..  -isystem/sphenix/user/sgross/install_dir/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include   -g -O2 -std=c++20 -Wall -Wextra -Wshadow -Werror -MT EtaShiftStudy.lo -MD -MP -MF .deps/EtaShiftStudy.Tpo -c -o EtaShiftStudy.lo ../EtaShiftStudy.cc
+libtool: compile:  /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/bin/g++ -DPACKAGE_NAME=\"etashiftqa\" -DPACKAGE_TARNAME=\"etashiftqa\" -DPACKAGE_VERSION=\"1.00\" "-DPACKAGE_STRING=\"etashiftqa 1.00\"" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"etashiftqa\" -DVERSION=\"1.00\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -I. -I.. -isystem/sphenix/user/sgross/install_dir/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include -g -O2 -std=c++20 -Wall -Wextra -Wshadow -Werror -MT EtaShiftStudy.lo -MD -MP -MF .deps/EtaShiftStudy.Tpo -c ../EtaShiftStudy.cc  -fPIC -DPIC -o .libs/EtaShiftStudy.o
+In file included from ../EtaShiftStudy.h:28,
+                 from ../EtaShiftStudy.cc:66:
+../../../BuildMetaTowers.h:407:67: error: 'CAlO' has not been declared
+  407 |                 double calculateEtaShift(double eta, double zVtx, CAlO calo)
+      |                                                                   ^~~~
+../../../BuildMetaTowers.h:501:17: error: expected unqualified-id before '{' token
+  501 |                 {
+      |                 ^
+../../../BuildMetaTowers.h:511:17: error: expected unqualified-id before '{' token
+  511 |                 {
+      |                 ^
+../../../BuildMetaTowers.h:369:51: error: narrowing conversion of '(((double)1 / 2.0e+0) * ((double)(((float)((BuildMetaTowers*)this)->BuildMetaTowers::R_OHCAL_Outer) + ((float)((BuildMetaTowers*)this)->BuildMetaTowers::R_OHCAL_Inner))))' from 'double' to 'float' [-Werror=narrowing]
+  369 |                 const float     R_OHCAL_MID { 1/2.*(R_OHCAL_Outer + R_OHCAL_Inner) };
+      |                                               ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../../../BuildMetaTowers.h:370:51: error: narrowing conversion of '(((double)1 / 2.0e+0) * ((double)(((float)((BuildMetaTowers*)this)->BuildMetaTowers::R_IHCAL_Outer) + ((float)((BuildMetaTowers*)this)->BuildMetaTowers::R_IHCAL_Inner))))' from 'double' to 'float' [-Werror=narrowing]
+  370 |                 const float     R_IHCAL_MID { 1/2.*(R_IHCAL_Outer + R_IHCAL_Inner) };
+      |                                               ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../../../BuildMetaTowers.h:371:51: error: narrowing conversion of '(((double)1 / 2.0e+0) * ((double)(((float)((BuildMetaTowers*)this)->BuildMetaTowers::R_EMCAL_Outer) + ((float)((BuildMetaTowers*)this)->BuildMetaTowers::R_EMCAL_Inner))))' from 'double' to 'float' [-Werror=narrowing]
+  371 |                 const float     R_EMCAL_MID { 1/2.*(R_EMCAL_Outer + R_EMCAL_Inner) };
+      |                                               ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../../../BuildMetaTowers.h:394:76: error: too many initializers for 'const std::array<double, 64>'
+  394 |                                 5.9350412, 6.0332160, 6.1313908, 6.2295655 };
+      |                                                                            ^
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::RunMetaTowerBuilder(float)':
+../../../BuildMetaTowers.h:102:112: error: cannot convert '<brace-enclosed initializer list>' to 'BuildMetaTowers::TowerArrayEntry*' in initialization
+  102 |                                                 new TowerArrayEntry* {0., shiftedetaEdges.at(i), phiEdges.at(i)};
+      |                                                                                                                ^
+../../../BuildMetaTowers.h:111:54: error: 'CalculateIndex' was not declared in this scope; did you mean 'calculateIndex'?
+  111 |                                         int index  = CalculateIndex(tower);
+      |                                                      ^~~~~~~~~~~~~~
+      |                                                      calculateIndex
+../../../BuildMetaTowers.h:112:41: error: 'MetaTower' was not declared in this scope; did you mean 'MetaTowers'?
+  112 |                                         MetaTower->at(index)=tower;
+      |                                         ^~~~~~~~~
+      |                                         MetaTowers
+../../../BuildMetaTowers.h:100:48: error: unused variable 'pt' [-Werror=unused-variable]
+  100 |                                         double pt =100.;
+      |                                                ^~
+../../../BuildMetaTowers.h:116:70: error: 'AddMetaTower' was not declared in this scope; did you mean 'addMetaTower'?
+  116 |                         for(int i=0; i<(int)EMReTowers->size(); i++) AddMetaTower(EMReTowers->at(i));
+      |                                                                      ^~~~~~~~~~~~
+      |                                                                      addMetaTower
+../../../BuildMetaTowers.h:117:70: error: 'AddMetaTower' was not declared in this scope; did you mean 'addMetaTower'?
+  117 |                         for(int i=0; i<(int)IHCaTowers->size(); i++) AddMetaTower(IHCaTowers->at(i));
+      |                                                                      ^~~~~~~~~~~~
+      |                                                                      addMetaTower
+../../../BuildMetaTowers.h:118:70: error: 'AddMetaTower' was not declared in this scope; did you mean 'addMetaTower'?
+  118 |                         for(int i=0; i<(int)OHCaTowers->size(); i++) AddMetaTower(OHCaTowers->at(i));
+      |                                                                      ^~~~~~~~~~~~
+      |                                                                      addMetaTower
+../../../BuildMetaTowers.h: In member function 'std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4>* BuildMetaTowers::LoadFun4AllTower(PHCompositeNode*, double)':
+../../../BuildMetaTowers.h:131:45: error: 'GetClass' is not a member of 'findNode'; did you mean 'getClass'?
+  131 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_CEMC_RETOWER" );
+      |                                             ^~~~~~~~
+      |                                             getClass
+../../../BuildMetaTowers.h:131:74: error: expected primary-expression before '>' token
+  131 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_CEMC_RETOWER" );
+      |                                                                          ^
+../../../BuildMetaTowers.h:131:78: error: left operand of comma operator has no effect [-Werror=unused-value]
+  131 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_CEMC_RETOWER" );
+      |                                                                              ^~~~~~~
+../../../BuildMetaTowers.h:133:45: error: 'GetClass' is not a member of 'findNode'; did you mean 'getClass'?
+  133 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALIN" );
+      |                                             ^~~~~~~~
+      |                                             getClass
+../../../BuildMetaTowers.h:133:74: error: expected primary-expression before '>' token
+  133 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALIN" );
+      |                                                                          ^
+../../../BuildMetaTowers.h:133:78: error: left operand of comma operator has no effect [-Werror=unused-value]
+  133 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALIN" );
+      |                                                                              ^~~~~~~
+../../../BuildMetaTowers.h:135:45: error: 'GetClass' is not a member of 'findNode'; did you mean 'getClass'?
+  135 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALOUT" );
+      |                                             ^~~~~~~~
+      |                                             getClass
+../../../BuildMetaTowers.h:135:74: error: expected primary-expression before '>' token
+  135 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALOUT" );
+      |                                                                          ^
+../../../BuildMetaTowers.h:135:78: error: left operand of comma operator has no effect [-Werror=unused-value]
+  135 |                                 = findNode::GetClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALOUT" );
+      |                                                                              ^~~~~~~
+../../../BuildMetaTowers.h:152:50: error: 'rawMT' was not declared in this scope; did you mean 'rawMt'?
+  152 |                         for(int i = 0; i < (int) rawMT->size(); i++)
+      |                                                  ^~~~~
+      |                                                  rawMt
+../../../BuildMetaTowers.h:125:40: error: unused parameter 'zVTX' [-Werror=unused-parameter]
+  125 |                                 double zVTX
+      |                                 ~~~~~~~^~~~
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetFun4AllTowers(TowerInfoContainerv2, RawTowerGeomContainer_Cylinderv1, std::array<TowerArrayEntry*, 1536>*, double, CALO)':
+../../../BuildMetaTowers.h:176:59: error: 'n' was not declared in this scope; did you mean 'yn'?
+  176 |                                 auto key = CAL.encode_key(n) ;
+      |                                                           ^
+      |                                                           yn
+../../../BuildMetaTowers.h:179:55: error: 'class TowerInfoContainerv2' has no member named 'getTowerEtabin'; did you mean 'getTowerEtaBin'?
+  179 |                                 int etabin      = CAL.getTowerEtabin(key);
+      |                                                       ^~~~~~~~~~~~~~
+      |                                                       getTowerEtaBin
+../../../BuildMetaTowers.h:181:56: error: 'class RawTowerGeomContainer_Cylinderv1' has no member named 'get_etaecenter'; did you mean 'get_etacenter'?
+  181 |                                 double eta      = geom.get_etaecenter(etabin);
+      |                                                        ^~~~~~~~~~~~~~
+      |                                                        get_etacenter
+../../../BuildMetaTowers.h:183:51: error: 'CalculateEtaShift' was not declared in this scope; did you mean 'calculateEtaShift'?
+  183 |                                 eta             = CalculateEtaShift(eta, zVTX, calo);
+      |                                                   ^~~~~~~~~~~~~~~~~
+      |                                                   calculateEtaShift
+../../../BuildMetaTowers.h:186:51: error: 'CalculateIndex' was not declared in this scope; did you mean 'calculateIndex'?
+  186 |                                 int index       = CalculateIndex(tower, true);
+      |                                                   ^~~~~~~~~~~~~~
+      |                                                   calculateIndex
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetEMCALTowers(TowerInfoContainerv2, RawTowerGeomContainer_Cylinderv1, bool, double)':
+../../../BuildMetaTowers.h:192:54: error: declaration of 'EMCAL' shadows a member of 'BuildMetaTowers' [-Werror=shadow]
+  192 |                                 TowerInfoContainerv2 EMCAL,
+      |                                 ~~~~~~~~~~~~~~~~~~~~~^~~~~
+../../../BuildMetaTowers.h:82:25: note: shadowed declaration is here
+   82 |                         EMCAL   = 1,
+      |                         ^~~~~
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetHCALTowers(TowerInfoContainerv2, RawTowerGeomContainer_Cylinderv1, bool, double)':
+../../../BuildMetaTowers.h:213:36: error: 'TowerEntryArray' was not declared in this scope
+  213 |                         std::array<TowerEntryArray*, 1536>* HCaTowers = NULL;
+      |                                    ^~~~~~~~~~~~~~~
+../../../BuildMetaTowers.h:213:58: error: template argument 1 is invalid
+  213 |                         std::array<TowerEntryArray*, 1536>* HCaTowers = NULL;
+      |                                                          ^
+../../../BuildMetaTowers.h:213:58: error: template argument 2 is invalid
+../../../BuildMetaTowers.h:216:51: error: cannot convert 'std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*' to 'int*' in assignment
+  216 |                                 HCaTowers       = OHCaTowers;
+      |                                                   ^~~~~~~~~~
+      |                                                   |
+      |                                                   std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*
+../../../BuildMetaTowers.h:220:51: error: cannot convert 'std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*' to 'int*' in assignment
+  220 |                                 HCaTowers       = IHCaTowers;
+      |                                                   ^~~~~~~~~~
+      |                                                   |
+      |                                                   std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*
+../../../BuildMetaTowers.h:223:59: error: cannot convert 'int*' to 'std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*'
+  223 |                         GetFun4AllTowers(HCAL, HCAL_geom, HCaTowers, zVTX, cal);
+      |                                                           ^~~~~~~~~
+      |                                                           |
+      |                                                           int*
+../../../BuildMetaTowers.h:169:69: note:   initializing argument 3 of 'void BuildMetaTowers::GetFun4AllTowers(TowerInfoContainerv2, RawTowerGeomContainer_Cylinderv1, std::array<TowerArrayEntry*, 1536>*, double, CALO)'
+  169 |                                 std::array<TowerArrayEntry*, 1536>* Towers,
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetEMCALTowers(std::vector<Tower*>, bool, double)':
+../../../BuildMetaTowers.h:230:53: error: declaration of 'EMCAL' shadows a member of 'BuildMetaTowers' [-Werror=shadow]
+  230 |                                 std::vector<Tower*> EMCAL,
+      |                                 ~~~~~~~~~~~~~~~~~~~~^~~~~
+../../../BuildMetaTowers.h:82:25: note: shadowed declaration is here
+   82 |                         EMCAL   = 1,
+      |                         ^~~~~
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetVandyTowers(std::vector<Tower*>, std::array<TowerArrayEntry*, 1536>*, double, CALO)':
+../../../BuildMetaTowers.h:278:51: error: 'CalculateEtaShift' was not declared in this scope; did you mean 'calculateEtaShift'?
+  278 |                                 eta             = CalculateEtaShift(eta, zVTX, calo);
+      |                                                   ^~~~~~~~~~~~~~~~~
+      |                                                   calculateEtaShift
+../../../BuildMetaTowers.h:280:51: error: 'CalculateIndex' was not declared in this scope; did you mean 'calculateIndex'?
+  280 |                                 int index       = CalculateIndex(tower, true);
+      |                                                   ^~~~~~~~~~~~~~
+      |                                                   calculateIndex
+../../../BuildMetaTowers.h:280:37: error: unused variable 'index' [-Werror=unused-variable]
+  280 |                                 int index       = CalculateIndex(tower, true);
+      |                                     ^~~~~
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::LoadVandyTowers(std::vector<Tower>, float)':
+../../../BuildMetaTowers.h:294:38: error: 'int Tower::calo' is private within this context
+  294 |                                 if(t.calo == 1 )        emcal.push_back(&t);
+      |                                      ^~~~
+In file included from ../../../BuildMetaTowers.h:31:
+/sphenix/user/sgross/install_dir/include/vandyclasses/Tower.h:34:13: note: declared private here
+   34 |         int calo; //0=EMCal, 1=retowered EMCal, 2=IHCal, 3=OHCal
+      |             ^~~~
+../../../BuildMetaTowers.h:294:38: note: field 'int Tower::calo' can be accessed via 'int Tower::get_calo()'
+  294 |                                 if(t.calo == 1 )        emcal.push_back(&t);
+      |                                      ^~~~
+      |                                      get_calo()
+../../../BuildMetaTowers.h:295:43: error: 'int Tower::calo' is private within this context
+  295 |                                 else if(t.calo == 2)    ihcal.push_back(&t);
+      |                                           ^~~~
+/sphenix/user/sgross/install_dir/include/vandyclasses/Tower.h:34:13: note: declared private here
+   34 |         int calo; //0=EMCal, 1=retowered EMCal, 2=IHCal, 3=OHCal
+      |             ^~~~
+../../../BuildMetaTowers.h:295:43: note: field 'int Tower::calo' can be accessed via 'int Tower::get_calo()'
+  295 |                                 else if(t.calo == 2)    ihcal.push_back(&t);
+      |                                           ^~~~
+      |                                           get_calo()
+../../../BuildMetaTowers.h:296:43: error: 'int Tower::calo' is private within this context
+  296 |                                 else if(t.calo == 3)    ohcal.push_back(&t);
+      |                                           ^~~~
+/sphenix/user/sgross/install_dir/include/vandyclasses/Tower.h:34:13: note: declared private here
+   34 |         int calo; //0=EMCal, 1=retowered EMCal, 2=IHCal, 3=OHCal
+      |             ^~~~
+../../../BuildMetaTowers.h:296:43: note: field 'int Tower::calo' can be accessed via 'int Tower::get_calo()'
+  296 |                                 else if(t.calo == 3)    ohcal.push_back(&t);
+      |                                           ^~~~
+      |                                           get_calo()
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetEMCALTowers(std::vector<TowerArrayEntry*>, bool, double)':
+../../../BuildMetaTowers.h:305:63: error: declaration of 'EMCAL' shadows a member of 'BuildMetaTowers' [-Werror=shadow]
+  305 |                                 std::vector<TowerArrayEntry*> EMCAL,
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+../../../BuildMetaTowers.h:82:25: note: shadowed declaration is here
+   82 |                         EMCAL   = 1,
+      |                         ^~~~~
+../../../BuildMetaTowers.h:311:53: error: base operand of '->' has non-pointer type 'std::vector<BuildMetaTowers::TowerArrayEntry*>'
+  311 |                         for(int i = 0; i <(int)EMCAL->size(); i++)
+      |                                                     ^~
+../../../BuildMetaTowers.h:313:64: error: base operand of '->' has non-pointer type 'std::vector<BuildMetaTowers::TowerArrayEntry*>'
+  313 |                                 EMReTowers->at(i)       = EMCAL->at(i);
+      |                                                                ^~
+../../../BuildMetaTowers.h:314:77: error: 'EMReTower' was not declared in this scope; did you mean 'EMReTowers'?
+  314 |                                 EMReTowers->at(i)->eta  = calculateEtaShift(EMReTower->at(i)->eta, zVTX, calo);
+      |                                                                             ^~~~~~~~~
+      |                                                                             EMReTowers
+../../../BuildMetaTowers.h:306:38: error: unused parameter 'isRetower' [-Werror=unused-parameter]
+  306 |                                 bool isRetower = false,
+      |                                 ~~~~~^~~~~~~~~~~~~~~~~
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::GetHCALTowers(std::vector<TowerArrayEntry*>, bool, double)':
+../../../BuildMetaTowers.h:326:52: error: wrong number of template arguments (1, should be 2)
+  326 |                         std::array<TowerArrayEntry*>* HC = OHCaTowers;
+      |                                                    ^
+In file included from /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_algobase.h:64,
+                 from /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/string:51,
+                 from /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/fun4all/Fun4AllBase.h:8,
+                 from /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/fun4all/SubsysReco.h:6,
+                 from ../EtaShiftStudy.h:10:
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../../../BuildMetaTowers.h:326:60: error: cannot convert 'std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*' to 'int*' in initialization
+  326 |                         std::array<TowerArrayEntry*>* HC = OHCaTowers;
+      |                                                            ^~~~~~~~~~
+      |                                                            |
+      |                                                            std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*
+../../../BuildMetaTowers.h:329:43: error: cannot convert 'std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*' to 'int*' in assignment
+  329 |                                 HC      = IHCaTowers;
+      |                                           ^~~~~~~~~~
+      |                                           |
+      |                                           std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*
+../../../BuildMetaTowers.h:331:52: error: base operand of '->' has non-pointer type 'std::vector<BuildMetaTowers::TowerArrayEntry*>'
+  331 |                         for(int i = 0; i <(int)HCAL->size(); i++)
+      |                                                    ^~
+../../../BuildMetaTowers.h:333:37: error: request for member 'at' in '* HC', which is of non-class type 'int'
+  333 |                                 HC->at(i)->eta  = calculateEtaShift(HCAL->at(i)->eta, zVTX, calo);
+      |                                     ^~
+../../../BuildMetaTowers.h:333:73: error: base operand of '->' has non-pointer type 'std::vector<BuildMetaTowers::TowerArrayEntry*>'
+  333 |                                 HC->at(i)->eta  = calculateEtaShift(HCAL->at(i)->eta, zVTX, calo);
+      |                                                                         ^~
+../../../BuildMetaTowers.h: In member function 'int BuildMetaTowers::LookupBin(double, bool, bool)':
+../../../BuildMetaTowers.h:443:56: error: 'EtaEdges' was not declared in this scope; did you mean 'etaEdges'?
+  443 |                                 for(int i = 0; i<(int) EtaEdges.size(); i++){
+      |                                                        ^~~~~~~~
+      |                                                        etaEdges
+../../../BuildMetaTowers.h:449:56: error: 'PhiEdges' was not declared in this scope; did you mean 'phiEdges'?
+  449 |                                 for(int i = 0; i<(int) PhiEdges.size(); i++){
+      |                                                        ^~~~~~~~
+      |                                                        phiEdges
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::shiftEMCAL(std::vector<TowerArrayEntry*>, bool, float)':
+../../../BuildMetaTowers.h:487:70: error: 'RetowerEMCAL' was not declared in this scope
+  487 |                                 std::vector<TowerArrayEntry*> rtEM = RetowerEMCAL(emcal);
+      |                                                                      ^~~~~~~~~~~~
+../../../BuildMetaTowers.h:493:89: error: 'EMC' is not a member of 'BuildMetaTowers::CALO'
+  493 |                                 TowerArrayEntry* nTower = shiftTower(emcal.at(i), CALO::EMC, zVTX);
+      |                                                                                         ^~~
+../../../BuildMetaTowers.h:494:55: error: no matching function for call to 'BuildMetaTowers::calculateIndex(BuildMetaTowers::TowerArrayEntry&)'
+  494 |                                 int N = calculateIndex( *nTower );
+      |                                         ~~~~~~~~~~~~~~^~~~~~~~~~~
+../../../BuildMetaTowers.h:422:21: note: candidate: 'int BuildMetaTowers::calculateIndex(TowerArrayEntry, bool)'
+  422 |                 int calculateIndex(TowerArrayEntry tower, bool useSlant)
+      |                     ^~~~~~~~~~~~~~
+../../../BuildMetaTowers.h:422:21: note:   candidate expects 2 arguments, 1 provided
+../../../BuildMetaTowers.h: In member function 'void BuildMetaTowers::addMetaTower(TowerArrayEntry)':
+../../../BuildMetaTowers.h:524:43: error: 'findEtaBin' was not declared in this scope
+  524 |                         int etaBin      = findEtaBin(eta_val);
+      |                                           ^~~~~~~~~~
+../../../BuildMetaTowers.h:525:43: error: 'findPhiBin' was not declared in this scope
+  525 |                         int phiBin      = findPhiBin(phi_val);
+      |                                           ^~~~~~~~~~
+../../../BuildMetaTowers.h:526:57: error: no matching function for call to 'BuildMetaTowers::calculateIndex(BuildMetaTowers::TowerArrayEntry&)'
+  526 |                         int N           = calculateIndex(tower);
+      |                                           ~~~~~~~~~~~~~~^~~~~~~
+../../../BuildMetaTowers.h:422:21: note: candidate: 'int BuildMetaTowers::calculateIndex(TowerArrayEntry, bool)'
+  422 |                 int calculateIndex(TowerArrayEntry tower, bool useSlant)
+      |                     ^~~~~~~~~~~~~~
+../../../BuildMetaTowers.h:422:21: note:   candidate expects 2 arguments, 1 provided
+../../../BuildMetaTowers.h:528:59: error: 'getPhiCenter' was not declared in this scope
+  528 |                                 new TowerArrayEntry* { 0, getPhiCenter(phiBin), getEtaCenter(etaBin) };
+      |                                                           ^~~~~~~~~~~~
+../../../BuildMetaTowers.h:528:81: error: 'getEtaCenter' was not declared in this scope
+  528 |                                 new TowerArrayEntry* { 0, getPhiCenter(phiBin), getEtaCenter(etaBin) };
+      |                                                                                 ^~~~~~~~~~~~
+../../../BuildMetaTowers.h:528:102: error: cannot convert '<brace-enclosed initializer list>' to 'BuildMetaTowers::TowerArrayEntry*' in initialization
+  528 |                                 new TowerArrayEntry* { 0, getPhiCenter(phiBin), getEtaCenter(etaBin) };
+      |                                                                                                      ^
+../../../BuildMetaTowers.h:529:44: error: 'struct BuildMetaTowers::TowerArrayEntry' has no member named 'E'
+  529 |                         MetaTowers->at(N)->E += tower.E;
+      |                                            ^
+../../../BuildMetaTowers.h:529:55: error: 'struct BuildMetaTowers::TowerArrayEntry' has no member named 'E'
+  529 |                         MetaTowers->at(N)->E += tower.E;
+      |                                                       ^
+../../../BuildMetaTowers.h: In member function 'BuildMetaTowers::TowerArrayEntry* BuildMetaTowers::shiftTower(TowerArrayEntry*, CALO, float)':
+../../../BuildMetaTowers.h:535:38: error: 'CalculateEtaShift' was not declared in this scope; did you mean 'calculateEtaShift'?
+  535 |                         tower->eta = CalculateEtaShift(tower->eta, zVTX, calo);
+      |                                      ^~~~~~~~~~~~~~~~~
+      |                                      calculateEtaShift
+../EtaShiftStudy.h: In member function 'void PerCaloQAPlots::InitializePlots()':
+../EtaShiftStudy.h:70:25: error: expected ')' before 'deltaEt'
+   70 |                         deltaEt         = new TH1F(
+      |                         ^~~~~~~
+../EtaShiftStudy.h:66:51: note: to match this '('
+   66 |                         avgeta          = new TH1F(
+      |                                                   ^
+../EtaShiftStudy.h:85:25: error: 'etaDeltaEtabin' was not declared in this scope; did you mean 'etaDeltaetabin'?
+   85 |                         etaDeltaEtabin  = new TH2F(
+      |                         ^~~~~~~~~~~~~~
+      |                         etaDeltaetabin
+../EtaShiftStudy.h:90:41: error: expected primary-expression before ')' token
+   90 |                                         );
+      |                                         ^
+../EtaShiftStudy.h:63:60: error: call to consteval function 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("{} bin shift; #Delta #eta_{bin}; N_{bins}")' is not a constant expression
+   63 |                                                 std::format("{} bin shift; #Delta #eta_{bin}; N_{bins}", calo).c_str(),
+      |                                                 ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../EtaShiftStudy.h:35:
+../EtaShiftStudy.h:63:18:   in 'constexpr' expansion of 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("{} bin shift; #Delta #eta_{bin}; N_{bins}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h:77:60: error: call to consteval function 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("Transverse Energy for {}; #Sum{{}} E_{T}; N_{evts}")' is not a constant expression
+   77 |                                                 std::format("Transverse Energy for {}; #Sum{{}} E_{T}; N_{evts}", calo, calo).c_str(),
+      |                                                 ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h:77:18:   in 'constexpr' expansion of 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("Transverse Energy for {}; #Sum{{}} E_{T}; N_{evts}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h:82:60: error: call to consteval function 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("New #eta of center {}; #eta; N_{hits}")' is not a constant expression
+   82 |                                                 std::format("New #eta of center {}; #eta; N_{hits}", calo).c_str(),
+      |                                                 ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h:82:18:   in 'constexpr' expansion of 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("New #eta of center {}; #eta; N_{hits}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h:93:60: error: call to consteval function 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("Event average #Delta #eta in {}; z_{vtx}; < #eta >; N_{evts}")' is not a constant expression
+   93 |                                                 std::format("Event average #Delta #eta in {}; z_{vtx}; < #eta >; N_{evts}", calo).c_str(),
+      |                                                 ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h:93:18:   in 'constexpr' expansion of 'std::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>("Event average #Delta #eta in {}; z_{vtx}; < #eta >; N_{evts}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.h: At global scope:
+../EtaShiftStudy.h:147:98: error: wrong number of template arguments (1, should be 2)
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                                                                                  ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.h:147:98: error: wrong number of template arguments (1, should be 2)
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                                                                                  ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.h:147:98: error: wrong number of template arguments (1, should be 2)
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                                                                                  ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.h:147:98: error: wrong number of template arguments (1, should be 2)
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                                                                                  ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.h:147:33: error: invalid template-id
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                 ^~~
+../EtaShiftStudy.h:147:95: error: expected primary-expression before '*' token
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                                                                               ^
+../EtaShiftStudy.h:147:33: error: missing template argument list after 'std::array'; template placeholder not permitted in parameter
+  147 |                                 std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+      |                                 ^~~
+      |                                    <>
+../EtaShiftStudy.h:147:33: note: or use 'auto' for an abbreviated function template
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: 'template<class _Tp, long unsigned int _Nm> struct std::array' declared here
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.cc: In constructor 'EtaShiftStudy::EtaShiftStudy(const std::string&)':
+../EtaShiftStudy.cc:81:9: error: 'caluclatedJetpt' was not declared in this scope; did you mean 'calculatedJetpt'?
+   81 |         caluclatedJetpt         = new TH1F(
+      |         ^~~~~~~~~~~~~~~
+      |         calculatedJetpt
+../EtaShiftStudy.cc:86:9: error: 'caluclatedShiftedJetpt' was not declared in this scope; did you mean 'calculatedShiftedJetpt'?
+   86 |         caluclatedShiftedJetpt  = new TH1F(
+      |         ^~~~~~~~~~~~~~~~~~~~~~
+      |         calculatedShiftedJetpt
+../EtaShiftStudy.cc:93:76: error: expected ')' before numeric constant
+   93 |                                 "Vertex position; z_{vtx} [cm]; N_{events}"
+      |                                                                            ^
+      |                                                                            )
+   94 |                                 300, -150.5, 149.5
+      |                                 ~~~                                         
+../EtaShiftStudy.cc:91:43: note: to match this '('
+   91 |         hzVTX                   = new TH1F(
+      |                                           ^
+../EtaShiftStudy.cc:95:25: error: no matching function for call to 'TH1F::TH1F(const char [7], const char [42], double, double)'
+   95 |                         );
+      |                         ^
+In file included from ../EtaShiftStudy.h:23:
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:629:4: note: candidate: 'TH1F::TH1F(const TH1F&)'
+  629 |    TH1F(const TH1F &h1f);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:629:4: note:   candidate expects 1 argument, 4 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:628:13: note: candidate: 'TH1F::TH1F(const TVectorF&)'
+  628 |    explicit TH1F(const TVectorF &v);
+      |             ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:628:13: note:   candidate expects 1 argument, 4 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:627:4: note: candidate: 'TH1F::TH1F(const char*, const char*, Int_t, const Double_t*)'
+  627 |    TH1F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:627:73: note:   no known conversion for argument 4 from 'double' to 'const Double_t*' {aka 'const double*'}
+  627 |    TH1F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins);
+      |                                                         ~~~~~~~~~~~~~~~~^~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:626:4: note: candidate: 'TH1F::TH1F(const char*, const char*, Int_t, const Float_t*)'
+  626 |    TH1F(const char *name,const char *title,Int_t nbinsx,const Float_t  *xbins);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:626:73: note:   no known conversion for argument 4 from 'double' to 'const Float_t*' {aka 'const float*'}
+  626 |    TH1F(const char *name,const char *title,Int_t nbinsx,const Float_t  *xbins);
+      |                                                         ~~~~~~~~~~~~~~~~^~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:625:4: note: candidate: 'TH1F::TH1F(const char*, const char*, Int_t, Double_t, Double_t)'
+  625 |    TH1F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:625:4: note:   candidate expects 5 arguments, 4 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:624:4: note: candidate: 'TH1F::TH1F()'
+  624 |    TH1F();
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH1.h:624:4: note:   candidate expects 0 arguments, 4 provided
+../EtaShiftStudy.cc:100:73: error: call to consteval function 'std::basic_format_string<char, int&>("EMCAL, |z|_{vtx} < {}")' is not a constant expression
+  100 |                 EMCAL_Z_QA->at(i)       = new PerCaloQAPlots(std::format("EMCAL, |z|_{vtx} < {}", z_range));
+      |                                                              ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:100:53:   in 'constexpr' expansion of 'std::basic_format_string<char, int&>("EMCAL, |z|_{vtx} < {}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, int>::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:101:73: error: call to consteval function 'std::basic_format_string<char, int&>("IHCAL, |z|_{vtx} < {}")' is not a constant expression
+  101 |                 IHCAL_Z_QA->at(i)       = new PerCaloQAPlots(std::format("IHCAL, |z|_{vtx} < {}", z_range));
+      |                                                              ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:101:54:   in 'constexpr' expansion of 'std::basic_format_string<char, int&>("IHCAL, |z|_{vtx} < {}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, int>::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:102:73: error: call to consteval function 'std::basic_format_string<char, int&>("OHCAL, |z|_{vtx} < {}")' is not a constant expression
+  102 |                 OHCAL_Z_QA->at(i)       = new PerCaloQAPlots(std::format("OHCAL, |z|_{vtx} < {}", z_range));
+      |                                                              ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:102:55:   in 'constexpr' expansion of 'std::basic_format_string<char, int&>("OHCAL, |z|_{vtx} < {}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, int>::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:103:73: error: call to consteval function 'std::basic_format_string<char, int&>("Meta Calo, EMCAL radius, |z|_{vtx} < {}")' is not a constant expression
+  103 |                 MetaE_Z_QA->at(i)       = new PerCaloQAPlots(std::format("Meta Calo, EMCAL radius, |z|_{vtx} < {}", z_range));
+      |                                                              ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:103:55:   in 'constexpr' expansion of 'std::basic_format_string<char, int&>("Meta Calo, EMCAL radius, |z|_{vtx} < {}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, int>::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:104:73: error: call to consteval function 'std::basic_format_string<char, int&>("Meta Calo, IHCAL radius, |z|_{vtx} < {}")' is not a constant expression
+  104 |                 MetaI_Z_QA->at(i)       = new PerCaloQAPlots(std::format("Meta Calo, IHCAL radius, |z|_{vtx} < {}", z_range));
+      |                                                              ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:104:55:   in 'constexpr' expansion of 'std::basic_format_string<char, int&>("Meta Calo, IHCAL radius, |z|_{vtx} < {}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, int>::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:105:73: error: call to consteval function 'std::basic_format_string<char, int&>("Meta Calo, OHCAL radius, |z|_{vtx} < {}")' is not a constant expression
+  105 |                 MetaO_Z_QA->at(i)       = new PerCaloQAPlots(std::format("Meta Calo, OHCAL radius, |z|_{vtx} < {}", z_range));
+      |                                                              ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:105:55:   in 'constexpr' expansion of 'std::basic_format_string<char, int&>("Meta Calo, OHCAL radius, |z|_{vtx} < {}")'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:4208:19:   in 'constexpr' expansion of '__scanner.std::__format::_Checking_scanner<char, int>::std::__format::_Scanner<char>.std::__format::_Scanner<char>::_M_scan()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3949:30:   in 'constexpr' expansion of '((std::__format::_Scanner<char>*)this)->std::__format::_Scanner<char>::_M_on_replacement_field()'
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:3992:58: error: call to non-'constexpr' function 'void std::__format::__invalid_arg_id_in_format_string()'
+ 3992 |               __format::__invalid_arg_id_in_format_string();
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/format:218:3: note: 'void std::__format::__invalid_arg_id_in_format_string()' declared here
+  218 |   __invalid_arg_id_in_format_string()
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:72:49: error: unused parameter 'name' [-Werror=unused-parameter]
+   72 | EtaShiftStudy::EtaShiftStudy(const std::string &name)
+      |                              ~~~~~~~~~~~~~~~~~~~^~~~
+../EtaShiftStudy.cc: In member function 'float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float, 2> >)':
+../EtaShiftStudy.cc:120:20: error: 'const_pt' was not declared in this scope; did you mean 'const_pxy'?
+  120 |         for(auto c:const_pt) jet_pxy+=c;
+      |                    ^~~~~~~~
+      |                    const_pxy
+../EtaShiftStudy.cc:115:70: error: unused parameter 'const_pxy' [-Werror=unused-parameter]
+  115 | float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float,2>> const_pxy )
+      |                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+../EtaShiftStudy.cc: In member function 'void EtaShiftStudy::AnalyzeEvent(PHCompositeNode*)':
+../EtaShiftStudy.cc:127:31: error: 'TowerArrayEntry' was not declared in this scope
+  127 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersEM
+      |                               ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:127:53: error: template argument 1 is invalid
+  127 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersEM
+      |                                                     ^
+../EtaShiftStudy.cc:127:53: error: template argument 2 is invalid
+../EtaShiftStudy.cc:127:58: error: template argument 1 is invalid
+  127 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersEM
+      |                                                          ^
+../EtaShiftStudy.cc:127:58: error: template argument 2 is invalid
+../EtaShiftStudy.cc:128:39: error: 'arrayTowerArrayEntry' is not a member of 'std'
+  128 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                       ^~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:128:66: error: template argument 1 is invalid
+  128 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                                  ^
+../EtaShiftStudy.cc:128:66: error: template argument 2 is invalid
+../EtaShiftStudy.cc:128:28: error: '<expression error>' in namespace 'std' does not name a type
+  128 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:128:68: error: expected primary-expression before ',' token
+  128 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                                    ^
+../EtaShiftStudy.cc:129:53: error: template argument 1 is invalid
+  129 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersIH
+      |                                                     ^
+../EtaShiftStudy.cc:129:53: error: template argument 2 is invalid
+../EtaShiftStudy.cc:129:58: error: template argument 1 is invalid
+  129 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersIH
+      |                                                          ^
+../EtaShiftStudy.cc:129:58: error: template argument 2 is invalid
+../EtaShiftStudy.cc:130:39: error: 'arrayTowerArrayEntry' is not a member of 'std'
+  130 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                       ^~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:130:66: error: template argument 1 is invalid
+  130 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                                  ^
+../EtaShiftStudy.cc:130:66: error: template argument 2 is invalid
+../EtaShiftStudy.cc:130:28: error: '<expression error>' in namespace 'std' does not name a type
+  130 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:130:68: error: expected primary-expression before ',' token
+  130 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                                    ^
+../EtaShiftStudy.cc:131:53: error: template argument 1 is invalid
+  131 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersOH
+      |                                                     ^
+../EtaShiftStudy.cc:131:53: error: template argument 2 is invalid
+../EtaShiftStudy.cc:131:58: error: template argument 1 is invalid
+  131 |         std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowersOH
+      |                                                          ^
+../EtaShiftStudy.cc:131:58: error: template argument 2 is invalid
+../EtaShiftStudy.cc:132:39: error: 'arrayTowerArrayEntry' is not a member of 'std'
+  132 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                       ^~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:132:66: error: template argument 1 is invalid
+  132 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                                  ^
+../EtaShiftStudy.cc:132:66: error: template argument 2 is invalid
+../EtaShiftStudy.cc:132:28: error: '<expression error>' in namespace 'std' does not name a type
+  132 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:132:68: error: expected primary-expression before ',' token
+  132 |                 = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                                    ^
+../EtaShiftStudy.cc:156:9: error: 'h_vtx' was not declared in this scope
+  156 |         h_vtx->Fill(zvtx)
+      |         ^~~~~
+../EtaShiftStudy.cc:159:47: error: 'class BuildMetaTowers' has no member named 'LoadFun4AllTowers'; did you mean 'LoadFun4AllTower'?
+  159 |         rawTowersIH     = ihMetaTowerBuilder->LoadFun4AllTowers(topNode, zvtx);
+      |                                               ^~~~~~~~~~~~~~~~~
+      |                                               LoadFun4AllTower
+../EtaShiftStudy.cc:160:47: error: 'class BuildMetaTowers' has no member named 'LoadFun4AllTowers'; did you mean 'LoadFun4AllTower'?
+  160 |         rawTowersOH     = ohMetaTowerBuilder->LoadFun4AllTowers(topNode, zvtx);
+      |                                               ^~~~~~~~~~~~~~~~~
+      |                                               LoadFun4AllTower
+../EtaShiftStudy.cc:167:25: error: 'arrayTowerArrayEntry' is not a member of 'std'
+  167 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* emMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                         ^~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:167:52: error: template argument 1 is invalid
+  167 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* emMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                    ^
+../EtaShiftStudy.cc:167:52: error: template argument 2 is invalid
+../EtaShiftStudy.cc:167:54: error: expected unqualified-id before ',' token
+  167 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* emMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                      ^
+../EtaShiftStudy.cc:167:56: error: expected unqualified-id before numeric constant
+  167 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* emMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                        ^
+../EtaShiftStudy.cc:168:25: error: 'arrayTowerArrayEntry' is not a member of 'std'
+  168 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ihMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                         ^~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:168:52: error: template argument 1 is invalid
+  168 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ihMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                    ^
+../EtaShiftStudy.cc:168:52: error: template argument 2 is invalid
+../EtaShiftStudy.cc:168:54: error: expected unqualified-id before ',' token
+  168 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ihMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                      ^
+../EtaShiftStudy.cc:168:56: error: expected unqualified-id before numeric constant
+  168 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ihMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                        ^
+../EtaShiftStudy.cc:169:25: error: 'arrayTowerArrayEntry' is not a member of 'std'
+  169 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ohMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                         ^~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:169:52: error: template argument 1 is invalid
+  169 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ohMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                    ^
+../EtaShiftStudy.cc:169:52: error: template argument 2 is invalid
+../EtaShiftStudy.cc:169:54: error: expected unqualified-id before ',' token
+  169 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ohMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                      ^
+../EtaShiftStudy.cc:169:56: error: expected unqualified-id before numeric constant
+  169 |         std::array<std::arrayTowerArrayEntry*, 1536>*, 4>* ohMetaTowers = new std::array<std::arrayTowerArrayEntry*, 1536>*, 4> {};
+      |                                                        ^
+../EtaShiftStudy.cc:171:44: error: 'emMetaTowers' was not declared in this scope; did you mean 'BuildMetaTowers'?
+  171 |         grabTowerArray(emMetaTowerBuilder, emMetaTowers);
+      |                                            ^~~~~~~~~~~~
+      |                                            BuildMetaTowers
+../EtaShiftStudy.cc:172:44: error: 'ihMetaTowers' was not declared in this scope; did you mean 'BuildMetaTowers'?
+  172 |         grabTowerArray(ihMetaTowerBuilder, ihMetaTowers);
+      |                                            ^~~~~~~~~~~~
+      |                                            BuildMetaTowers
+../EtaShiftStudy.cc:173:44: error: 'ohMetaTowers' was not declared in this scope; did you mean 'BuildMetaTowers'?
+  173 |         grabTowerArray(ohMetaTowerBuilder, ohMetaTowers);
+      |                                            ^~~~~~~~~~~~
+      |                                            BuildMetaTowers
+../EtaShiftStudy.cc:181:9: error: 'grabJetConstituents' was not declared in this scope; did you mean 'grabJetConsitents'?
+  181 |         grabJetConstituents(topNode, zvtx);
+      |         ^~~~~~~~~~~~~~~~~~~
+      |         grabJetConsitents
+../EtaShiftStudy.cc: At global scope:
+../EtaShiftStudy.cc:187:80: error: 'TowerArrayEntry' was not declared in this scope
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:187:102: error: template argument 1 is invalid
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                      ^
+../EtaShiftStudy.cc:187:102: error: template argument 2 is invalid
+../EtaShiftStudy.cc:187:80: error: 'TowerArrayEntry' was not declared in this scope
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:187:102: error: template argument 1 is invalid
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                      ^
+../EtaShiftStudy.cc:187:102: error: template argument 2 is invalid
+../EtaShiftStudy.cc:187:80: error: 'TowerArrayEntry' was not declared in this scope
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:187:102: error: template argument 1 is invalid
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                      ^
+../EtaShiftStudy.cc:187:102: error: template argument 2 is invalid
+../EtaShiftStudy.cc:187:80: error: 'TowerArrayEntry' was not declared in this scope
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:187:102: error: template argument 1 is invalid
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                      ^
+../EtaShiftStudy.cc:187:102: error: template argument 2 is invalid
+../EtaShiftStudy.cc:187:69: error: invalid template-id
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                     ^~~
+../EtaShiftStudy.cc:187:80: error: 'TowerArrayEntry' was not declared in this scope
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:187:107: error: wrong number of template arguments (1, should be 2)
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                           ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.cc:187:107: error: wrong number of template arguments (1, should be 2)
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                           ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.cc:187:107: error: wrong number of template arguments (1, should be 2)
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                           ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.cc:187:107: error: wrong number of template arguments (1, should be 2)
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                           ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: provided for 'template<class _Tp, long unsigned int _Nm> struct std::array'
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.cc:187:58: error: invalid template-id
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                          ^~~
+../EtaShiftStudy.cc:187:103: error: missing template arguments before '*' token
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                       ^
+../EtaShiftStudy.cc:187:104: error: expected primary-expression before ',' token
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                                                                        ^
+../EtaShiftStudy.cc:187:58: error: missing template argument list after 'std::array'; template placeholder not permitted in parameter
+  187 | void EtaShiftStudy::grabTowerArray(BuildMetaTowers* MTB, std::array<std::array<TowerArrayEntry*, 1536>*, 4>* caloSet)
+      |                                                          ^~~
+      |                                                             <>
+../EtaShiftStudy.cc:187:58: note: or use 'auto' for an abbreviated function template
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/include/c++/14.2.0/bits/stl_pair.h:99:12: note: 'template<class _Tp, long unsigned int _Nm> struct std::array' declared here
+   99 |     struct array;
+      |            ^~~~~
+../EtaShiftStudy.cc: In member function 'void EtaShiftStudy::grabTowerArray(...)':
+../EtaShiftStudy.cc:189:9: error: 'caloSet' was not declared in this scope; did you mean 'close'?
+  189 |         caloSet->at(0)  = MTB->getEMReTowers();
+      |         ^~~~~~~
+      |         close
+../EtaShiftStudy.cc: At global scope:
+../EtaShiftStudy.cc:195:50: error: 'TowerArrayEntry' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                  ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:72: error: template argument 1 is invalid
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                        ^
+../EtaShiftStudy.cc:195:72: error: template argument 2 is invalid
+../EtaShiftStudy.cc:195:50: error: 'TowerArrayEntry' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                  ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:72: error: template argument 1 is invalid
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                        ^
+../EtaShiftStudy.cc:195:72: error: template argument 2 is invalid
+../EtaShiftStudy.cc:195:50: error: 'TowerArrayEntry' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                  ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:72: error: template argument 1 is invalid
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                        ^
+../EtaShiftStudy.cc:195:72: error: template argument 2 is invalid
+../EtaShiftStudy.cc:195:50: error: 'TowerArrayEntry' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                  ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:72: error: template argument 1 is invalid
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                        ^
+../EtaShiftStudy.cc:195:72: error: template argument 2 is invalid
+../EtaShiftStudy.cc:195:39: error: invalid template-id
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                       ^~~
+../EtaShiftStudy.cc:195:50: error: 'TowerArrayEntry' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                  ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:6: error: variable or field 'compareTowerValue' declared void
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |      ^~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:73: error: missing template arguments before '*' token
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                         ^
+../EtaShiftStudy.cc:195:75: error: 'CaloShifted' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                           ^~~~~~~~~~~
+../EtaShiftStudy.cc:195:99: error: 'TowerArrayEntry' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                   ^~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:195:121: error: template argument 1 is invalid
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                                         ^
+../EtaShiftStudy.cc:195:121: error: template argument 2 is invalid
+../EtaShiftStudy.cc:195:124: error: 'CaloBase' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                                            ^~~~~~~~
+../EtaShiftStudy.cc:195:134: error: expected primary-expression before 'float'
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                                                      ^~~~~
+../EtaShiftStudy.cc:195:146: error: expected primary-expression before 'int'
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                                                                  ^~~
+../EtaShiftStudy.cc:195:171: error: expected primary-expression before '*' token
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                                                                                           ^
+../EtaShiftStudy.cc:195:173: error: 'MTB' was not declared in this scope
+  195 | void EtaShiftStudy::compareTowerValue(std::array<TowerArrayEntry*, 1536>* CaloShifted, std::array<TowerArrayEntry*, 1536>* CaloBase, float zvtx, int meta, BuildMetaTowers* MTB)
+      |                                                                                                                                                                             ^~~
+../EtaShiftStudy.cc: In member function 'void EtaShiftStudy::grabJetConsitents(PHCompositeNode*, float)':
+../EtaShiftStudy.cc:277:46: error: 'JetContainerv1' was not declared in this scope
+  277 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |                                              ^~~~~~~~~~~~~~
+../EtaShiftStudy.cc:277:61: error: no matching function for call to 'getClass<<expression error> >(PHCompositeNode*&, const char [17])'
+  277 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../EtaShiftStudy.h:16:
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:17:25: note: candidate: 'template<class T> T* findNode::getClass(PHCompositeNode*, const std::string&)'
+   17 |   template <class T> T *getClass(PHCompositeNode *top, const std::string &name)
+      |                         ^~~~~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:17:25: note:   template argument deduction/substitution failed:
+../EtaShiftStudy.cc:277:61: error: template argument 1 is invalid
+  277 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:58:25: note: candidate: 'template<class T> T* findNode::getClass(PHCompositeNode*, int)'
+   58 |   template <class T> T *getClass(PHCompositeNode *top, const int packetid)
+      |                         ^~~~~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:58:25: note:   template argument deduction/substitution failed:
+../EtaShiftStudy.cc:277:61: error: template argument 1 is invalid
+  277 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:305:25: error: 'Jet' has not been declared
+  305 |                         Jet::SRC source=iter.first;
+      |                         ^~~
+../EtaShiftStudy.cc:306:29: error: 'source' was not declared in this scope
+  306 |                         if( source == Jet::SRC::HCALOUT_TOWER)
+      |                             ^~~~~~
+../EtaShiftStudy.cc:306:39: error: 'Jet' has not been declared
+  306 |                         if( source == Jet::SRC::HCALOUT_TOWER)
+      |                                       ^~~
+../EtaShiftStudy.cc:309:59: error: 'ohcal_tower_energy' was not declared in this scope; did you mean 'ohcal_energy'?
+  309 |                                         e               = ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+      |                                                           ^~~~~~~~~~~~~~~~~~
+      |                                                           ohcal_energy
+../EtaShiftStudy.cc:317:55: error: declaration of 'e' shadows a previous local [-Werror=shadow]
+  317 |                                 catch(std::exception& e){
+      |                                                       ^
+../EtaShiftStudy.cc:301:31: note: shadowed declaration is here
+  301 |                         float e = 0.;
+      |                               ^
+../EtaShiftStudy.cc:318:87: error: 'Jet' has not been declared
+  318 |                                         std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER
+      |                                                                                       ^~~
+../EtaShiftStudy.cc:323:44: error: 'Jet' has not been declared
+  323 |                         else if( source == Jet::SRC::HCALIN_TOWER)
+      |                                            ^~~
+../EtaShiftStudy.cc:326:59: error: 'ihcal_tower_energy' was not declared in this scope; did you mean 'ihcal_energy'?
+  326 |                                         e               = ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+      |                                                           ^~~~~~~~~~~~~~~~~~
+      |                                                           ihcal_energy
+../EtaShiftStudy.cc:334:55: error: declaration of 'e' shadows a previous local [-Werror=shadow]
+  334 |                                 catch(std::exception& e){
+      |                                                       ^
+../EtaShiftStudy.cc:301:31: note: shadowed declaration is here
+  301 |                         float e = 0.;
+      |                               ^
+../EtaShiftStudy.cc:335:87: error: 'Jet' has not been declared
+  335 |                                         std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER
+      |                                                                                       ^~~
+../EtaShiftStudy.cc:340:44: error: 'Jet' has not been declared
+  340 |                         else if( source == Jet::SRC::CEMC_TOWER)
+      |                                            ^~~
+../EtaShiftStudy.cc:343:59: error: 'emcal_tower_energy' was not declared in this scope; did you mean 'emcal_energy'?
+  343 |                                         e               = emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+      |                                                           ^~~~~~~~~~~~~~~~~~
+      |                                                           emcal_energy
+../EtaShiftStudy.cc:350:55: error: declaration of 'e' shadows a previous local [-Werror=shadow]
+  350 |                                 catch(std::exception& e){
+      |                                                       ^
+../EtaShiftStudy.cc:301:31: note: shadowed declaration is here
+  301 |                         float e = 0.;
+      |                               ^
+../EtaShiftStudy.cc:351:87: error: 'Jet' has not been declared
+  351 |                                         std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER
+      |                                                                                       ^~~
+../EtaShiftStudy.cc:359:43: error: 'E' was not declared in this scope
+  359 |                         float pt        = E / cosh(etacenter);
+      |                                           ^
+../EtaShiftStudy.cc:363:29: error: 'struct std::array<float, 2>' has no member named 'first'
+  363 |                         pxy.first       = px;
+      |                             ^~~~~
+../EtaShiftStudy.cc:364:29: error: 'struct std::array<float, 2>' has no member named 'second'
+  364 |                         pxy.second      = py;
+      |                             ^~~~~~
+../EtaShiftStudy.cc:368:32: error: 'struct std::array<float, 2>' has no member named 'first'
+  368 |                         pxysft.first    = px;
+      |                                ^~~~~
+../EtaShiftStudy.cc:369:32: error: 'struct std::array<float, 2>' has no member named 'second'
+  369 |                         pxysft.second   = py;
+      |                                ^~~~~~
+../EtaShiftStudy.cc:372:17: error: 'caluclatedJetpt' was not declared in this scope; did you mean 'calculatedJetpt'?
+  372 |                 caluclatedJetpt->Fill(CalculateJetPt(jetC);
+      |                 ^~~~~~~~~~~~~~~
+      |                 calculatedJetpt
+../EtaShiftStudy.cc:372:54: error: cannot convert 'vector<std::array<float, 2>*>' to 'vector<std::array<float, 2>>'
+  372 |                 caluclatedJetpt->Fill(CalculateJetPt(jetC);
+      |                                                      ^~~~
+      |                                                      |
+      |                                                      vector<std::array<float, 2>*>
+../EtaShiftStudy.cc:115:70: note:   initializing argument 1 of 'float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float, 2> >)'
+  115 | float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float,2>> const_pxy )
+      |                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+../EtaShiftStudy.cc:374:14: error: declaration of 'jetConts' shadows a previous local [-Werror=shadow]
+  374 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |              ^~~~~~~~
+../EtaShiftStudy.cc:277:14: note: shadowed declaration is here
+  277 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |              ^~~~~~~~
+../EtaShiftStudy.cc:374:61: error: no matching function for call to 'getClass<JetContainerv1>(PHCompositeNode*&, const char [17])'
+  374 |         auto jetConts   = findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+      |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:17:25: note: candidate: 'template<class T> T* findNode::getClass(PHCompositeNode*, const std::string&)'
+   17 |   template <class T> T *getClass(PHCompositeNode *top, const std::string &name)
+      |                         ^~~~~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:17:25: note:   template argument deduction/substitution failed:
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:58:25: note: candidate: 'template<class T> T* findNode::getClass(PHCompositeNode*, int)'
+   58 |   template <class T> T *getClass(PHCompositeNode *top, const int packetid)
+      |                         ^~~~~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.545/include/phool/getClass.h:58:25: note:   template argument deduction/substitution failed:
+../EtaShiftStudy.cc:375:21: error: declaration of 'ohcal_energy_towers' shadows a previous local [-Werror=shadow]
+  375 |         std::string ohcal_energy_towers = "TOWERINFO_CALIB_HCALOUT";
+      |                     ^~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:278:21: note: shadowed declaration is here
+  278 |         std::string ohcal_energy_towers = "TOWERINFO_CALIB_HCALOUT";
+      |                     ^~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:376:21: error: declaration of 'ihcal_energy_towers' shadows a previous local [-Werror=shadow]
+  376 |         std::string ihcal_energy_towers ="TOWERINFO_CALIB_HCALIN";
+      |                     ^~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:279:21: note: shadowed declaration is here
+  279 |         std::string ihcal_energy_towers ="TOWERINFO_CALIB_HCALIN";
+      |                     ^~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:377:21: error: declaration of 'emcal_energy_towers' shadows a previous local [-Werror=shadow]
+  377 |         std::string emcal_energy_towers ="TOWERINFO_CALIB_CEMC_RETOWER";
+      |                     ^~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:280:21: note: shadowed declaration is here
+  280 |         std::string emcal_energy_towers ="TOWERINFO_CALIB_CEMC_RETOWER";
+      |                     ^~~~~~~~~~~~~~~~~~~
+../EtaShiftStudy.cc:378:14: error: declaration of 'emcal_energy' shadows a previous local [-Werror=shadow]
+  378 |         auto emcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:281:14: note: shadowed declaration is here
+  281 |         auto emcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:379:14: error: declaration of 'ihcal_energy' shadows a previous local [-Werror=shadow]
+  379 |         auto ihcal_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:282:14: note: shadowed declaration is here
+  282 |         auto ihcal_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:380:14: error: declaration of 'ohcal_energy' shadows a previous local [-Werror=shadow]
+  380 |         auto ohcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  ohcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:283:14: note: shadowed declaration is here
+  283 |         auto ohcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  ohcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:381:14: error: declaration of 'ohcal_geom' shadows a previous local [-Werror=shadow]
+  381 |         auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT");
+      |              ^~~~~~~~~~
+../EtaShiftStudy.cc:284:14: note: shadowed declaration is here
+  284 |         auto ohcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT");
+      |              ^~~~~~~~~~
+../EtaShiftStudy.cc:382:14: error: declaration of 'emcal_geom' shadows a previous local [-Werror=shadow]
+  382 |         auto emcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC"   );
+      |              ^~~~~~~~~~
+../EtaShiftStudy.cc:285:14: note: shadowed declaration is here
+  285 |         auto emcal_geom=findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC"   );
+      |              ^~~~~~~~~~
+../EtaShiftStudy.cc:383:14: error: declaration of 'ihcal_geom' shadows a previous local [-Werror=shadow]
+  383 |         auto ihcal_geom= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN");
+      |              ^~~~~~~~~~
+../EtaShiftStudy.cc:286:14: note: shadowed declaration is here
+  286 |         auto ihcal_geom= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN");
+      |              ^~~~~~~~~~
+../EtaShiftStudy.cc:387:18: error: declaration of 'jet' shadows a previous local [-Werror=shadow]
+  387 |         for(auto jet: *jetConts){
+      |                  ^~~
+../EtaShiftStudy.cc:290:18: note: shadowed declaration is here
+  290 |         for(auto jet: *jetConts){
+      |                  ^~~
+../EtaShiftStudy.cc:388:54: error: declaration of 'jetC' shadows a previous local [-Werror=shadow]
+  388 |                 std::vector< std::array< float, 2> > jetC {};
+      |                                                      ^~~~
+../EtaShiftStudy.cc:291:55: note: shadowed declaration is here
+  291 |                 std::vector< std::array< float, 2>* > jetC {};
+      |                                                       ^~~~
+../EtaShiftStudy.cc:389:38: error: declaration of 'pxy' shadows a previous local [-Werror=shadow]
+  389 |                 std::array<float, 2> pxy {0., 0.};
+      |                                      ^~~
+../EtaShiftStudy.cc:292:38: note: shadowed declaration is here
+  292 |                 std::array<float, 2> pxy {0., 0.};
+      |                                      ^~~
+../EtaShiftStudy.cc:390:54: error: declaration of 'jetCsft' shadows a previous local [-Werror=shadow]
+  390 |                 std::vector< std::array< float, 2> > jetCsft {};
+      |                                                      ^~~~~~~
+../EtaShiftStudy.cc:293:55: note: shadowed declaration is here
+  293 |                 std::vector< std::array< float, 2>* > jetCsft {};
+      |                                                       ^~~~~~~
+../EtaShiftStudy.cc:391:38: error: declaration of 'pxysft' shadows a previous local [-Werror=shadow]
+  391 |                 std::array<float, 2> pxysft {0., 0.};
+      |                                      ^~~~~~
+../EtaShiftStudy.cc:294:38: note: shadowed declaration is here
+  294 |                 std::array<float, 2> pxysft {0., 0.};
+      |                                      ^~~~~~
+../EtaShiftStudy.cc:392:22: error: declaration of 'cmp_vec' shadows a previous local [-Werror=shadow]
+  392 |                 auto cmp_vec = jet->get_comp_vec();
+      |                      ^~~~~~~
+../EtaShiftStudy.cc:295:22: note: shadowed declaration is here
+  295 |                 auto cmp_vec = jet->get_comp_vec();
+      |                      ^~~~~~~
+../EtaShiftStudy.cc:402:25: error: 'Jet' has not been declared
+  402 |                         Jet::SRC source=iter.first;
+      |                         ^~~
+../EtaShiftStudy.cc:403:29: error: 'source' was not declared in this scope
+  403 |                         if( source == Jet::SRC::HCALOUT_TOWER)
+      |                             ^~~~~~
+../EtaShiftStudy.cc:403:39: error: 'Jet' has not been declared
+  403 |                         if( source == Jet::SRC::HCALOUT_TOWER)
+      |                                       ^~~
+../EtaShiftStudy.cc:406:59: error: 'ohcal_tower_energy' was not declared in this scope; did you mean 'ohcal_energy'?
+  406 |                                         e               = ohcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+      |                                                           ^~~~~~~~~~~~~~~~~~
+      |                                                           ohcal_energy
+../EtaShiftStudy.cc:414:55: error: declaration of 'e' shadows a previous local [-Werror=shadow]
+  414 |                                 catch(std::exception& e){
+      |                                                       ^
+../EtaShiftStudy.cc:398:31: note: shadowed declaration is here
+  398 |                         float e = 0.;
+      |                               ^
+../EtaShiftStudy.cc:415:87: error: 'Jet' has not been declared
+  415 |                                         std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER
+      |                                                                                       ^~~
+../EtaShiftStudy.cc:420:44: error: 'Jet' has not been declared
+  420 |                         else if( source == Jet::SRC::HCALIN_TOWER)
+      |                                            ^~~
+../EtaShiftStudy.cc:423:59: error: 'ihcal_tower_energy' was not declared in this scope; did you mean 'ihcal_energy'?
+  423 |                                         e               = ihcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+      |                                                           ^~~~~~~~~~~~~~~~~~
+      |                                                           ihcal_energy
+../EtaShiftStudy.cc:431:55: error: declaration of 'e' shadows a previous local [-Werror=shadow]
+  431 |                                 catch(std::exception& e){
+      |                                                       ^
+../EtaShiftStudy.cc:398:31: note: shadowed declaration is here
+  398 |                         float e = 0.;
+      |                               ^
+../EtaShiftStudy.cc:432:87: error: 'Jet' has not been declared
+  432 |                                         std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER
+      |                                                                                       ^~~
+../EtaShiftStudy.cc:437:44: error: 'Jet' has not been declared
+  437 |                         else if( source == Jet::SRC::CEMC_TOWER)
+      |                                            ^~~
+../EtaShiftStudy.cc:440:59: error: 'emcal_tower_energy' was not declared in this scope; did you mean 'emcal_energy'?
+  440 |                                         e               = emcal_tower_energy->get_tower_at_channel(tower_id)->get_energy();
+      |                                                           ^~~~~~~~~~~~~~~~~~
+      |                                                           emcal_energy
+../EtaShiftStudy.cc:447:55: error: declaration of 'e' shadows a previous local [-Werror=shadow]
+  447 |                                 catch(std::exception& e){
+      |                                                       ^
+../EtaShiftStudy.cc:398:31: note: shadowed declaration is here
+  398 |                         float e = 0.;
+      |                               ^
+../EtaShiftStudy.cc:448:87: error: 'Jet' has not been declared
+  448 |                                         std::cout<<"Bad tower id found for source " <<Jet::SRC::HCALOUT_TOWER
+      |                                                                                       ^~~
+../EtaShiftStudy.cc:456:43: error: 'E' was not declared in this scope
+  456 |                         float pt        = E / cosh(etacenter);
+      |                                           ^
+../EtaShiftStudy.cc:460:29: error: 'struct std::array<float, 2>' has no member named 'first'
+  460 |                         pxy.first       = px;
+      |                             ^~~~~
+../EtaShiftStudy.cc:461:29: error: 'struct std::array<float, 2>' has no member named 'second'
+  461 |                         pxy.second      = py;
+      |                             ^~~~~~
+../EtaShiftStudy.cc:465:32: error: 'struct std::array<float, 2>' has no member named 'first'
+  465 |                         pxysft.first    = px;
+      |                                ^~~~~
+../EtaShiftStudy.cc:466:32: error: 'struct std::array<float, 2>' has no member named 'second'
+  466 |                         pxysft.second   = py;
+      |                                ^~~~~~
+../EtaShiftStudy.cc:470:69: error: expected ')' before ';' token
+  470 |                 calculatedShiftedJetpt->Fill(CalculateJetPt(jetCsft);
+      |                                             ~                       ^
+      |                                                                     )
+../EtaShiftStudy.cc:378:14: error: unused variable 'emcal_energy' [-Werror=unused-variable]
+  378 |         auto emcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:379:14: error: unused variable 'ihcal_energy' [-Werror=unused-variable]
+  379 |         auto ihcal_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:380:14: error: unused variable 'ohcal_energy' [-Werror=unused-variable]
+  380 |         auto ohcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  ohcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:477:33: error: qualified-id in declaration before '(' token
+  477 | int EtaShiftStudy::process_event(PHCompositeNode *topNode)
+      |                                 ^
+../EtaShiftStudy.cc:486:23: error: qualified-id in declaration before '(' token
+  486 | int EtaShiftStudy::End( PHCompositeNode *topNode)
+      |                       ^
+../EtaShiftStudy.cc:489:30: error: return-statement with a value, in function returning 'void' [-fpermissive]
+  489 |   return Fun4AllReturnCodes::EVENT_OK;
+      |          ~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+../EtaShiftStudy.cc:281:14: error: unused variable 'emcal_energy' [-Werror=unused-variable]
+  281 |         auto emcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  emcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:282:14: error: unused variable 'ihcal_energy' [-Werror=unused-variable]
+  282 |         auto ihcal_energy= findNode::getClass<TowerInfoContainer>(topNode, ihcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc:283:14: error: unused variable 'ohcal_energy' [-Werror=unused-variable]
+  283 |         auto ohcal_energy=findNode::getClass<TowerInfoContainer>(topNode,  ohcal_energy_towers );
+      |              ^~~~~~~~~~~~
+../EtaShiftStudy.cc: In member function 'virtual int EtaShiftStudy::Reset(PHCompositeNode*)':
+../EtaShiftStudy.cc:493:44: error: unused parameter 'topNode' [-Werror=unused-parameter]
+  493 | int EtaShiftStudy::Reset( PHCompositeNode *topNode)
+      |                           ~~~~~~~~~~~~~~~~~^~~~~~~
+cc1plus: all warnings being treated as errors
+make[1]: *** [Makefile:501: EtaShiftStudy.lo] Error 1
+make[1]: Leaving directory '/gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/CalorimeterEnergyCorrelatorCommonTools/ENCStudiesQA/EtaShiftStudy/build'
+make: *** [Makefile:777: install] Error 2

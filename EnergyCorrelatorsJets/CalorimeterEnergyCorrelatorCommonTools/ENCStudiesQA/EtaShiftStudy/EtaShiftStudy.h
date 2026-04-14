@@ -25,7 +25,7 @@
 #include <TFile.h>
 
 //personal
-#include <caloenctools/BuildMetaTowers.h>
+#include "../../BuildMetaTowers.h" //need to fix this later 
 
 //c++
 #include <math.h>
@@ -131,7 +131,7 @@ class EtaShiftStudy : public SubsysReco
 			int n=0;
 			for(int i = 0; i<(int)calovals->size(); i++)
 			{
-				if(calovals->at(i)->E <= 0.) continue; //don't bother with empty bins, we want to not include dead areas in a systemaic analysis
+				if(calovals->at(i)->Energy <= 0.) continue; //don't bother with empty bins, we want to not include dead areas in a systemaic analysis
 				avgeta+=calovals->at(i)->eta;
 				n++;
 			}
@@ -144,11 +144,11 @@ class EtaShiftStudy : public SubsysReco
 		void AnalyzeEvent(PHCompositeNode*);
 		void grabTowerArray(
 				BuildMetaTowers*, 
-				std::array<std::array<TowerArrayEntry*, 1536>* 4>*
+				std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
 				);
 		void compareTowerValue( 
-				std::array<TowerArrayEntry*, 1536>*, 
-				std::array<TowerArrayEntry*, 1536>*,
+				std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 
+				std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*,
 				float,
 				int,
 				BuildMetaTowers*
