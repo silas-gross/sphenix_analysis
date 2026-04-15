@@ -67,6 +67,7 @@ class PerCaloQAPlots
 						std::format("h_{}_eta", calo).c_str(), 
 						std::format("{} average #eta; <#eta >; N_{bins}", calo).c_str(),
 						100, -2, 2
+					);
 			deltaEt		= new TH1F(
 						std::format("h_{}_dEt", calo).c_str(),
 						std::format("Change in calculated E_{T} for {} ; #Sum_{{}} #Delta E_{T}; N_{events}", calo, calo).c_str(),
@@ -82,7 +83,7 @@ class PerCaloQAPlots
 						std::format("New #eta of center {}; #eta; N_{hits}", calo).c_str(),
 						100, -4, 4
 					);
-			etaDeltaEtabin	= new TH2F(
+			etaDeltaetabin	= new TH2F(
 						std::format("h_{}_eta_deta", calo).c_str(),
 						std::format("{} bin shift; #eta_{phyiscal}; #Delta #eta_{bin}; N_{evts}", calo).c_str(),
 					       	24, -1.1, 1.1,
@@ -144,7 +145,7 @@ class EtaShiftStudy : public SubsysReco
 		void AnalyzeEvent(PHCompositeNode*);
 		void grabTowerArray(
 				BuildMetaTowers*, 
-				std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* 4>*
+				std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4>*
 				);
 		void compareTowerValue( 
 				std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 
