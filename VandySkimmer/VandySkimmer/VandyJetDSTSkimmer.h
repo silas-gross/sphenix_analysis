@@ -163,7 +163,9 @@ class VandyJetDSTSkimmer : public SubsysReco
 	    t += -(2.015+0.784*ohcal_ratio)*ohcal_ratio;
 	    return t;
     }
-
+    void getJetParentParton(Jet* jet, PHCompositeNode* topNode);
+    std::vector<PHHepMC::GenParticle*> getFinalStateAncestors(PHHepMC::GenParticle*, PHHepMC::GenEvent*);
+    PHHepMC::findCommonAncestor(std::vector< std::vector< PHHepMC::GenParticle*>>);
     PHParameters m_cutParams{"TimingCutParams"}; //variable name is arbitrary
 
     int num{-1};

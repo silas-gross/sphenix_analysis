@@ -844,9 +844,27 @@ float VandyJetDSTSkimmer::getDeltatTruth(float lead_ratio, float subl_ratio)
 	float lead_t = OHCALrat2t(lead_ratio);
 	float subl_t = OHCALrat2t(subl_ratio);
 	float delta_t = lead_t - subl_t;
-	return delta_t; //cloest approximation using the TF1 report 	
+	return delta_t; //closest approximation using the TF1 report 	
 }
+void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, PHCompositeNode* topNode)
+{
+	//find the earliest common ancestor of all the partons in the jet 
+	std::vector<std::vector<PHHepMC::GenParticle*>> parton_parents; 
+	auto truthParticles=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+	std::vector<PHHepMC::GenParticle*> jet_final_state {}; 
+	for(auto p:Jet->get_compvec())
+	{
+		if(!p) continue;
+		Jet::SRC source = p->first;
+		if( source == Jet::SRC::PARTICLE || 
+				source == Jet::SRC::CHARGED_PARTICLE || 
+				source == Jet::SRC::HEPMC_IMPORT)
+		{
+			unsigned int id = p->second;
 
+		}
+	}
+}
 //____________________________________________________________________________..
 std::pair<float, float> VandyJetDSTSkimmer::isGoodTruthDijet(int jetR_index, PHCompositeNode *topNode)
 {
