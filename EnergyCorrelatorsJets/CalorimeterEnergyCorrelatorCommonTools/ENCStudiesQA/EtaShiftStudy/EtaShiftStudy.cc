@@ -69,8 +69,10 @@
 
 #include <phool/PHCompositeNode.h>
 
-EtaShiftStudy::EtaShiftStudy(const std::string &name)
+EtaShiftStudy::EtaShiftStudy(const std::string ofn, [[maybe_unused]] const std::string &name)
 {
+	output_file_name = ofn;
+
 	EMCALQA = new PerCaloQAPlots("EMCAL");
 	IHCALQA	= new PerCaloQAPlots("IHCAL");
 	OHCALQA = new PerCaloQAPlots("OHCAL");
@@ -275,6 +277,8 @@ void EtaShiftStudy::grabJetConstituents( PHCompositeNode* topNode, float zVTX)
 {
 	//grab the jet consituents and save the momentum 
 	auto jetConts	= findNode::getClass<JetContainerv1>(topNode, "AntiKt_r04_calib");
+	if(!jetConts) return;
+	if(jetConst->size() <1) return;
 	std::string ohcal_energy_towers	= "TOWERINFO_CALIB_HCALOUT";
 	std::string ihcal_energy_towers	="TOWERINFO_CALIB_HCALIN"; 
 	std::string emcal_energy_towers	="TOWERINFO_CALIB_CEMC_RETOWER";
@@ -288,6 +292,7 @@ void EtaShiftStudy::grabJetConstituents( PHCompositeNode* topNode, float zVTX)
 	ihcal_geom->set_calorimeter_id(RawTowerDefs::HCALIN);
 	emcal_geom->set_calorimeter_id(RawTowerDefs::CEMC);
 	for(auto jet: *jetConts){
+		if(!jet) continue;
 		std::vector< std::array< float, 2> > jetC {}; 
 		std::array<float, 2> pxy {0., 0.};
 		std::vector< std::array< float, 2> > jetCsft {}; 
@@ -384,17 +389,66 @@ int EtaShiftStudy::process_event(PHCompositeNode *topNode)
 
 //____________________________________________________________________________..
 
-int EtaShiftStudy::End( PHCompositeNode *topNode)
+int EtaShiftStudy::End( [[maybe_unused]] PHCompositeNode *topNode)
 /////{
   std::cout << "EtaShiftStudy::End(PHCompositeNode *topNode) This is the End..." << std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
 //____________________________________________________________________________..
-int EtaShiftStudy::Reset( PHCompositeNode *topNode)
+int EtaShiftStudy::Reset([[maybe_unused]] PHCompositeNode *topNode)
 {
- std::cout << "EtaShiftStudy::Reset(PHCompositeNode *topNode) being Reset" << std::endl;
-  return Fun4AllReturnCodes::EVENT_OK;
+ 	std::cout << "EtaShiftStudy::Reset(PHCompositeNode *topNode) being Reset" << std::endl;
+ 	TFile* output_file = new TFile(output_file_name.c_str(), "RECREATE");
+	output_file->cd();
+	calculatedJetpt->Write();
+	calculatedShiftedJetpt->Write();
+	hzVTX->Write();
+	std::array<TDirectory*, 7>* base_dirs = new std::array<TDirectory*, 7> {}
+	std::array<std::array<TDirectory*, 6>*, 7>* deep_dirs = new std::array<std::array<TDirectory*, 6>*, 7>{}; 
+	for(int i = 0; i<(int)base_dirs->size(); i++)
+	{
+		base_dirs->at(i) = output_file->mkdir(std::format("Z_leq_{}_cm", 10*i).c_str()); 
+		deep_dirs->at(i)->at(0) = base_dirs->at(i)->mkdir("EMCAL");
+		if(i==0) EMCALQA->dumpThePlots(deep_dirs->at(i)->at(0));	
+		else EMCAL_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(0));	
+		
+		deep_dirs->at(i)->at(1)	= base_dirs->at(i)->mkdir("IHCAL");
+		if(i==0) IHCALQA->dumpThePlots(deep_dirs->at(i)->at(1));	
+		else IHCAL_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(1));	
+		
+		deep_dirs->at(i)->at(2)	= base_dirs->at(i)->mkdir("OHCAL");
+		if(i==0) OHCALQA->dumpThePlots(deep_dirs->at(i)->at(2));	
+		else OHCAL_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(2));	
+		
+		deep_dirs->at(i)->at(3)	= base_dirs->at(i)->mkdir("Meta EMCal");
+		if(i==0) MetaEQA->dumpThePlots(deep_dirs->at(i)->at(3));	
+		else MetaE_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(3));	
+		
+		deep_dirs->at(i)->at(4)	= base_dirs->at(i)->mkdir("Meta IHCal");
+		if(i==0) MetaIQA->dumpThePlots(deep_dirs->at(i)->at(4));	
+		else MetaI_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(4));	
+		
+		deep_dirs->at(i)->at(5)	= base_dirs->at(i)->mkdir("Meta OHCal");
+		if(i==0) MetaOQA->dumpThePlots(deep_dirs->at(i)->at(5));	
+		else MetaO_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(5));	
+		output_file->cd();
+
+	}
+	output_file->cd();
+	for(int i = 0; i < (int)base_dirs->size(); i++)
+	{
+		base_dirs->at(i)->cd();
+		for(int j = 0; j < (int)deep_dirs->at(i)->size(); j++)
+		{
+			deep_dirs->at(i)->at(j)->Write();
+		}
+		output_file->cd();
+		base_dirs->at(i)->Write();
+	}
+	output_file->Write();
+	output_file->Close();
+  	return Fun4AllReturnCodes::EVENT_OK
 }
 
 //____________________________________________________________________________..

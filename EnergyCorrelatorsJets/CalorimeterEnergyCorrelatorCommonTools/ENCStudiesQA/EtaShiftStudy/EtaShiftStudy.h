@@ -19,10 +19,31 @@
 #include <globalvertex/GlobalVertex.h>
 #include <globalvertex/GlobalVertexMap.h>
 
+//G4 objects
+
+#include <g4main/PHG4Particle.h>
+#include <g4main/PHG4Hit.h>
+#include <g4main/PHG4TruthInfoContainer.h>
+
+
+#include <phhepmc/PHHepMCGenEvent.h>  
+#include <phhepmc/PHHepMCGenEventMap.h>
+#include <HepMC/GenEvent.h>
+
+//jetbase objects 
+
+#include <jetbase/JetContainer.h>
+#include <jetbase/JetContainerv1.h>
+#include <jetbase/JetMapv1.h>
+#include <jetbase/JetMap.h>
+#include <jetbase/Jetv1.h>
+
+
 //root
 #include <TH1.h>
 #include <TH2.h>
 #include <TFile.h>
+#include <TDirectory.h>
 
 //personal
 #include "../../BuildMetaTowers.h" //need to fix this later 
@@ -36,6 +57,11 @@
 
 
 class PHCompositeNode;
+class Jet;
+class JetContainer;
+class PHG4Hit;
+class PHG4Particle;
+class PHG4TruthInfoContainer;
 
 class PerCaloQAPlots
 {
@@ -46,6 +72,28 @@ class PerCaloQAPlots
 			InitializePlots();
 		}
 		~PerCaloQAPlots(){};
+		void dumpThePlots(TDirectory* dir){
+			dir->cd();
+			if(Deltaetabin) Deltaetabin->Write();
+			if(deltaEt) deltaEt->Write();
+			if(avgeta) avgeta->Write();
+			if(Et) Et->Write();
+			if(shifteta) shifteta->Write();
+			if(etaDeltaetabin) etaDeltaetabin->Write();
+			if(zVTXdeltaeta) zVTXdeltaeta->Write();
+		};
+
+		void dumpThePlots(TFile* f){
+			f->cd();
+			if(Deltaetabin) Deltaetabin->Write();
+			if(deltaEt) deltaEt->Write();
+			if(avgeta) avgeta->Write();
+			if(Et) Et->Write();
+			if(shifteta) shifteta->Write();
+			if(etaDeltaetabin) etaDeltaetabin->Write();
+			if(zVTXdeltaeta) zVTXdeltaeta->Write();
+		};
+
 		TH1F* Deltaetabin;
 		TH1F* deltaEt;
 		TH1F* avgeta;
@@ -186,6 +234,7 @@ class EtaShiftStudy : public SubsysReco
 		BuildMetaTowers* ihMetaTowerBuilder	{ nullptr };
 		BuildMetaTowers* ohMetaTowerBuilder	{ nullptr };
 
+		std::string output_file_name {""};
 
 };
 
