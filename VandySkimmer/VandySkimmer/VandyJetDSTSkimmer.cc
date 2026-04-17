@@ -851,7 +851,24 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, PHCompositeNode* topNode)
 	//find the earliest common ancestor of all the partons in the jet 
 	std::vector<std::vector<PHHepMC::GenParticle*>> parton_parents; 
 	auto truthParticles=findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
-	std::vector<PHHepMC::GenParticle*> jet_final_state {}; 
+	auto hepMCParticles=findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
+	if(!truthParticles || !hepMCParticle) return;
+	
+	HepMC::GenEvent*  hepMCevent {nullptr}; 
+	for(PHHepMCGenEventMap::ConstIter eventIter = hepMCParticles.begin(); eventIter != hepMCParticles.end(); ++eventIter)
+	{
+		auto hc=eventIter.second;
+		if(!hc) continue;
+		hepMCevent=hc->GetEvent();
+	}
+	if(!hepMCevent) return;
+
+	std::map<int, PHG4Particle*> truthParticlesMaps;
+	std::map<int, HepMC::GenParticle*> truthParticlesMaps;
+        for(const auto& a:truthParticlesMaps->GetMap()) truth_particles[a.first]=a.second;
+
+	std::vector<PHHepMC::GenParticle*> jet_final_state {};
+       	std::vector<PHG4Particle*> jetPHg4 {};	
 	for(auto p:Jet->get_compvec())
 	{
 		if(!p) continue;
@@ -861,9 +878,17 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, PHCompositeNode* topNode)
 				source == Jet::SRC::HEPMC_IMPORT)
 		{
 			unsigned int id = p->second;
-
+			if( truthParticlesMaps.find(id) != truthParticlesMaps.end() ) jetPHg4.push_back(truthParticlesMaps.at(id));
 		}
 	}
+	for(HepMC::GenEvent::particle_const_iterator iter=hepMCevent->particles_begin(); iter !=hepMCevent->particles_end(); ++iter){
+		if(
+		truthHepMCMap 
+
+	for(auto p:jetPHg4)
+	{
+		auto bc = p->get_barcode();
+
 }
 //____________________________________________________________________________..
 std::pair<float, float> VandyJetDSTSkimmer::isGoodTruthDijet(int jetR_index, PHCompositeNode *topNode)
