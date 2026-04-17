@@ -108,43 +108,41 @@ class PerCaloQAPlots
 			//this is to initialize the plots for each calorimeter
 			Deltaetabin 	= new TH1F(
 						std::format("h_{}_Detabin", calo).c_str(), 
-						std::format("{} bin shift; #Delta #eta_{bin}; N_{bins}", calo).c_str(),
+						std::format("{} bin shift; #Delta #eta_\{bin\}; N_\{bins\}", calo).c_str(),
 						100, -2, 2
 					);
 			avgeta	 	= new TH1F(
 						std::format("h_{}_eta", calo).c_str(), 
-						std::format("{} average #eta; <#eta >; N_{bins}", calo).c_str(),
+						std::format("{} average #eta; <#eta >; N_\{bins\}", calo).c_str(),
 						100, -2, 2
 					);
 			deltaEt		= new TH1F(
 						std::format("h_{}_dEt", calo).c_str(),
-						std::format("Change in calculated E_{T} for {} ; #Sum_{{}} #Delta E_{T}; N_{events}", calo, calo).c_str(),
+						std::format("Change in calculated E_\{T\} for {} ; #Sum_\{{}\} #Delta E_\{T\}; N_\{events\}", calo, calo).c_str(),
 						2000, -100.5, 99.5
 					);
 			Et		= new TH1F(
 						std::format("h_{}_Et", calo).c_str(),
-						std::format("Transverse Energy for {}; #Sum{{}} E_{T}; N_{evts}", calo, calo).c_str(),
+						std::format("Transverse Energy for {}; #Sum\{{}\} E_\{T\}; N_\{evts\}", calo, calo).c_str(),
 						1000, 0, 200
 					);
 			shifteta	= new TH1F(
 						std::format("h_{}_shift", calo).c_str(),
-						std::format("New #eta of center {}; #eta; N_{hits}", calo).c_str(),
+						std::format("New #eta of center {}; #eta; N_\{hits\}", calo).c_str(),
 						100, -4, 4
 					);
 			etaDeltaetabin	= new TH2F(
 						std::format("h_{}_eta_deta", calo).c_str(),
-						std::format("{} bin shift; #eta_{phyiscal}; #Delta #eta_{bin}; N_{evts}", calo).c_str(),
+						std::format("{} bin shift; #eta_{phyiscal}; #Delta #eta_\{bin\}; N_\{evts\}", calo).c_str(),
 					       	24, -1.1, 1.1,
 						100, -2, 2,
 					);
 			zVTXdeltaeta	= new TH2F(
 						std::format("h_{}_z_deta", calo).c_str(),
-						std::format("Event average #Delta #eta in {}; z_{vtx}; < #eta >; N_{evts}", calo).c_str(),
+						std::format("Event average #Delta #eta in {}; z_\{vtx\}; < #eta >; N_\{evts\}", calo).c_str(),
 						120, -60.5, 59.5,
 						100, -4, 4
 					);
-			
-
 		}
 };
 
@@ -152,7 +150,7 @@ class EtaShiftStudy : public SubsysReco
 {
 	public:
 
-		EtaShiftStudy(const std::string &name = "EtaShiftStudy");
+		EtaShiftStudy(const std::string ofn, const std::string &name = "EtaShiftStudy");
 
 		~EtaShiftStudy() override;
 
@@ -202,7 +200,7 @@ class EtaShiftStudy : public SubsysReco
 				int,
 				BuildMetaTowers*
 				);
-		void grabJetConsitents(
+		void grabJetConstituents(
 			PHCompositeNode*,
 			float			
 			);

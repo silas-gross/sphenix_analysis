@@ -119,7 +119,11 @@ float EtaShiftStudy::CalculateJetPt(std::vector<std::array<float,2>> const_pxy )
 	//using E scheme
 	float jet_pt=0.;
 	std::array<float,2> jet_pxy {0., 0.};
-	for(auto c:const_pxy) jet_pxy+=c;
+	for(auto c:const_pxy)
+	{
+		jet_pxy[0]+=c[0];
+		jte_pxy[1]+=c[1];
+	}
 	jet_pt=std::sqrt(std::pow(jet_pxy[0], 2) + std::pow(jet_pxy[1], 2));
 	return jet_pt;
 }
@@ -155,7 +159,7 @@ void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode)
                 }
         }
         catch(std::exception& e){std::cout<<"Could not find the vertex. \n Setting to origin" <<std::endl;}
-	hzVTX->Fill(zvtx)
+	hzVTX->Fill(zvtx);
 	//Load in the recoTowers, handle seperating the calos offline
 	rawTowersEM	= emMetaTowerBuilder->LoadFun4AllTowers(topNode, zvtx);
 	rawTowersIH	= ihMetaTowerBuilder->LoadFun4AllTowers(topNode, zvtx);
@@ -175,9 +179,9 @@ void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode)
 	grabTowerArray(ohMetaTowerBuilder, ohMetaTowers);
 	
 	//need to hand it the full MetaTower set then break it down
-	compareTowerValue( emMetaTowers, rawTowersEM, zvtx, 0, emMetaTowerBuilder );
-	compareTowerValue( ihMetaTowers, rawTowersIH, zvtx, 1, ihMetaTowerBuilder );
-	compareTowerValue( ohMetaTowers, rawTowersOH, zvtx, 2, ohMetaTowerBuilder );
+	compareTowerValue( emMetaTowers->at(3), rawTowersEM, zvtx, 0, emMetaTowerBuilder );
+	compareTowerValue( ihMetaTowers->at(3), rawTowersIH, zvtx, 1, ihMetaTowerBuilder );
+	compareTowerValue( ohMetaTowers->at(3), rawTowersOH, zvtx, 2, ohMetaTowerBuilder );
 	
 	//do the jet analysis
 	grabJetConstituents(topNode, zvtx);	
@@ -217,6 +221,7 @@ void EtaShiftStudy::compareTowerValue(std::array<BuildMetaTowers::TowerArrayEntr
 	int non_neg = 0;
 	float avg_eta = 0.;
 	float EtSum = 0.;
+	float DeltaEtSum = 0.;
 	for(int i=0; i<(int)CaloBase->size(); i++)
 	{
 		auto CaloShiftTower	= CaloShifted->at(i);
@@ -232,10 +237,10 @@ void EtaShiftStudy::compareTowerValue(std::array<BuildMetaTowers::TowerArrayEntr
 		EtSum		+= Et;
 		DeltaEtSum	+= DeltaEt;
 		CPQA->shifteta->Fill(Deltaeta);
-		for(int i=0; i<(int)ZRest->size(); i++)
+		for(int j=0; j<(int)ZRest->size(); j++)
 		{
-			if(std::abs(zvtx) <  10*i+10){
-				ZRest->at(i)->shifteta->Fill(Deltaeta);
+			if(std::abs(zvtx) <  10*j+10){
+				ZRest->at(j)->shifteta->Fill(Deltaeta);
 			}
 		}
 
@@ -255,17 +260,17 @@ void EtaShiftStudy::compareTowerValue(std::array<BuildMetaTowers::TowerArrayEntr
 		}
 	}
 	std::array<double, 25> shiftedEdge = MTB->getShiftedEdges();
-	for(int i = 0; i<(int) shiftedEdge->size() - 1; i++)
+	for(int i = 0; i<(int) shiftedEdge.size() - 1; i++)
 	{
 		double low 	= shiftedEdge[i];
 		double high 	= shiftedEdge[i+1];
 		double diff	= std::abs(high - low);
 		double ddiff	= diff - 0.0917;
 	        CPQA->Deltaetabin->Fill(ddiff);
-                for(int i=0; i<(int)ZRest->size(); i++)
+                for(int j=0; j<(int)ZRest->size(); j++)
                 {
-                        if(std::abs(zvtx) <  10*i+10){
-                                ZRest->at(i)->Deltaetabin->Fill(Deltaeta);
+                        if(std::abs(zvtx) <  10*j+10){
+                                ZRest->at(j)->Deltaetabin->Fill(Deltaeta);
                         }
                 }
 	}
@@ -389,14 +394,14 @@ int EtaShiftStudy::process_event(PHCompositeNode *topNode)
 
 //____________________________________________________________________________..
 
-int EtaShiftStudy::End( [[maybe_unused]] PHCompositeNode *topNode)
+int EtaShiftStudy::Reset( [[maybe_unused]] PHCompositeNode *topNode)
 /////{
   std::cout << "EtaShiftStudy::End(PHCompositeNode *topNode) This is the End..." << std::endl;
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
 //____________________________________________________________________________..
-int EtaShiftStudy::Reset([[maybe_unused]] PHCompositeNode *topNode)
+int EtaShiftStudy::End([[maybe_unused]] PHCompositeNode *topNode)
 {
  	std::cout << "EtaShiftStudy::Reset(PHCompositeNode *topNode) being Reset" << std::endl;
  	TFile* output_file = new TFile(output_file_name.c_str(), "RECREATE");
@@ -404,7 +409,7 @@ int EtaShiftStudy::Reset([[maybe_unused]] PHCompositeNode *topNode)
 	calculatedJetpt->Write();
 	calculatedShiftedJetpt->Write();
 	hzVTX->Write();
-	std::array<TDirectory*, 7>* base_dirs = new std::array<TDirectory*, 7> {}
+	std::array<TDirectory*, 7>* base_dirs = new std::array<TDirectory*, 7> {};
 	std::array<std::array<TDirectory*, 6>*, 7>* deep_dirs = new std::array<std::array<TDirectory*, 6>*, 7>{}; 
 	for(int i = 0; i<(int)base_dirs->size(); i++)
 	{
@@ -448,7 +453,7 @@ int EtaShiftStudy::Reset([[maybe_unused]] PHCompositeNode *topNode)
 	}
 	output_file->Write();
 	output_file->Close();
-  	return Fun4AllReturnCodes::EVENT_OK
+  	return Fun4AllReturnCodes::EVENT_OK;
 }
 
 //____________________________________________________________________________..
