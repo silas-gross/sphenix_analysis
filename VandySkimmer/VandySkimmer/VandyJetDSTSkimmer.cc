@@ -178,10 +178,10 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 
 
   num++;
-  if(Verbosity())
-  {
+ // if(Verbosity())
+ // {
      std::cout << "working on event " << num << "   number of removed events so far: " << nRem << std::endl;
-  }
+ // }
 
 
   m_towerInfo.clear();
@@ -272,7 +272,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     }
 
     //Particles
-    auto range = truthParticles->GetsPHENIXPrimaryParticleRange();
+    auto range = truthParticles->GetSPHENIXPrimaryParticleRange();
     for(auto it=range.first; it!=range.second; ++it)
     {
       PHG4Particle* p = it->second;
@@ -331,7 +331,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         tmpJet.set_pt_uncalib(jet->get_pt());
         tmpJet.set_hCaloFrac(getHCalFracTruth(jet, topNode));
         tmpJet.set_constituents(cons);
-	getJetParentParton(jet, &tmpJet, topNode);	
+//	getJetParentParton(jet, &tmpJet, topNode);	
         m_truthJetInfo[r].push_back(tmpJet);
      }
     }
@@ -853,39 +853,38 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, JetInfo* jetinfo, PHCompos
 	std::vector<std::vector<HepMC::GenParticle*>> parton_parents; 
 	auto hepMCParticles=findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
 	
-	if(!truthParticles || !hepMCParticle) return;
+	if(!truthParticles || !hepMCParticles) return;
 	
 	HepMC::GenEvent*  hepMCevent {nullptr}; 
-	for(PHHepMCGenEventMap::ConstIter eventIter = hepMCParticles.begin(); eventIter != hepMCParticles.end(); ++eventIter)
+	for(PHHepMCGenEventMap::ConstIter eventIter = hepMCParticles->begin(); eventIter != hepMCParticles->end(); ++eventIter)
 	{
-		auto hc=eventIter.second;
+		auto hc=eventIter->second;
 		if(!hc) continue;
-		hepMCevent=hc->GetEvent();
+		hepMCevent=hc->getEvent();
 	}
 	if(!hepMCevent) return;
 
 
 	std::map<int, PHG4Particle*> truthParticlesMap;
 	std::map<int, HepMC::GenParticle*> truthHepMCMap;
-	auto range = truthParticles->GetsPHENIXPrimaryParticleRange();
+	auto range = truthParticles->GetSPHENIXPrimaryParticleRange();
         for(auto it=range.first; it!=range.second; ++it)
 	{
 		auto a = it->second; 
 		if(!a) continue;
-		truthParticleMap[it->first]=a;
+		truthParticlesMap[it->first]=a;
 	}
-	std::vector<PHHepMC::GenParticle*> jet_final_state {};
+	std::vector<HepMC::GenParticle*> jet_final_state {};
        	std::vector<PHG4Particle*> jetPHg4 {};	
-	for(auto p:Jet->get_compvec())
+	for(auto p:jet->get_comp_vec())
 	{
-		if(!p) continue;
-		Jet::SRC source = p->first;
+		Jet::SRC source = p.first;
 		if( source == Jet::SRC::PARTICLE || 
 				source == Jet::SRC::CHARGED_PARTICLE || 
 				source == Jet::SRC::HEPMC_IMPORT)
 		{
-			unsigned int id = p->second;
-			if( truthParticlesMaps.find(id) != truthParticlesMaps.end() ) jetPHg4.push_back(truthParticlesMaps.at(id));
+			unsigned int id = p.second;
+			if( truthParticlesMap.find(id) != truthParticlesMap.end() ) jetPHg4.push_back(truthParticlesMap.at(id));
 		}
 	}
 	for(HepMC::GenEvent::particle_const_iterator iter=hepMCevent->particles_begin(); iter !=hepMCevent->particles_end(); ++iter){
@@ -902,14 +901,15 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, JetInfo* jetinfo, PHCompos
 			//attepmpt to position match if barcode doesnt work
 			for(auto hp:truthHepMCMap)
 			{
-				auto etaHP 	= hp->momentum().pseudoRapidity();
-			 	auto phiHP	= hp->momentum().phi();
-				auto etaPG	= std::atanh(p->get_pz()/(std::sqrt( std::pow(p->get_px(),2) +std::pow(p->get_py(),2) + std::pow(p->get_pz(),2)));
+				auto etaHP 	= hp.second->momentum().pseudoRapidity();
+			 	auto phiHP	= hp.second->momentum().phi();
+				auto etaPG	= std::atanh(p->get_pz()/(std::sqrt( std::pow(p->get_px(),2) +std::pow(p->get_py(),2) + std::pow(p->get_pz(),2))));
 				auto phiPG	= std::atan2(p->get_py(), p->get_px());	
-				if( etaHP == etaPG && phiHP == phiPG ) jet_final_state.push_back(hp);
+				if( etaHP == etaPG && phiHP == phiPG ) jet_final_state.push_back(hp.second);
 			}
 		}
 	}
+	std::cout<<"There are " <<jet->get_comp_vec().size() <<" particles in the jet final state" <<std::endl;
 	for(auto p: jet_final_state)
 	{
 		std::vector<HepMC::GenParticle*> ancestors {};
@@ -917,7 +917,14 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, JetInfo* jetinfo, PHCompos
 		parton_parents.push_back(ancestors);
 	}
 	HepMC::GenParticle* parent = findCommonAncestor(parton_parents);
-	int pid = std::abs(parent->pdg_id);
+	if(!parent){
+	       std::cout<<"Bad parent" <<std::endl;
+	       jetinfo->set_parentPID(-999);
+	       jetinfo->set_isQuark(false);
+	       jetinfo->set_parent("");
+	       return;
+	}
+	int pid = std::abs(parent->pdg_id());
 	jetinfo->set_parentPID(pid);
 	if(pid < 9 ) 
 	{
@@ -944,20 +951,21 @@ std::vector<HepMC::GenParticle*> VandyJetDSTSkimmer::getFinalStateAncestors(HepM
 	HepMC::GenVertex* prodvtx = gp->production_vertex();
 	std::map<float, HepMC::GenParticle*> tempparents {};
 	HepMC::GenVertex* sig_proc = ev->signal_process_vertex();	
-	for(HepMC::particles_in_const_iterator it = prodvtx->particles_in_const_begin(); 
+	for(HepMC::GenVertex::particles_in_const_iterator it = prodvtx->particles_in_const_begin(); 
 			it != prodvtx->particles_in_const_end(); 
 			++it )
 	{
 		float time = prodvtx->position().t();
-		while (tempparents.find(time) != tempparents.end() ) time+=time/1000.; //just make sure that there are unique keys
+		while (tempparents.find(time) != tempparents.end() ) time+=(time+1)/1000.; //just make sure that there are unique keys
 		tempparents[time]=*it;
 	}
 	for(auto t: tempparents)
 	{
 		auto pt = t.second;
 		prodvtx = pt->production_vertex();
+		if(!prodvtx || !sig_proc ) continue;
 		if(prodvtx->barcode() == sig_proc->barcode()) continue; //do not include the beam particles
-		for(HepMC::particles_in_const_iterator it = prodvtx->particles_in_const_begin();
+		for(auto it = prodvtx->particles_in_const_begin();
 				it != prodvtx->particles_in_const_end();
 				++it)
 		{
@@ -970,7 +978,7 @@ std::vector<HepMC::GenParticle*> VandyJetDSTSkimmer::getFinalStateAncestors(HepM
 	}
 	std::vector<HepMC::GenParticle*> parents {};
 	//sort all the ancestors in order from latest to earliest
-	for(auto t=tempparents.rbegin(); t != temppartents.rend(); ++t)
+	for(auto t=tempparents.rbegin(); t != tempparents.rend(); ++t)
 	{
 		parents.push_back(t->second); //preserve ordering of the time 
 	}
@@ -980,16 +988,18 @@ HepMC::GenParticle* VandyJetDSTSkimmer::findCommonAncestor( std::vector<std::vec
 {
 	//find the latest common ancestor of all final state particles
 	HepMC::GenParticle* parent {nullptr};
-	bool isCommon = false; 
+	bool isCommon 	= false; 
+	bool foundCommon= false;
 	auto j = Jettree.begin();
 	for(auto p:*j)
 	{
 		isCommon=true;
+		int i=0;
 		while(isCommon)
 		{
 			for(auto j2=Jettree.begin()+1; j2 != Jettree.end(); ++j2)
 			{
-				bool foundCommon = false;
+				i++;
 				for(auto p2:*j2)
 				{
 					if( p->barcode() == p2->barcode() )
@@ -998,15 +1008,16 @@ HepMC::GenParticle* VandyJetDSTSkimmer::findCommonAncestor( std::vector<std::vec
 						break;
 					}
 				}
-				if( !foundCommon )
+				if( !foundCommon || i > 10  )
 				{
 					isCommon = false;
 					break;
 				}
 			}
-			if(!isCommon) break;
+			if(!isCommon || i > 10 ) break;
 		}
 		if(isCommon){
+			std::cout<<p->pdg_id()<<std::endl;
 			parent = p;
 			break;
 		}
