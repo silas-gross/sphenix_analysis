@@ -1,38 +1,38 @@
 AUTOMAKE_OPTIONS = foreign
 
 AM_CPPFLAGS = \
-  -isystem$(includedir) \
+  -I$(includedir) \
   -isystem$(OFFLINE_MAIN)/include \
-  -isystem$(ROOTSYS)/include \
-  -isystem$(OPT_SPHENIX)/include  
+  -isystem$(ROOTSYS)/include
 
 AM_LDFLAGS = \
   -L$(libdir) \
   -L$(OFFLINE_MAIN)/lib \
-  -L$(OFFLINE_MAIN)/lib64
+  -L$(OFFLINE_MAIN)/lib64 \
+  -L$(ROOTSYS)/lib
 
 pkginclude_HEADERS = \
-  VandyJetDSTSkimmer.h
+  lwtrackntuplizer.h
 
 lib_LTLIBRARIES = \
-  libVandySkimmer.la
+  liblwtrackntuplizer.la
 
-libVandySkimmer_la_SOURCES = \
-  VandyJetDSTSkimmer.cc
+liblwtrackntuplizer_la_SOURCES = \
+  lwtrackntuplizer.cc
 
-libVandySkimmer_la_LIBADD = \
-  -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib \
-  -lphool \
-  -lodbc++ \
-  -lSubsysReco \
+liblwtrackntuplizer_la_LIBADD = \
+  -lCore \
+  -lMathCore \
+  -lPhysics \
+  -lRIO \
+  -lTree \
   -lfun4all \
-  -lcalo_io \
-  -lg4jets \
-  -lVandyClasses \
-  -lcalotrigger_io \
-  -lcalotrigger
-
+  -lg4detectors \
+  -lglobalvertex \
+  -lphool \
+  -lSubsysReco \
+  -ltrack \
+  -ltrackbase_historic
 
 BUILT_SOURCES = testexternals.cc
 
@@ -40,7 +40,7 @@ noinst_PROGRAMS = \
   testexternals
 
 testexternals_SOURCES = testexternals.cc
-testexternals_LDADD   = libVandySkimmer.la
+testexternals_LDADD   = liblwtrackntuplizer.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@

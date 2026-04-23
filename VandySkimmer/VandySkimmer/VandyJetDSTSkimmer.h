@@ -3,6 +3,9 @@
 #ifndef VandyJetDSTSkimmer_H
 #define VandyJetDSTSkimmer_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include <fun4all/SubsysReco.h>
 #include <fun4all/Fun4AllReturnCodes.h>
 
@@ -41,6 +44,10 @@
 #include <g4main/PHG4TruthInfoContainer.h>
 #include <g4main/PHG4VtxPoint.h>
 
+//HepMC
+#include <phhepmc/PHHepMCGenEvent.h>  
+#include <phhepmc/PHHepMCGenEventMap.h>
+#include <HepMC/GenEvent.h>
 //fastjet
 #include <fastjet/PseudoJet.hh>
 
@@ -163,7 +170,9 @@ class VandyJetDSTSkimmer : public SubsysReco
 	    t += -(2.015+0.784*ohcal_ratio)*ohcal_ratio;
 	    return t;
     }
-
+    void getJetParentParton(Jet*, JetInfo*, PHCompositeNode*);
+    std::vector<HepMC::GenParticle*> getFinalStateAncestors(HepMC::GenParticle*, HepMC::GenEvent*);
+    HepMC::GenParticle* findCommonAncestor(std::vector< std::vector< HepMC::GenParticle*>>);
     PHParameters m_cutParams{"TimingCutParams"}; //variable name is arbitrary
 
     int num{-1};
