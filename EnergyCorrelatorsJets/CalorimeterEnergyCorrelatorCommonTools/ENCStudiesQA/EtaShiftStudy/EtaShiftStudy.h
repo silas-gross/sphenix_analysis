@@ -71,7 +71,15 @@ class PerCaloQAPlots
 			this->calo = calorimeter;
 			InitializePlots();
 		}
-		~PerCaloQAPlots(){};
+		virtual ~PerCaloQAPlots(){
+			delete Deltaetabin;
+			delete deltaEt;
+			delete avgeta;
+			delete Et;
+			delete shifteta;
+			delete etaDeltaetabin;
+			delete zVTXdeltaeta;
+		};
 		void dumpThePlots(TDirectory* dir){
 			dir->cd();
 			if(Deltaetabin) Deltaetabin->Write();
@@ -152,7 +160,7 @@ class EtaShiftStudy : public SubsysReco
 
 		EtaShiftStudy(const std::string ofn, const std::string &name = "EtaShiftStudy");
 
-		~EtaShiftStudy() override {};
+		virtual ~EtaShiftStudy() override {};
 
 		int Init(PHCompositeNode *topNode) override;
 
