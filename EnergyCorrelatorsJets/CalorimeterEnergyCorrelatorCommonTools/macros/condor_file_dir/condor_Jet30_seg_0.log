@@ -1,0 +1,64 @@
+000 (1066586.000.000) 2026-04-28 03:59:46 Job submitted from host: <130.199.48.168:9618?addrs=[2620-0-210-a002--168]-9618+130.199.48.168-9618&alias=sphnxuser04.sdcc.bnl.gov&noUDP&sock=schedd_295088_b9ec>
+...
+001 (1066586.000.000) 2026-04-28 04:00:17 Job executing on host: <130.199.152.157:9618?addrs=[2620-0-210-9060--157]-9618+130.199.152.157-9618&alias=sphnx1157.sdcc.bnl.gov&noUDP&sock=startd_28038_c5c4>
+	SlotName: slot1_43@sphnx1157.sdcc.bnl.gov
+	CondorScratchDir = "/home/condor/local/sphnx/execute/dir_2414159"
+	Cpus = 1
+	Disk = 7408
+	Memory = 8192
+	xferslots = 0
+...
+006 (1066586.000.000) 2026-04-28 04:00:18 Image size of job updated: 252
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+005 (1066586.000.000) 2026-04-28 04:00:18 Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	0  -  Run Bytes Sent By Job
+	0  -  Run Bytes Received By Job
+	0  -  Total Bytes Sent By Job
+	0  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0        1         1 
+	   Disk (KB)            :        1        1      7408 
+	   Memory (MB)          :        0     8192      8192 
+	   TimeExecute (s)      :        1                    
+	   TimeSlotBusy (s)     :        2                    
+	   xferslots            :                           0 
+...
+000 (1066588.000.000) 2026-04-28 04:02:52 Job submitted from host: <130.199.48.168:9618?addrs=[2620-0-210-a002--168]-9618+130.199.48.168-9618&alias=sphnxuser04.sdcc.bnl.gov&noUDP&sock=schedd_295088_b9ec>
+...
+001 (1066588.000.000) 2026-04-28 04:03:59 Job executing on host: <130.199.186.216:9618?addrs=[2620-0-210-9073--216]-9618+130.199.186.216-9618&alias=sphnx1346.sdcc.bnl.gov&noUDP&sock=startd_18620_182c>
+	SlotName: slot1_56@sphnx1346.sdcc.bnl.gov
+	CondorScratchDir = "/home/condor/local/sphnx/execute/dir_2101482"
+	Cpus = 1
+	Disk = 7408
+	Memory = 8192
+	xferslots = 0
+...
+006 (1066588.000.000) 2026-04-28 04:04:03 Image size of job updated: 156
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+005 (1066588.000.000) 2026-04-28 04:04:03 Job terminated.
+	(1) Normal termination (return value 1)
+		Usr 0 00:00:02, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:02, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	0  -  Run Bytes Sent By Job
+	0  -  Run Bytes Received By Job
+	0  -  Total Bytes Sent By Job
+	0  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0        1         1 
+	   Disk (KB)            :        1        1      7408 
+	   Memory (MB)          :        0     8192      8192 
+	   TimeExecute (s)      :        4                    
+	   TimeSlotBusy (s)     :        4                    
+	   xferslots            :                           0 
+...

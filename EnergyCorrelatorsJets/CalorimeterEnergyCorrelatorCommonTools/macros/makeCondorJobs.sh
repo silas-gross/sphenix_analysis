@@ -21,7 +21,7 @@ nfiles=100
 makedatalist=false
 forcechunk=false
 gen="Pythia"
-doSim=false
+doSim=true
 rundata=-1
 
 make_truth_condor_jobs()
@@ -38,10 +38,10 @@ make_truth_condor_jobs()
 		condor_out_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".out"
 		condor_err_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".err"
 		condor_log_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".log"
-		global=`sed "${j}q;d" ${triggertype}_data/global_density_${filedensity}.list`
-		truth=`sed "${j}q;d" ${triggertype}_data/truth_density_${filedensity}.list`
-		jet=`sed "${j}q;d" ${triggertype}_data/jet_density_${filedensity}.list`
-		calo=`sed "${j}q;d" ${triggertype}_data/calo_density_${filedensity}.list`
+		global=`sed "${j}q;d" MC/${triggertype}_data/global_density_${filedensity}.list`
+		truth=`sed "${j}q;d" MC/${triggertype}_data/truth_density_${filedensity}.list`
+		jet=`sed "${j}q;d" MC/${triggertype}_data/jet_density_${filedensity}.list`
+		calo=`sed "${j}q;d" MC/${triggertype}_data/calo_density_${filedensity}.list`
 		
 		options="${options} ${calo} ${global} ${jet} ${truth}"
 		if [ "$vebose_mode" = true ]; then
@@ -50,7 +50,7 @@ make_truth_condor_jobs()
 		IFS=$'\n' read -d '' -r -a blanklines < $condor_testfile
 		echo "${blanklines[0]}" > $condor_file 
 		echo "${blanklines[1]}"$(pwd)"/${executable}" >> $condor_file
-		echo "${blanklines[2]}"${options} >> $condor_file
+		echo "${blanklines[2]}" $(pwd) ${options} ${MYINSTALL} >> $condor_file
 		echo "${blanklines[3]}"$condor_out_file >> $condor_file
 		echo "${blanklines[4]}"$condor_err_file >> $condor_file
 		echo "${blanklines[5]}"$condor_log_file >> $condor_file
@@ -80,10 +80,10 @@ make_condor_jobs()
 		condor_out_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".out"
 		condor_err_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".err"
 		condor_log_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".log"
-		global=`sed "${j}q;d" ${run_data}/global_density_${filedensity}.list`
+		global=`sed "${j}q;d" real_data/${run_data}/global_density_${filedensity}.list`
 		truth="none" 
-		jet=`sed "${j}q;d" ${run_data}/jet_density_${filedensity}.list`
-		calo=`sed "${j}q;d" ${run_data}/calo_density_${filedensity}.list`
+		jet=`sed "${j}q;d" real_data/${run_data}/jet_density_${filedensity}.list`
+		calo=`sed "${j}q;d" real_data/${run_data}/calo_density_${filedensity}.list`
 		
 		options="${options} ${calo} ${global} ${jet} ${truth} ${MYINSTALL}"
 		if [ "$vebose_mode" = true ]; then
@@ -92,7 +92,7 @@ make_condor_jobs()
 		IFS=$'\n' read -d '' -r -a blanklines < $condor_testfile
 		echo "${blanklines[0]}" > $condor_file 
 		echo "${blanklines[1]}"$(pwd)"/${executable}" >> $condor_file
-		echo "${blanklines[2]}"${options} >> $condor_file
+		echo "${blanklines[2]}" $(pwd) ${options} ${MYINSTALL} >> $condor_file
 		echo "${blanklines[3]}"$condor_out_file >> $condor_file
 		echo "${blanklines[4]}"$condor_err_file >> $condor_file
 		echo "${blanklines[5]}"$condor_log_file >> $condor_file
@@ -116,8 +116,9 @@ choose_executable()
 }
 select_options()
 {
-	if [[ "${ex_tag}" = *"EtaShift" ]]; then 
+	if [[ "${ex_tag}" = *"EtaShift"* ]]; then 
 		options="$(pwd) "
+		print $options
 	fi
 }
 
@@ -143,17 +144,17 @@ get_dst_list()
 	if [ "$verbose" = true ]; then 
 		echo "Checking if data directory exists for ${triggertype}"
 	fi 
-	if [ ! -d ${triggertype}"_data" ]; then 
+	if [ ! -d "MC/"${triggertype}"_data" ]; then 
 		if [ "$verbose" = true ]; then 
 			echo "data directory doesn't exist for ${triggertype}, fixing now"
 		fi 
 		
-		mkdir -p ${triggertype}"_data"
+		mkdir -p "MC/"${triggertype}"_data"
 	fi 
 	if [ "$verbose" = true ]; then 
 		echo "Create DST for ${triggertype}"
 	fi
-	cd ${triggertype}_data
+	cd MC/${triggertype}_data
 	converttriggertype 
 	CreateFileList.pl -nopileup -type ${prodtype} -run 28 G4Hits DST_TRUTH_JET DST_CALO_CLUSTER DST_GLOBAL
 	mv g4hits.list truth.list
@@ -162,10 +163,10 @@ get_dst_list()
 	mv dst_global.list global.list
 	cd ${base_dir}
 }
-chunk_dst_list()
+chunk_truth_dst_list()
 {
 	base_dir=$(pwd)
-	cd ${triggertype}_data
+	cd MC/${triggertype}_data
 	if [ "$verbose" = true ]; then 
 		echo "Checking if lookup file and file list exist for a per job density of ${filedensity} exists"
 	fi 
@@ -233,6 +234,81 @@ chunk_dst_list()
 				global=`sed "${j}q;d" global.list`
 				
 				echo ${truth} >> ${truthChunk}	
+				echo ${jet} >> ${jetChunk}	
+				echo ${calo} >> ${caloChunk}	
+				echo ${global} >> ${globalChunk}	
+			done
+			nChunks=$(( nChunks + 1 ))
+			if [[ $nSegsUsed -gt $Nseg ]]; then
+			       break
+			fi 	       
+		done	
+	fi
+	cd ${base_dir}
+}
+chunk_dst_list()
+{
+	base_dir=$(pwd)
+	cd real_data/${run_data}
+	if [ "$verbose" = true ]; then 
+		echo "Checking if lookup file and file list exist for a per job density of ${filedensity} exists"
+	fi 
+	listdir=lists_${filedensity}_per_file
+	if [ ! -d ${listdir} ]; then
+		mkdir -p $listdir
+	fi 
+	if [ ! -f truth_density_${filedensity}.list ]; then 
+		forcechunk=true
+	fi
+	if [ "$forcechunk" = true ]; then 
+		if [ "$verbose" = true ]; then 
+			echo "Creating file lists and lookup files"
+		fi
+		if [ -f jet_density_${filedensity}.list ]; then 
+			rm jet_density_${filedensity}.list
+			rm calo_density_${filedensity}.list
+			rm global_density_${filedensity}.list
+			rm ${listdir}/*
+		fi 
+		touch jet_density_${filedensity}.list
+		touch calo_density_${filedensity}.list
+		touch global_density_${filedensity}.list
+
+		nChunks=0
+		Nseg=`wc -l  < truth.list`
+		nSegsUsed=0
+		while [ $nSegsUsed -le $Nseg ]; do 
+			nStop=$(( nSegsUsed + filedensity - 1 ))
+			jetChunk=$(pwd)/${listdir}/jet_seg_${nSegsUsed}_to_${nStop}.list
+			caloChunk=$(pwd)/${listdir}/calo_seg_${nSegsUsed}_to_${nStop}.list
+			globalChunk=$(pwd)/${listdir}/global_seg_${nSegsUsed}_to_${nStop}.list
+			if [ "$superverbose" = true ]; then 
+				echo "Building the following files"
+				echo " Jet data : " $jetChunk
+				echo " Calo data : " $caloChunk
+				echo " Global data: " $globalChunk
+			fi
+			touch ${jetChunk}
+			touch ${caloChunk}
+			touch ${globalChunk}
+			
+			echo ${jetChunk} >> jet_density_${filedensity}.list
+			echo ${caloChunk} >> calo_density_${filedensity}.list
+			echo ${globalChunk} >> global_density_${filedensity}.list
+			line0=$(( nChunks * filedensity ))
+			for i in $(seq 0 $filedensity); do
+				j=$(( line0 + i + 1 ))
+				nSegsUsed=$(( nSegsUsed + 1 ))
+				if [[ $j -gt $Nseg || $j -gt $nStop ]]; then
+					break
+				fi
+				if [ "$superverbose" = true ]; then 
+					echo "Looking at line " $j
+				fi
+				jet=`sed "${j}q;d" jet.list`
+				calo=`sed "${j}q;d" calo.list`
+				global=`sed "${j}q;d" global.list`
+				
 				echo ${jet} >> ${jetChunk}	
 				echo ${calo} >> ${caloChunk}	
 				echo ${global} >> ${globalChunk}	
@@ -330,6 +406,7 @@ handle_options()
 				;;
 			-t | --type) 
 				triggertype=$(extract_argument $@)
+				doSim=true
 				shift
 				shift
 				;;
@@ -429,7 +506,7 @@ converttriggertype()
 }
 handle_options "$@"
 setGenerator
-make_home_dir
+#make_home_dir
 set_out_dir
 if [ "$verbose" = true ]; then 
 	echo "trigger type is now: ${triggertype}"
@@ -440,8 +517,14 @@ fi
 if [ "$makedatalist" = true ]; then
 	get_dst_list
 fi
-chunk_dst_list
-make_condor_jobs
+if [ "$doSim" = true ]; then 
+	chunk_truth_dst_list
+	make_truth_condor_jobs
+else
+	chunk_dst_list
+	make_condor_jobs
+fi
+
 if [ "$dosubmit" = true ]; then
 	submit_condor_jobs
 fi
