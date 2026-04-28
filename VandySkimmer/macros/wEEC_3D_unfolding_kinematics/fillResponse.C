@@ -45,8 +45,8 @@
 void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                   Mode mode = Mode::kFull)
 {
-    //const double evtWeight   = getSampleWeight(jetSample);
-    const bool   halfClosure = (mode == Mode::kHalf);
+    const bool halfClosure = (mode == Mode::kHalf);
+    const bool vtxOnly     = (mode == Mode::kVtx);
 
     std::string outName = std::format(
         "{}/Jet{}/response_Jet{}_seg{:06d}_to_{:06d}-{}.root",
@@ -59,6 +59,62 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
 
     std::cout << "made file " << outName << std::endl;
     std::cout.flush();
+
+    // ── vtx histogram (all modes) ─────────────────────────────────────────
+    // hVtxMC is filled in every mode so the vtx distribution can always be
+    // inspected.  In kVtx mode this is the only histogram filled — all
+    // tower-pair and response-matrix work is skipped entirely.
+    TH1D* hVtxMC = new TH1D("hVtxMC",
+        "MC vtx_z (xsec weighted);v_{z} (cm);weighted events",
+        nVtxBins, vtxZMin, vtxZMax);
+    hVtxMC->Sumw2();
+
+    if (vtxOnly)
+    {
+        // ── kVtx fast path ────────────────────────────────────────────────
+        // Open the MC file and loop over events, filling hVtxMC with the
+        // cross-section weight.  No tower maps, no jet matching, no pair loops.
+        TFile* simFile = new TFile(SimFilePath(jetSample, seg).c_str(), "READ");
+        if (!simFile || simFile->IsZombie()) {
+            std::cerr << "Cannot open sim file\n";
+            fOut->Close(); return;
+        }
+
+        TTree* T = (TTree*)simFile->Get("T");
+        if (!T) { simFile->Close(); fOut->Close(); return; }
+
+        EventInfo*                  eventInfo  = nullptr;
+        std::vector<JetInfo>* truthJets = nullptr;
+        T->SetBranchAddress("EventInfo", &eventInfo);
+        T->SetBranchAddress("TruthJetInfo_r04", &truthJets);
+
+        long nEvents = T->GetEntries();
+        for (long ev = 0; ev < nEvents; ++ev) {
+            std::cout << "kVtx: working on event " << ev << std::endl;
+            T->GetEntry(ev);
+
+            double vtx_z = eventInfo->get_z_vtx();
+            if (std::abs(vtx_z) > 10.0) continue;
+
+            // pThat slice cut — same guard as the full loop
+            double maxTruthPT = -1;
+            for (auto& j : *truthJets)
+                if (j.pt() > maxTruthPT) maxTruthPT = j.pt();
+            if (maxTruthPT < get_jet_pTLow(jetSample) ||
+                maxTruthPT > get_jet_pTHigh(jetSample)) continue;
+
+            double evtWeight = eventInfo->get_cross_section();
+            hVtxMC->Fill(vtx_z, evtWeight);
+        }
+
+        simFile->Close(); delete simFile;
+
+        fOut->cd();
+        hVtxMC->Write();
+        fOut->Close();
+        std::cout << "Written (vtxOnly): " << outName << "\n";
+        return;
+    }
 
     // ── dijet pT histograms ───────────────────────────────────────────────
     TH1D* hJetPt_truth_matched = new TH1D("hJetPt_truth_matched", "", nTrueFlat(), 0, nTrueFlat());
@@ -190,6 +246,8 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
         "Truth-tower wEEC;#Delta#phi;wEEC", nDphi, dPhiBins.data());
     hWEEC_particle  ->Sumw2();
     hWEEC_truthTower->Sumw2();
+
+    TFile* simFile = new TFile(SimFilePath(jetSample, seg).c_str(), "READ");
     if (!simFile || simFile->IsZombie()) {
         std::cerr << "Cannot open " << SimFilePath(jetSample, seg) << "\n";
         if (simFile) delete simFile; return;
@@ -232,6 +290,13 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
 
         double evtWeight = eventInfo->get_cross_section();
 
+        // Apply vtx_z reweighting only when building the response for real
+        // data (kData mode).  In closure modes (kFull, kHalf) the MC vtx
+        // distribution is self-consistent and reweighting would introduce
+        // a spurious bias.
+        if (mode == Mode::kData)
+            evtWeight *= GetVtxWeight(vtx_z);
+
         double maxTruthPT = -1;
         for (auto& j : *truthJets)
             if (j.pt() > maxTruthPT) maxTruthPT = j.pt();
@@ -246,6 +311,11 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                    && eventInfo->get_subleadTruth_pT(2) >= trueSublMin;
 
         if(!rValid && !tValid) continue;
+
+        // Fill vtx histogram with the raw (pre-vtx-reweight) cross-section
+        // so the stored MC distribution always reflects the true MC shape,
+        // usable as the denominator in makeVtxWeights.C regardless of mode.
+        hVtxMC->Fill(vtx_z, eventInfo->get_cross_section());
 
         double rLeadPT = rValid ? eventInfo->get_lead_pT(2)         : -1;
         double rSublPT = rValid ? eventInfo->get_sublead_pT(2)      : -1;
@@ -410,6 +480,9 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                 }
             }
         }
+
+        // ── matched dijet ─────────────────────────────────────────────────
+        if (fillResp && isMatched)
         {
             const double rPTmean2 = 0.25*(rLeadPT+rSublPT)*(rLeadPT+rSublPT);
             const double tPTmean2 = 0.25*(tLeadPT+tSublPT)*(tLeadPT+tSublPT);
@@ -663,6 +736,10 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
         hWEEC3D_counts[k]->Write();
 
     std::cout << "done writing counts hists" << std::endl;
+
+    hVtxMC->Write();
+
+    std::cout << "done writing vtx hist" << std::endl;
 
     hWEEC_particle  ->Write();
     hWEEC_truthTower->Write();

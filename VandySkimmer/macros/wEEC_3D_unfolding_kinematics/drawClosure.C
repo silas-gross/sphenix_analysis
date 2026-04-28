@@ -581,40 +581,72 @@ void drawClosure(const char* outDir   = ".",
         for (TH1D* h:{hUnfLead,hUnfSubl,hUnfPW,hTruLead,hTruSubl,hTruPW})
             { h->SetDirectory(0); h->Sumw2(); }
 
-        // Read unfolded 3D histograms directly from already-open fWEEC
-        for (int k=0; k<nDphi; ++k) {
-                TH1D* hU=(TH1D*)fWEEC->Get(std::format("hWEEC3D_unfolded_{}",k).c_str());
-                TH1D* hT=(TH1D*)fResp->Get(std::format("hWEEC3D_truth_{}",k).c_str());
-                for (int ft=0; ft<nTrueFlat(); ++ft)
-                for (int iPw=0; iPw<nPairWeight; ++iPw) {
-                    int iL, iS; TrueFlatToIJ(ft, iL, iS);
-                    if (!IsRecoAccessible(iL, iS)) continue;
-                    int    iF   = ft * nPairWeight + iPw;
-                    double den  = (usePWMean && hPWDen[k]) ? hPWDen[k]->GetBinContent(iF+1) : 0.0;
-                    double wMean = (den > 0)
-                        ? hPWNum[k]->GetBinContent(iF+1) / den
-                        : 0.5*(pairWeightBins[iPw]+pairWeightBins[iPw+1]);
-                    double lCen=0.5*(trueLeadPtBins[iL]+trueLeadPtBins[iL+1]);
-                    double sCen=0.5*(trueSublPtBins[iS]+trueSublPtBins[iS+1]);
-                    if (hU) {
-                        double v=hU->GetBinContent(iF+1), e=hU->GetBinError(iF+1);
-                        hUnfLead->Fill(lCen,v);
-                        hUnfSubl->Fill(sCen,v);
-                        hUnfPW  ->Fill(wMean,v);
-                        int bL=hUnfLead->FindBin(lCen);
-                        int bS=hUnfSubl->FindBin(sCen);
-                        int bP=hUnfPW  ->FindBin(wMean);
-                        hUnfLead->SetBinError(bL,std::hypot(hUnfLead->GetBinError(bL),e));
-                        hUnfSubl->SetBinError(bS,std::hypot(hUnfSubl->GetBinError(bS),e));
-                        hUnfPW  ->SetBinError(bP,std::hypot(hUnfPW  ->GetBinError(bP),e));
-                    }
-                    if (hT) {
-                        double v=hT->GetBinContent(iF+1);
-                        hTruLead->Fill(lCen,v);
-                        hTruSubl->Fill(sCen,v);
-                        hTruPW  ->Fill(wMean,v);
-                    }
+        // Project from the already-normalized per-bin wEEC histograms so that
+        // truth and unfolded use exactly the same normalization convention.
+        // hUnfBin[ft] and hTruthBin[ft] are normalized wEEC vs ΔΦ.
+        // Summing over ΔΦ bins gives the ΔΦ-integrated shape weight, and the
+        // errors from RooUnfold's covariance are properly carried through.
+        // Lead and subl pT projections come from summing over ΔΦ bins.
+        for (int ft=0; ft<nTrueFlat(); ++ft) {
+            int iL, iS; TrueFlatToIJ(ft, iL, iS);
+            if (!IsRecoAccessible(iL, iS)) continue;
+            double lCen = 0.5*(trueLeadPtBins[iL]+trueLeadPtBins[iL+1]);
+            double sCen = 0.5*(trueSublPtBins[iS]+trueSublPtBins[iS+1]);
+            int bL = hUnfLead->FindBin(lCen);
+            int bS = hUnfSubl->FindBin(sCen);
+            if (hUnfBin[ft]) {
+                double sumV=0, sumE2=0;
+                for (int k=1; k<=hUnfBin[ft]->GetNbinsX(); ++k) {
+                    sumV  += hUnfBin[ft]->GetBinContent(k);
+                    sumE2 += std::pow(hUnfBin[ft]->GetBinError(k), 2);
                 }
+                hUnfLead->AddBinContent(bL, sumV);
+                hUnfSubl->AddBinContent(bS, sumV);
+                hUnfLead->SetBinError(bL, std::hypot(hUnfLead->GetBinError(bL), std::sqrt(sumE2)));
+                hUnfSubl->SetBinError(bS, std::hypot(hUnfSubl->GetBinError(bS), std::sqrt(sumE2)));
+            }
+            if (hTruthBin[ft]) {
+                double sumV=0, sumE2=0;
+                for (int k=1; k<=hTruthBin[ft]->GetNbinsX(); ++k) {
+                    sumV  += hTruthBin[ft]->GetBinContent(k);
+                    sumE2 += std::pow(hTruthBin[ft]->GetBinError(k), 2);
+                }
+                hTruLead->AddBinContent(bL, sumV);
+                hTruSubl->AddBinContent(bS, sumV);
+                hTruLead->SetBinError(bL, std::hypot(hTruLead->GetBinError(bL), std::sqrt(sumE2)));
+                hTruSubl->SetBinError(bS, std::hypot(hTruSubl->GetBinError(bS), std::sqrt(sumE2)));
+            }
+        }
+
+        // Pair weight projection: read from raw 3D histograms since pair weight
+        // is the innermost flat3D dimension and hUnfBin/hTruthBin integrate over it.
+        // Read errors before AddBinContent to avoid Sumw2 corruption.
+        for (int k=0; k<nDphi; ++k) {
+            TH1D* hU3D = (TH1D*)fWEEC->Get(std::format("hWEEC3D_unfolded_{}",k).c_str());
+            TH1D* hT3D = (TH1D*)fResp->Get(std::format("hWEEC3D_truth_{}",k).c_str());
+            for (int ft=0; ft<nTrueFlat(); ++ft)
+            for (int iPw=0; iPw<nPairWeight; ++iPw) {
+                int iL, iS; TrueFlatToIJ(ft, iL, iS);
+                if (!IsRecoAccessible(iL, iS)) continue;
+                int iF = ft * nPairWeight + iPw;
+                double den   = (usePWMean && hPWDen[k]) ? hPWDen[k]->GetBinContent(iF+1) : 0.0;
+                double wMean = (den > 0)
+                    ? hPWNum[k]->GetBinContent(iF+1) / den
+                    : 0.5*(pairWeightBins[iPw]+pairWeightBins[iPw+1]);
+                int bP = hUnfPW->FindBin(wMean);
+                if (hU3D) {
+                    double v=hU3D->GetBinContent(iF+1), e=hU3D->GetBinError(iF+1);
+                    double ePprev = hUnfPW->GetBinError(bP);
+                    hUnfPW->AddBinContent(bP, v);
+                    hUnfPW->SetBinError(bP, std::hypot(ePprev, e));
+                }
+                if (hT3D) {
+                    double v=hT3D->GetBinContent(iF+1), e=hT3D->GetBinError(iF+1);
+                    double ePprev = hTruPW->GetBinError(bP);
+                    hTruPW->AddBinContent(bP, v);
+                    hTruPW->SetBinError(bP, std::hypot(ePprev, e));
+                }
+            }
         }
 
         struct ProjSpec { TH1D* hU; TH1D* hT; const char* xL; bool logx; };

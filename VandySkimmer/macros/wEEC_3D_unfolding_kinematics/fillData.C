@@ -19,6 +19,13 @@ void fillData(int runnumber = 47722, int seg = 0, const char* outDir = ".")
     TH1D* hJetPt_meas = new TH1D("hJetPt_meas", "", nRecoFlat(), 0, nRecoFlat());
     hJetPt_meas->Sumw2();
 
+    // Vtx distribution from data — used by makeVtxWeights.C to form the
+    // data/MC ratio that is stored in analysisHelper.h.
+    TH1D* hVtxData = new TH1D("hVtxData",
+        "Data vtx_z;v_{tz} (cm);events",
+        nVtxBins, vtxZMin, vtxZMax);
+    // No Sumw2: data events are unweighted counts.
+
     // 3D data histograms: one per ΔΦ bin, in reco-index space
     std::vector<TH1D*> hWEEC3D_data(nDphi, nullptr);
     for (int k = 0; k < nDphi; ++k) {
@@ -55,6 +62,10 @@ void fillData(int runnumber = 47722, int seg = 0, const char* outDir = ".")
 
         double vtx_z = eventInfo->get_z_vtx();
         if (std::abs(vtx_z) > 10.0) continue;
+
+        // Fill vtx distribution for all events passing the vtx cut,
+        // regardless of whether they pass the dijet selection.
+        hVtxData->Fill(vtx_z);
 
         if (!eventInfo->is_dijet_event(2)) continue;
         double rLeadPT = eventInfo->get_lead_pT(2);
@@ -124,6 +135,7 @@ void fillData(int runnumber = 47722, int seg = 0, const char* outDir = ".")
     hJetPt_meas->Write();
     for (int k = 0; k < nDphi; ++k)
         hWEEC3D_data[k]->Write();
+    hVtxData->Write();
     fOut->Close();
     std::cout << "Written: " << outName << "\n";
 }
