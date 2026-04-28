@@ -152,7 +152,7 @@ class EtaShiftStudy : public SubsysReco
 
 		EtaShiftStudy(const std::string ofn, const std::string &name = "EtaShiftStudy");
 
-		~EtaShiftStudy() override;
+		~EtaShiftStudy() override {};
 
 		int Init(PHCompositeNode *topNode) override;
 
