@@ -12,8 +12,8 @@
 //									//
 //	Authors: 	Ben Kimelman, Skaydi 				//
 //	First commit: 	9 March 2026					//
-//	This commit: 	10 March 2026					//
-//	version: 	v1.0						//
+//	This commit: 	28 April 2026					//
+//	version: 	v1.9						//
 //									//
 //	Notes on this commit: First commit				//
 //									//
@@ -97,7 +97,6 @@ class BuildMetaTowers
 					eta = 0.5*(shiftedetaEdges.at(i),  1.1);
 				for( int j = 0; j < 64; j++)
 				{
-					double pt =100.; 
 					TowerArrayEntry* tower = 
 						new TowerArrayEntry {0., shiftedetaEdges.at(i), phiEdges.at(i)};
 					if(i < (int) phiEdges.size() - 1 ) 
@@ -108,7 +107,7 @@ class BuildMetaTowers
 					if(phi < -M_PI) phi += 	2*M_PI;
 					tower->eta = eta;
 					tower->phi = phi;
-					int index  = calculateIndex(tower);
+					int index  = calculateIndex(*tower);
 					MetaTowers->at(index)=tower;
 				}
 
@@ -145,9 +144,9 @@ class BuildMetaTowers
 			std::array<TowerArrayEntry*, 1536>* rawIH	= new std::array<TowerArrayEntry*, 1536> {};
 			std::array<TowerArrayEntry*, 1536>* rawOH	= new std::array<TowerArrayEntry*, 1536> {};
 			std::array<TowerArrayEntry*, 1536>* rawMT	= new std::array<TowerArrayEntry*, 1536> {};
-			GetFun4AllTowers(*emcalTowers, emcalGeom, rawEM, 0, CALO::EMCAL);
-			GetFun4AllTowers(*ihcalTowers, ihcalGeom, rawIH, 0, CALO::IHCAL);
-			GetFun4AllTowers(*ohcalTowers, ohcalGeom, rawOH, 0, CALO::OHCAL);
+			GetFun4AllTowers(*emcalTowers, *emcalGeom, rawEM, 0, CALO::EMCAL);
+			GetFun4AllTowers(*ihcalTowers, *ihcalGeom, rawIH, 0, CALO::IHCAL);
+			GetFun4AllTowers(*ohcalTowers, *ohcalGeom, rawOH, 0, CALO::OHCAL);
 			for(int i = 0; i < (int) rawMT->size(); i++)
 			{
 				rawMT->at(i) = rawEM->at(i);
@@ -365,9 +364,9 @@ class BuildMetaTowers
 		const float 	R_IHCAL_Inner {116.};
 		const float 	R_EMCAL_Outer {116.};
 		const float	R_EMCAL_Inner { 90.};	
-		const float	R_OHCAL_MID { 0.5*( (float)R_OHCAL_Outer + (float)R_OHCAL_Inner) };	
-		const float	R_IHCAL_MID { 0.5*(R_IHCAL_Outer + R_IHCAL_Inner) };	
-		float	R_EMCAL_MID { 0.5*(R_EMCAL_Outer + R_EMCAL_Inner) };	
+		const float	R_OHCAL_MID 	= 0.5*(R_OHCAL_Outer + R_OHCAL_Inner) ;	
+		const float	R_IHCAL_MID	= 0.5*(R_IHCAL_Outer + R_IHCAL_Inner) ;	
+		const float	R_EMCAL_MID 	= 0.5*(R_EMCAL_Outer + R_EMCAL_Inner) ;	
 		std::array <TowerArrayEntry*, 1536>* MetaTowers = new std::array <TowerArrayEntry*, 1536> {}; 
 		std::array <TowerArrayEntry*, 1536>* EMReTowers = new std::array <TowerArrayEntry*, 1536> {}; 
 		std::array <TowerArrayEntry*, 1536>* IHCaTowers = new std::array <TowerArrayEntry*, 1536> {}; 
@@ -410,9 +409,9 @@ class BuildMetaTowers
 			else if( 	calo == CALO::IHCAL )	r = R_IHCAL_MID;
 			else if(	calo == CALO::OHCAL ) 	r = R_OHCAL_MID;
 			else 					r = this->R;
-			double z 	= R*std::sinh(eta);
+			double z 	= r*std::sinh(eta);
 			double zshift	= z-zVtx;
-			zshift		= zshift / R;
+			zshift		= zshift / r;
 			double etashift	= std::asinh(zshift);
 			return etashift;
 		}
@@ -461,7 +460,7 @@ class BuildMetaTowers
 			}
 			return binN;
 		}
-		void decodeIndex(int index, int* ebr, int* pbr) 
+		void decodeIndex(int index, [[maybe_unused]] int* ebr, [[maybe_unused]] int* pbr) 
 		{
 			
 			int etabin	= index / 64;

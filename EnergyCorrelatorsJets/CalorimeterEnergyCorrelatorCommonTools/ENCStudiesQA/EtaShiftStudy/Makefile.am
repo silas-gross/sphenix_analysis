@@ -3,7 +3,9 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = \
   -isystem$(includedir) \
   -isystem$(OFFLINE_MAIN)/include \
-  -isystem$(ROOTSYS)/include
+  -isystem$(ROOTSYS)/include \
+  -isystem$(OPT_SPHENIX)/include  
+
 
 AM_LDFLAGS = \
   -L$(libdir) \
@@ -24,7 +26,11 @@ libEtaShiftStudy_la_LIBADD = \
   -lSubsysReco \
   -lfun4all \
   -lcalo_io \
-  -lg4jets 
+  -lg4jets \
+  -lphhepmc \
+  -lcalotrigger_io \
+  -lcalotrigger \
+  -lVandyClasses  
 
 BUILT_SOURCES = testexternals.cc
 
