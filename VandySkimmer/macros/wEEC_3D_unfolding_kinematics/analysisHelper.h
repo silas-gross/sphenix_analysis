@@ -192,15 +192,16 @@ const std::vector<double> original_dPhiBins = {
     3.1415927
 };
 const std::vector<double> new_dPhiBins = {
-    0.0000000, 0.041592654, 0.14159265,
+//    0.0000000, 0.041592654, 0.14159265,
+    0.0000000, 0.14159265,
     0.34159265, 0.54159265, 0.74159265, 0.94159265,
     1.2415927, 1.5415927, 1.8415927, 2.1415927,
     2.3415927, 2.5415927, 2.7415927, 2.9415927,
     3.0415927, 3.1415927
 };
 
-const std::vector<double> dPhiBins = original_dPhiBins;
-//const std::vector<double> dPhiBins = new_dPhiBins;
+//const std::vector<double> dPhiBins = original_dPhiBins;
+const std::vector<double> dPhiBins = new_dPhiBins;
 const int nDphi = (int)dPhiBins.size() - 1;  // 32
 
 
@@ -291,8 +292,8 @@ inline float get_jet_pTHigh(int sample)
 // ═════════════════════════════════════════════════════════════════════════════
 //  Dijet validity cuts
 // ═════════════════════════════════════════════════════════════════════════════
-const double recoLeadMin = 30.0;
-const double recoSublMin =  15.0;
+const double recoLeadMin = 20.0;
+const double recoSublMin =  8.0;
 const double trueLeadMin = 15.0;
 const double trueSublMin =  8.0;
 
@@ -321,8 +322,8 @@ const double geoMatchDR = 0.3;
 // ═════════════════════════════════════════════════════════════════════════════
 inline bool IsRecoAccessible(int iL, int iS)
 {
-    return trueLeadPtBins[iL + 1] > recoLeadMin &&
-           trueSublPtBins[iS + 1] > recoSublMin;
+    return trueLeadPtBins[iL + 1] > 30 &&
+           trueSublPtBins[iS + 1] > 15;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -654,6 +655,152 @@ inline void ProjectWEEC3DSliceForBin(TH1D* h1D, int iL, int iS,
     }
     val = sum;
     err = std::sqrt(sumw2);
+}
+
+// ── Covariance-aware projection overloads ────────────────────────────────────
+// These use the full TMatrixD covariance from RooUnfold::Errunfold() so that
+// off-diagonal correlations between unfolded bins are properly accounted for
+// when projecting onto a subset of the flat-3D space.
+//
+// For a linear combination P = sum_i w_i * x_i over bins in set S:
+//   Var(P) = sum_{i,j in S} w_i * w_j * C_{ij}
+//
+// The covariance matrix is 0-based with size nTrueFlat3D() × nTrueFlat3D().
+// Pass nullptr for cov to fall back to naive diagonal (GetBinError) propagation.
+
+inline void ProjectWEEC3DSlice(TH1D* h1D, double& val, double& err,
+                                const TMatrixD* cov)
+{
+    double sum = 0.0, var = 0.0;
+    // Collect (flat3D index, weight) pairs for all accessible bins
+    std::vector<std::pair<int,double>> bins;
+    for (int ft = 0; ft < nTrueFlat(); ++ft) {
+        int iL, iS; TrueFlatToIJ(ft, iL, iS);
+        if (!IsRecoAccessible(iL, iS)) continue;
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF   = ft * nPairWeight + iPw;
+            double wCen = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            sum += wCen * h1D->GetBinContent(iF + 1);
+            bins.push_back({iF, wCen});
+        }
+    }
+    if (cov) {
+        for (auto [i, wi] : bins)
+        for (auto [j, wj] : bins)
+            var += wi * wj * (*cov)(i, j);
+    } else {
+        for (auto [i, wi] : bins) {
+            double e = h1D->GetBinError(i + 1);
+            var += wi * wi * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
+inline void ProjectWEEC3DSliceForBin(TH1D* h1D, int iL, int iS,
+                                      double& val, double& err,
+                                      const TMatrixD* cov)
+{
+    val = 0; err = 0;
+    int ft = TrueFlatIndex(iL, iS);
+    if (ft < 0) return;
+    double sum = 0.0, var = 0.0;
+    int iF0 = ft * nPairWeight;
+    for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+        int    iF   = iF0 + iPw;
+        double wCen = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+        sum += wCen * h1D->GetBinContent(iF + 1);
+    }
+    if (cov) {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF = iF0 + iPw;
+            double wi = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            for (int jPw = 0; jPw < nPairWeight; ++jPw) {
+                int    jF = iF0 + jPw;
+                double wj = 0.5 * (pairWeightBins[jPw] + pairWeightBins[jPw+1]);
+                var += wi * wj * (*cov)(iF, jF);
+            }
+        }
+    } else {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF = iF0 + iPw;
+            double wCen = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            double e    = h1D->GetBinError(iF + 1);
+            var += wCen * wCen * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
+// Covariance-aware variants with weighted mean pair weight
+inline void ProjectWEEC3DSlice(TH1D* h1D, double& val, double& err,
+                                TH1D* hPWNum, TH1D* hPWDen,
+                                const TMatrixD* cov)
+{
+    double sum = 0.0, var = 0.0;
+    std::vector<std::pair<int,double>> bins;
+    for (int ft = 0; ft < nTrueFlat(); ++ft) {
+        int iL, iS; TrueFlatToIJ(ft, iL, iS);
+        if (!IsRecoAccessible(iL, iS)) continue;
+        int iF0 = ft * nPairWeight;
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF  = iF0 + iPw;
+            double den = hPWDen ? hPWDen->GetBinContent(iF + 1) : 0.0;
+            double w   = (den > 0)
+                ? hPWNum->GetBinContent(iF + 1) / den
+                : 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            sum += w * h1D->GetBinContent(iF + 1);
+            bins.push_back({iF, w});
+        }
+    }
+    if (cov) {
+        for (auto [i, wi] : bins)
+        for (auto [j, wj] : bins)
+            var += wi * wj * (*cov)(i, j);
+    } else {
+        for (auto [i, wi] : bins) {
+            double e = h1D->GetBinError(i + 1);
+            var += wi * wi * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
+inline void ProjectWEEC3DSliceForBin(TH1D* h1D, int iL, int iS,
+                                      double& val, double& err,
+                                      TH1D* hPWNum, TH1D* hPWDen,
+                                      const TMatrixD* cov)
+{
+    val = 0; err = 0;
+    int ft = TrueFlatIndex(iL, iS);
+    if (ft < 0) return;
+    double sum = 0.0, var = 0.0;
+    int iF0 = ft * nPairWeight;
+    // Build per-iPw weights
+    std::vector<double> ws(nPairWeight);
+    for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+        int    iF  = iF0 + iPw;
+        double den = hPWDen ? hPWDen->GetBinContent(iF + 1) : 0.0;
+        ws[iPw]    = (den > 0)
+            ? hPWNum->GetBinContent(iF + 1) / den
+            : 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+        sum += ws[iPw] * h1D->GetBinContent(iF + 1);
+    }
+    if (cov) {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw)
+        for (int jPw = 0; jPw < nPairWeight; ++jPw)
+            var += ws[iPw] * ws[jPw] * (*cov)(iF0 + iPw, iF0 + jPw);
+    } else {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            double e = h1D->GetBinError(iF0 + iPw + 1);
+            var += ws[iPw] * ws[iPw] * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

@@ -36,6 +36,7 @@ void wEEC_doUnfolding(const char* respFile,
 {
     const bool isData    = (mode == Mode::kData);
     const bool isClosure = !isData;
+    const bool doTrim = false;
     if (isData && !measFile) {
         std::cerr << "kData mode requires measFile\n"; return;
     }
@@ -138,8 +139,8 @@ void wEEC_doUnfolding(const char* respFile,
         
         RooUnfoldResponse* respTrimmed = nullptr;
         // hResp2D bin indices: X = reco flat3D (1-based), Y = truth flat3D
-        TH2D* hResp2D = (TH2D*)resp->Hresponse();
-        if (hCounts) {
+        TH2D* hResp2D = (TH2D*)resp->Hresponse()->Clone();
+        if (doTrim && hCounts) {
             for (int rBin = 1; rBin <= hResp2D->GetNbinsX(); ++rBin)
             for (int tBin = 1; tBin <= hResp2D->GetNbinsY(); ++tBin) {
                 double rawCount = hCounts->GetBinContent(rBin, tBin);
@@ -150,7 +151,7 @@ void wEEC_doUnfolding(const char* respFile,
         }
 
 
-         RooUnfoldResponse *respToUse = (respTrimmed != nullptr) ? respTrimmed : resp;
+        RooUnfoldResponse *respToUse = (doTrim && respTrimmed != nullptr) ? respTrimmed : resp;
     
 
         std::cout << "Unfolding ΔΦ bin " << k << std::endl;
@@ -164,14 +165,77 @@ void wEEC_doUnfolding(const char* respFile,
         hUnf->SetDirectory(0);
         hUnf->SetName(std::format("hWEEC3D_unfolded_{}", k).c_str());
 
+        // Full covariance matrix C = M * V_meas * M^T where:
+        //   M      = unfolding matrix (nTruth × nReco) from UnfoldingMatrix()
+        //   V_meas = diagonal covariance of the measured histogram
+        //
+        // This is the analytic Bayesian error propagation formula, identical to
+        // what RooUnfold computes internally for kCovariance mode.  It assumes
+        // M is independent of the measurement — a good approximation for small
+        // iteration counts (nIterWEEC = 4 here).
+        //
+        // RooUnfold appends one extra fake-handling bin to the truth axis, so
+        // M has shape (nTrueFlat3D()+1) × nRecoFlat3D().  We trim the last row
+        // to get a nTrueFlat3D() × nTrueFlat3D() covariance that matches hUnf.
+        TMatrixD M = unfold.UnfoldingMatrix();   // (nT+1) × nR
+        int nT = hUnf->GetNbinsX();              // nTrueFlat3D() — trim fake row
+        int nR = hMeasClone->GetNbinsX();
+
+        // Build diagonal measured covariance from bin errors
+        TMatrixD Vmeas(nR, nR);
+        for (int i = 0; i < nR; ++i)
+            Vmeas(i, i) = std::pow(hMeasClone->GetBinError(i + 1), 2);
+
+        // Trim M to nT rows (drop the fake-handling last row)
+        TMatrixD Mtrim(nT, nR);
+        for (int i = 0; i < nT; ++i)
+        for (int j = 0; j < nR; ++j)
+            Mtrim(i, j) = M(i, j);
+
+        TMatrixD MT(TMatrixD::kTransposed, Mtrim);
+        TMatrixD cov = Mtrim * Vmeas * MT;   // nT × nT
+
+        // Reset hUnf bin errors to match the covariance diagonal.
+        // Hunfold() without an error mode sets errors to sqrt(bin_content)
+        // (Poisson approximation on weighted counts), which is not the correct
+        // propagated uncertainty.  The diagonal of C = M*Vmeas*M^T is the
+        // correct per-bin variance from measurement error propagation.
+        hUnf->Sumw2();
+        for (int i = 0; i < nT; ++i)
+            hUnf->SetBinError(i + 1, std::sqrt(std::max(cov(i, i), 0.0)));
+
+        // Sanity check: find first non-zero measured bin and compare
+        if (k == 0) {
+            for (int i = 0; i < nR; ++i) {
+                double v = hMeasClone->GetBinContent(i+1);
+                double e = hMeasClone->GetBinError(i+1);
+                if (v > 0 || e > 0) {
+                    std::cout << std::format(
+                        "  First non-zero meas bin {}: content={:.3e} error={:.3e} rel={:.3f}\n",
+                        i, v, e, (v > 0 ? e/v : 0.0));
+                    break;
+                }
+            }
+            for (int i = 0; i < nT; ++i) {
+                if (cov(i,i) > 0) {
+                    std::cout << std::format(
+                        "  First non-zero cov diag bin {}: cov={:.3e} hUnfErr^2={:.3e}\n",
+                        i, cov(i,i), std::pow(hUnf->GetBinError(i+1), 2));
+                    break;
+                }
+            }
+        }
+
         fOut->cd();
         hMeasClone->Write();
         hUnf->Write();
-        respTrimmed->Write(std::format("response_wEEC3D_trimmed_{}", k).c_str());   // save for drawClosure.C diagnostics
+        cov.Write(std::format("covWEEC3D_{}", k).c_str());
+        if (doTrim && respTrimmed)
+            respTrimmed->Write(std::format("response_wEEC3D_trimmed_{}", k).c_str());
 
         delete hMeasClone;
         delete hUnf;
-        delete respTrimmed;
+        if (doTrim && respTrimmed) delete respTrimmed;
     }
 
     fResp->Close(); delete fResp;
