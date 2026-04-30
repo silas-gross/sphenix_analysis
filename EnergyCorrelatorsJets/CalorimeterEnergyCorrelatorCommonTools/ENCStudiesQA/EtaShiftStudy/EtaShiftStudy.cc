@@ -99,7 +99,7 @@ EtaShiftStudy::EtaShiftStudy(const std::string ofn, [[maybe_unused]] const std::
 	for(int i = 0; i<6; i++)
 	{
 		int z_range = (i+1)*10;
-		EMCAL_Z_QA->at(i)	= new PerCaloQAPlots(std::format("EMCAL, |z|_{{vtx}} < {}", z_range));
+		EMCAL_Z_QA->at(i)	= new PerCaloQAPlots(std::format("EMCAL, |z|_{{vtx}} < {}", z_range));	
 		IHCAL_Z_QA->at(i) 	= new PerCaloQAPlots(std::format("IHCAL, |z|_{{vtx}} < {}", z_range));
 		OHCAL_Z_QA->at(i)  	= new PerCaloQAPlots(std::format("OHCAL, |z|_{{vtx}} < {}", z_range));
 		MetaE_Z_QA->at(i)  	= new PerCaloQAPlots(std::format("Meta Calo, EMCAL radius, |z|_{{vtx}} < {}", z_range));
@@ -136,7 +136,12 @@ void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode)
 		= new std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4> {}; 
 	std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4>* rawTowersOH	
 		= new std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4> {}; 
-	
+	for(int i = 0; i<4; i++){
+		rawTowersEM->at(i)=new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
+		rawTowersIH->at(i)=new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
+		rawTowersOH->at(i)=new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
+	}
+	std::cout<<__LINE__<<std::endl;
 	float zvtx = 0.;
         try{
                 GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
@@ -159,32 +164,40 @@ void EtaShiftStudy::AnalyzeEvent(PHCompositeNode* topNode)
                 }
         }
         catch(std::exception& e){std::cout<<"Could not find the vertex. \n Setting to origin" <<std::endl;}
+	std::cout<<__LINE__<<std::endl;	
 	hzVTX->Fill(zvtx);
+	std::cout<<__LINE__<<std::endl;	
 	//Load in the recoTowers, handle seperating the calos offline
 	rawTowersEM	= emMetaTowerBuilder->LoadFun4AllTowers(topNode);
 	rawTowersIH	= ihMetaTowerBuilder->LoadFun4AllTowers(topNode);
 	rawTowersOH	= ohMetaTowerBuilder->LoadFun4AllTowers(topNode);
+	std::cout<<__LINE__<<std::endl;	
 	//Build the MetaTowers	
 	emMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
 	ihMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
 	ohMetaTowerBuilder->RunMetaTowerBuilder(zvtx);
+	std::cout<<__LINE__<<std::endl;	
 
 	//Get the tower info and load it in 
 	std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4>* emMetaTowers	= new std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4> {};    	
 	std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4>* ihMetaTowers = new std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4> {};    	
 	std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4>* ohMetaTowers = new std::array<std::array<BuildMetaTowers::TowerArrayEntry*, 1536>*, 4> {};    	
+	std::cout<<__LINE__<<std::endl;	
 	
 	grabTowerArray(emMetaTowerBuilder, emMetaTowers);
 	grabTowerArray(ihMetaTowerBuilder, ihMetaTowers);
 	grabTowerArray(ohMetaTowerBuilder, ohMetaTowers);
+	std::cout<<__LINE__<<std::endl;	
 	
 	//need to hand it the full MetaTower set then break it down
 	compareTowerValue( emMetaTowers->at(3), rawTowersEM->at(3), zvtx, 0, emMetaTowerBuilder );
 	compareTowerValue( ihMetaTowers->at(3), rawTowersIH->at(3), zvtx, 1, ihMetaTowerBuilder );
 	compareTowerValue( ohMetaTowers->at(3), rawTowersOH->at(3), zvtx, 2, ohMetaTowerBuilder );
+	std::cout<<__LINE__<<std::endl;	
 	
 	//do the jet analysis
 	grabJetConstituents(topNode, zvtx);	
+	std::cout<<__LINE__<<std::endl;	
 	
 		
 	return;
@@ -414,7 +427,7 @@ int EtaShiftStudy::End([[maybe_unused]] PHCompositeNode *topNode)
 	std::array<std::array<TDirectory*, 6>*, 7>* deep_dirs = new std::array<std::array<TDirectory*, 6>*, 7>{}; 
 	for(int i = 0; i<(int)base_dirs->size(); i++)
 	{
-		base_dirs->at(i) = output_file->mkdir(std::format("Z_leq_{}_cm", 10*i).c_str()); 
+		base_dirs->at(i) = output_file->mkdir(std::format("Z_leq_{}_cm", 10*(i+1)).c_str()); 
 		deep_dirs->at(i)->at(0) = base_dirs->at(i)->mkdir("EMCAL");
 		if(i==0) EMCALQA->dumpThePlots(deep_dirs->at(i)->at(0));	
 		else EMCAL_Z_QA->at(i-1)->dumpThePlots(deep_dirs->at(i)->at(0));	

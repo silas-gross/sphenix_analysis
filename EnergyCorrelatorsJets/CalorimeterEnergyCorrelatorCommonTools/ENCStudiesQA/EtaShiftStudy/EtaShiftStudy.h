@@ -46,7 +46,7 @@
 #include <TDirectory.h>
 
 //personal
-#include "../../BuildMetaTowers.h" //need to fix this later 
+#include "BuildMetaTowers.h" //need to fix this later 
 
 //c++
 #include <math.h>
@@ -71,7 +71,7 @@ class PerCaloQAPlots
 			this->calo = calorimeter;
 			InitializePlots();
 		}
-		virtual ~PerCaloQAPlots(){
+		~PerCaloQAPlots(){
 			delete Deltaetabin;
 			delete deltaEt;
 			delete avgeta;
@@ -160,16 +160,16 @@ class EtaShiftStudy : public SubsysReco
 
 		EtaShiftStudy(const std::string ofn, const std::string &name = "EtaShiftStudy");
 
-		virtual ~EtaShiftStudy() override {};
+		~EtaShiftStudy() override {};
 
-		int Init(PHCompositeNode *topNode) override;
+		//int Init(PHCompositeNode *topNode) override {};
 
 
 		int process_event(PHCompositeNode *topNode) override;
 
 
 		/// Called at the end of each run.
-		int EndRun(const int runnumber) override;
+	//	int EndRun(const int runnumber) override {};
 
 		/// Called at the end of all processing.
 		int End(PHCompositeNode *topNode) override;
@@ -214,7 +214,7 @@ class EtaShiftStudy : public SubsysReco
 			);
 	private:
 		//over all z 
-		PerCaloQAPlots* EMCALQA;
+		PerCaloQAPlots* EMCALQA ;
 		PerCaloQAPlots* IHCALQA;
 		PerCaloQAPlots* OHCALQA;
 		//using EMCAL radius, IHCAL radius and OHCAL radius respectively
@@ -229,12 +229,12 @@ class EtaShiftStudy : public SubsysReco
 		//meta tower builder and shifter
 
 		//restricted z ranges
-		std::array<PerCaloQAPlots*, 6>* EMCAL_Z_QA;
-		std::array<PerCaloQAPlots*, 6>* IHCAL_Z_QA;
-		std::array<PerCaloQAPlots*, 6>* OHCAL_Z_QA;
-		std::array<PerCaloQAPlots*, 6>* MetaE_Z_QA;
-		std::array<PerCaloQAPlots*, 6>* MetaI_Z_QA;
-		std::array<PerCaloQAPlots*, 6>* MetaO_Z_QA;
+		std::array<PerCaloQAPlots*, 6>* EMCAL_Z_QA	= new std::array<PerCaloQAPlots*,6> {};
+		std::array<PerCaloQAPlots*, 6>* IHCAL_Z_QA 	= new std::array<PerCaloQAPlots*,6> {};
+		std::array<PerCaloQAPlots*, 6>* OHCAL_Z_QA 	= new std::array<PerCaloQAPlots*,6> {};
+		std::array<PerCaloQAPlots*, 6>* MetaE_Z_QA 	= new std::array<PerCaloQAPlots*,6> {};
+		std::array<PerCaloQAPlots*, 6>* MetaI_Z_QA 	= new std::array<PerCaloQAPlots*,6> {};
+		std::array<PerCaloQAPlots*, 6>* MetaO_Z_QA 	= new std::array<PerCaloQAPlots*,6> {};
 
 		BuildMetaTowers* emMetaTowerBuilder 	{ nullptr };
 		BuildMetaTowers* ihMetaTowerBuilder	{ nullptr };

@@ -71,9 +71,9 @@ class BuildMetaTowers
 		//struct for Array input 
 		struct TowerArrayEntry
 		{
-			double Energy;
-			double phi; //center of tower phi 
-			double eta; //center of tower eta
+			double Energy 	{0};
+			double phi	{-999}; //center of tower phi 
+			double eta	{-999}; //center of tower eta
 			
 		};
 		enum CALO
@@ -124,35 +124,55 @@ class BuildMetaTowers
 			)
 		{
 			std::array<std::array<TowerArrayEntry*, 1536>*, 4>* rawTowers = new std::array<std::array<TowerArrayEntry*, 1536>*, 4>{};
+			std::cout<<__LINE__<<std::endl;	
 			//Calo towers
 			auto emcalTowers
-				= findNode::getClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_CEMC_RETOWER" );
+				= findNode::getClass<TowerInfoContainer> ( topNode, "TOWERINFO_CALIB_CEMC_RETOWER" );
 			auto ihcalTowers
-				= findNode::getClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALIN" );
+				= findNode::getClass<TowerInfoContainer> ( topNode, "TOWERINFO_CALIB_HCALIN" );
 			auto ohcalTowers
-				= findNode::getClass<TowerInfoContainerv2> ( topNode, "TOWERINFO_CALIB_HCALOUT" );
+				= findNode::getClass<TowerInfoContainer> ( topNode, "TOWERINFO_CALIB_HCALOUT" );
+			std::cout<<__LINE__<<std::endl;	
 
 			//Calo Geom
+			std::cout<<__LINE__<<std::endl;	
 			auto emcalGeom	
 				= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_CEMC" );
 			auto ihcalGeom	
 				= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALIN" );
 			auto ohcalGeom	
 				= findNode::getClass<RawTowerGeomContainer_Cylinderv1>(topNode, "TOWERGEOM_HCALOUT" );
+			std::cout<<__LINE__<<std::endl;	
 			//convert to TowerArrayEntries
 			std::array<TowerArrayEntry*, 1536>* rawEM	= new std::array<TowerArrayEntry*, 1536> {};
 			std::array<TowerArrayEntry*, 1536>* rawIH	= new std::array<TowerArrayEntry*, 1536> {};
 			std::array<TowerArrayEntry*, 1536>* rawOH	= new std::array<TowerArrayEntry*, 1536> {};
 			std::array<TowerArrayEntry*, 1536>* rawMT	= new std::array<TowerArrayEntry*, 1536> {};
+			std::cout<<__LINE__<<std::endl;	
+			if(!emcalTowers) std::cout<<"emcal Towers missing"<<std::endl;
+			if(!emcalGeom) std::cout<<"emcal geom missing"<<std::endl;
+			if(!rawEM) std::cout<<"emcal catcher missing"<<std::endl;
 			GetFun4AllTowers(*emcalTowers, *emcalGeom, rawEM, 0, CALO::EMCAL);
+			std::cout<<__LINE__<<std::endl;	
 			GetFun4AllTowers(*ihcalTowers, *ihcalGeom, rawIH, 0, CALO::IHCAL);
 			GetFun4AllTowers(*ohcalTowers, *ohcalGeom, rawOH, 0, CALO::OHCAL);
+			std::cout<<__LINE__<<std::endl;
+			if(!rawMT || !rawEM || !rawIH || !rawOH) std::cout<<"One of the dump containers is missing"<<std::endl;	
 			for(int i = 0; i < (int) rawMT->size(); i++)
 			{
-				rawMT->at(i) = rawEM->at(i);
-				rawMT->at(i)->Energy += rawIH->at(i)->Energy;
-				rawMT->at(i)->Energy += rawOH->at(i)->Energy;
+				std::cout<<__LINE__<<": "<<i<<std::endl;
+				rawMT->at(i)->Energy  	 = rawEM->at(i)->Energy;
+				std::cout<<__LINE__<<": "<<i<<std::endl;
+				rawMT->at(i)->phi  	 = rawEM->at(i)->Energy;
+				std::cout<<__LINE__<<": "<<i<<std::endl;
+				rawMT->at(i)->eta	 = rawEM->at(i)->Energy;
+				std::cout<<__LINE__<<": "<<i<<std::endl;
+				rawMT->at(i)->Energy 	+= rawIH->at(i)->Energy;
+				std::cout<<__LINE__<<": "<<i<<std::endl;
+				rawMT->at(i)->Energy 	+= rawOH->at(i)->Energy;
+				std::cout<<__LINE__<<": "<<i<<std::endl;
 			}
+			std::cout<<__LINE__<<std::endl;	
 			rawTowers->at(0) = rawEM;
 			rawTowers->at(1) = rawIH;
 			rawTowers->at(2) = rawOH;
@@ -162,15 +182,18 @@ class BuildMetaTowers
 		}
 
 		void GetFun4AllTowers( 
-				TowerInfoContainerv2 CAL, 
+				TowerInfoContainer CAL, 
 				RawTowerGeomContainer_Cylinderv1 geom, 
 				std::array<TowerArrayEntry*, 1536>* Towers,
 				double zVTX,
 				CALO calo
 				)
 		{
+				std::cout<<__LINE__<<std::endl;	
 			for(int t = 0; t < (int)CAL.size(); t++)
 			{
+				std::cout<<__LINE__<<std::endl;	
+				
 				auto key = CAL.encode_key(t) ;
 				auto f4tower 	= CAL.get_tower_at_channel(t);
 				int phibin 	= CAL.getTowerPhiBin(key);
@@ -187,7 +210,7 @@ class BuildMetaTowers
 			return;
 		}	
 		void GetEMCALTowers(
-				TowerInfoContainerv2 emCal, 
+				TowerInfoContainer emCal, 
 				RawTowerGeomContainer_Cylinderv1 emCal_geom, 
 				bool isRetower=false,
 				double zVTX = 0.
@@ -202,7 +225,7 @@ class BuildMetaTowers
 			return;
 		}
 		void GetHCALTowers(
-				TowerInfoContainerv2 hCal, 
+				TowerInfoContainer hCal, 
 				RawTowerGeomContainer_Cylinderv1 hCal_geom, 
 				bool outer=false,
 				double zVTX = 0.
