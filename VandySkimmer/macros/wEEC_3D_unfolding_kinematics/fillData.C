@@ -14,7 +14,7 @@
 //                        pair weight = pT_i * pT_j / <pT>²
 //                        using vertex-shifted eta for reco towers
 // ─────────────────────────────────────────────────────────────────────────────
-void fillData(int runnumber = 47722, int seg = 0, const char* outDir = ".")
+void fillData(int runnumber = 47722, int seg = 0, const char* outDir = ".", float towCut = 0.25)
 {
     TH1D* hJetPt_meas = new TH1D("hJetPt_meas", "", nRecoFlat(), 0, nRecoFlat());
     hJetPt_meas->Sumw2();
@@ -97,19 +97,15 @@ void fillData(int runnumber = 47722, int seg = 0, const char* outDir = ".")
 
         for (int i = 0; i < 24*64; ++i) {
             int ei = i / 64, pi = i % 64;
-            if (recoMap[ei][pi] <= 0.25 || recoMap[ei][pi] >= 80) continue;
             double phi_i = getPhiCenter(pi);
-            while (phi_i >  TMath::Pi()) phi_i -= 2*TMath::Pi();
-            while (phi_i < -TMath::Pi()) phi_i += 2*TMath::Pi();
             double rpT_i = recoMap[ei][pi] / cosh(getEtaCenter(ei, vtx_z));
+            if (rpT_i <= towCut || rpT_i >= 80) continue;
 
             for (int j = i+1; j < 24*64; ++j) {
                 int ej = j / 64, pj = j % 64;
-                if (recoMap[ej][pj] <= 0.25 || recoMap[ej][pj] >= 80) continue;
                 double phi_j = getPhiCenter(pj);
-                while (phi_j >  TMath::Pi()) phi_j -= 2*TMath::Pi();
-                while (phi_j < -TMath::Pi()) phi_j += 2*TMath::Pi();
                 double rpT_j = recoMap[ej][pj] / cosh(getEtaCenter(ej, vtx_z));
+                if (rpT_j <= towCut || rpT_j >= 80) continue;
 
                 double dphi   = DeltaPhi(phi_i, phi_j);
                 double rPairW = rpT_i * rpT_j / rPTmean2;

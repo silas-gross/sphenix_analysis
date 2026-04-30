@@ -11,7 +11,7 @@
 //
 //  Truth reference for wEEC per-bin plots:
 //    kFull — hWEEC3D_truth_{k} from respFile (fullClosure response)
-//    kHalf — hWEEC3D_truth_{k} from respFile (halfClosure response, training half)
+//    kHalf — hWEEC3D_meas_truth_{k} from respFile (odd-half truth = correct closure target)
 //    kData — hWEEC3D_truth_{k} from respFile (fullClosure response, full sim)
 //
 //  Dijet pT plots:
@@ -87,9 +87,9 @@ TH1D* MakeRatioHist(TH1D* hNum, TH1D* hDen, const char* name)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-void drawClosure(const char* outDir   = ".",
-                 const char* respFile = nullptr,
-                 Mode        mode     = Mode::kFull)
+void drawClosure(const char* outDir      = ".",
+                 const char* respFile    = nullptr,
+                 Mode        mode        = Mode::kFull)
 {
     gROOT->SetBatch(true);
     gStyle->SetOptStat(0); gStyle->SetOptTitle(0);
@@ -99,6 +99,8 @@ void drawClosure(const char* outDir   = ".",
     const bool usePWMean = true;   // true  → luminosity-weighted mean pair weight per bin
                                    // false → arithmetic bin-center approximation
     const bool projAccessibleOnly = false;  // true  → skip truth bins below reco threshold
+    const bool       useDirectCov = true; // true  → covDirectWEEC3D_{k} (RooUnfold Errunfold, preferred)
+                                        // false → covWEEC3D_{k}       (hand-built M*Vmeas*M^T)
 
     // ── Analysis-quality bin mask ─────────────────────────────────────────
     // Bins listed here are grayed out in the *_masked variants of the grid
@@ -116,9 +118,19 @@ void drawClosure(const char* outDir   = ".",
                                            // false → include all truth bins (shows full
                                            //          unfolding scope incl. miss-only bins)
     const bool isData    = (mode == Mode::kData);
+    const bool isHalf    = (mode == Mode::kHalf);
     const bool isClosure = !isData;
+
+    // Name of the per-ΔΦ truth histogram to use as the closure reference:
+    //   kFull/kData → hWEEC3D_truth_{k}       (training-half or full-sim truth)
+    //   kHalf       → hWEEC3D_meas_truth_{k}  (odd-half truth = correct target)
+    auto truth3DName = [&](int k) -> std::string {
+        return isHalf
+            ? std::format("hWEEC3D_meas_truth_{}", k)
+            : std::format("hWEEC3D_truth_{}", k);
+    };
     const std::string label   = ModeLabel(mode);
-    const std::string plotDir = std::format("{}/Plots_v2", outDir);
+    const std::string plotDir = std::format("{}/Plots", outDir);
 
     std::string wEECFile  = std::format("{}/wEEC-{}.root",   outDir, label);
 
@@ -154,21 +166,34 @@ void drawClosure(const char* outDir   = ".",
     }
 
     // ── Load unfolding covariance matrices ────────────────────────────────
-    // covWEEC3D_{k} is the full nTrueFlat3D() × nTrueFlat3D() covariance
-    // matrix from RooUnfoldBayes::Errunfold() written by wEEC_doUnfolding.C.
-    // Used for correct error propagation when summing subsets of flat-3D bins.
+    // Two covariance options written by wEEC_doUnfolding.C:
+    //   covDirectWEEC3D_{k} — directly from RooUnfoldBayes::Errunfold()
+    //                         (kCovariance mode); full off-diagonal propagation
+    //                         through the Bayesian iterations.  Preferred.
+    //   covWEEC3D_{k}       — hand-built analytic M*Vmeas*M^T; correct only
+    //                         in the linear (low-iteration) limit and ignores
+    //                         correlations introduced by the Bayesian updates.
+    // Selected via useDirectCov (default: true → covDirectWEEC3D).
     // nullptr entries mean the covariance is unavailable — projections fall
     // back to naive diagonal (GetBinError) propagation automatically.
     std::vector<TMatrixD*> hCov(nDphi, nullptr);
     {
+        const std::string covKeyFmt = useDirectCov
+            ? "covDirectWEEC3D_{}"
+            : "covWEEC3D_{}";
+        const std::string covLabel  = useDirectCov
+            ? "covDirectWEEC3D (RooUnfold Errunfold)"
+            : "covWEEC3D (M*Vmeas*M^T)";
         int nLoaded = 0;
         for (int k = 0; k < nDphi; ++k) {
             hCov[k] = (TMatrixD*)fWEEC->Get(
-                std::format("covWEEC3D_{}", k).c_str());
+                std::format(useDirectCov
+            ? "covDirectWEEC3D_{}"
+            : "covWEEC3D_{}", k).c_str());
             if (hCov[k]) ++nLoaded;
         }
-        std::cout << std::format("Loaded {}/{} covariance matrices from {}\n",
-            nLoaded, nDphi, wEECFile);
+        std::cout << std::format("Loaded {}/{} covariance matrices [{}] from {}\n",
+            nLoaded, nDphi, covLabel, wEECFile);
         if (nLoaded > 0 && hCov[0])
             std::cout << std::format("  cov[0] dimensions: {}×{}\n",
                 hCov[0]->GetNrows(), hCov[0]->GetNcols());
@@ -334,8 +359,7 @@ void drawClosure(const char* outDir   = ".",
             hT->Sumw2();
             hT->SetDirectory(0);
             for (int k=0; k<nDphi; ++k) {
-                TH1D* hT3D=(TH1D*)fResp->Get(
-                    std::format("hWEEC3D_truth_{}",k).c_str());
+                TH1D* hT3D=(TH1D*)fResp->Get(truth3DName(k).c_str());
                 if (!hT3D) continue;
                 double val,err;
                 if (usePWMean && hPWNum[k] && hPWDen[k])
@@ -357,8 +381,7 @@ void drawClosure(const char* outDir   = ".",
         hInclTruth->Sumw2();
         hInclTruth->SetDirectory(0);
         for (int k=0; k<nDphi; ++k) {
-                TH1D* hT3D=(TH1D*)fResp->Get(
-                    std::format("hWEEC3D_truth_{}",k).c_str());
+                TH1D* hT3D=(TH1D*)fResp->Get(truth3DName(k).c_str());
                 if (!hT3D) continue;
                 double val,err;
                 // ProjectWEEC3DSlice already gates on IsRecoAccessible
@@ -635,6 +658,39 @@ void drawClosure(const char* outDir   = ".",
                  hRatioBin, hNull, hNull,
                  true, 0.5, 1.5,
                  "Unf/Truth", "", "", maskedBins);
+
+        for(int ft=0; ft<nTrueFlat(); ++ft) {
+            if(!hUnfBin[ft] || !hTruthBin[ft]) continue;
+
+            TCanvas *cRBinByBin = new TCanvas("cRBinByBin","",padW,padH);
+            
+            int iL, iS;
+            TrueFlatToIJ(ft, iL, iS);
+            gPad->SetLeftMargin(0.18); gPad->SetBottomMargin(0.18);
+            gPad->SetRightMargin(0.04); gPad->SetTopMargin(0.10);
+            TLatex tex; tex.SetNDC(); tex.SetTextSize(0.09); tex.SetTextAlign(13);
+            std::string bl=std::format("{:.0f}-{:.0f}/{:.0f}-{:.0f} GeV",
+                trueLeadPtBins[iL],trueLeadPtBins[iL+1],trueSublPtBins[iS],trueSublPtBins[iS+1]);
+
+            hRatioBin[ft]->GetYaxis()->SetRangeUser(0.5,1.5);
+            hRatioBin[ft]->GetYaxis()->SetTitle("Unf/Truth");
+            hRatioBin[ft]->GetYaxis()->SetTitleSize(0.09); hRatioBin[ft]->GetYaxis()->SetTitleOffset(0.9);
+            hRatioBin[ft]->GetYaxis()->SetLabelSize(0.08);
+            hRatioBin[ft]->GetXaxis()->SetTitle("#Delta#phi");
+            hRatioBin[ft]->GetXaxis()->SetTitleSize(0.09); hRatioBin[ft]->GetXaxis()->SetLabelSize(0.08);
+            hRatioBin[ft]->SetTitle("");
+            
+            StyleLine(hRatioBin[ft],kColUnfolded,kMarUnfolded);
+
+            hRatioBin[ft]->Draw("E");
+            DrawRefLine(hRatioBin[ft]);
+
+            tex.DrawLatex(0.22,0.88,bl.c_str());
+
+            cRBinByBin->SaveAs(std::format("{}/wEEC_ratio_singleBinBin-{}-{}-{}.png",plotDir,iL,iS,label).c_str());
+
+            delete cRBinByBin;
+        }
         for (int ft=0; ft<nTrueFlat(); ++ft) delete hRatioBin[ft];
     }
 
@@ -685,7 +741,7 @@ void drawClosure(const char* outDir   = ".",
     if (isClosure && fResp) {
         for (int k=0; k<nDphi; ++k) {
             TH1D* hU3D = (TH1D*)fWEEC->Get(std::format("hWEEC3D_unfolded_{}",k).c_str());
-            TH1D* hT3D = (TH1D*)fResp->Get(std::format("hWEEC3D_truth_{}",k).c_str());
+            TH1D* hT3D = (TH1D*)fResp->Get(truth3DName(k).c_str());
             if (!hU3D || !hT3D) continue;
 
             TH1D* hUnfLead = new TH1D(std::format("hUnfLead_{}",k).c_str(),"",

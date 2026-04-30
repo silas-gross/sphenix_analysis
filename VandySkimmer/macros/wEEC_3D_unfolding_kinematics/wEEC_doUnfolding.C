@@ -1,4 +1,5 @@
 #include "analysisHelper.h"
+#include "RooUnfold.h"
 #include "RooUnfoldResponse.h"
 #include "RooUnfoldBayes.h"
 
@@ -161,9 +162,10 @@ void wEEC_doUnfolding(const char* respFile,
         // nonzero and no runtime compression is needed.
         RooUnfoldBayes unfold(respToUse, hMeasClone, nIterWEEC);
         unfold.HandleFakes(true);
-        TH1D* hUnf = (TH1D*)unfold.Hunfold();
+        TH1D* hUnf = (TH1D*)unfold.Hunfold(RooUnfold::ErrorTreatment::kCovariance);
         hUnf->SetDirectory(0);
         hUnf->SetName(std::format("hWEEC3D_unfolded_{}", k).c_str());
+        TMatrixD covM = (TMatrixD)unfold.Eunfold(RooUnfold::ErrorTreatment::kCovariance);
 
         // Full covariance matrix C = M * V_meas * M^T where:
         //   M      = unfolding matrix (nTruth × nReco) from UnfoldingMatrix()
@@ -202,7 +204,8 @@ void wEEC_doUnfolding(const char* respFile,
         // correct per-bin variance from measurement error propagation.
         hUnf->Sumw2();
         for (int i = 0; i < nT; ++i)
-            hUnf->SetBinError(i + 1, std::sqrt(std::max(cov(i, i), 0.0)));
+            //hUnf->SetBinError(i + 1, std::sqrt(std::max(cov(i, i), 0.0)));
+            hUnf->SetBinError(i + 1, std::sqrt(std::max(covM(i, i), 0.0)));
 
         // Sanity check: find first non-zero measured bin and compare
         if (k == 0) {
@@ -229,6 +232,7 @@ void wEEC_doUnfolding(const char* respFile,
         fOut->cd();
         hMeasClone->Write();
         hUnf->Write();
+        covM.Write(std::format("covDirectWEEC3D_{}",k).c_str());
         cov.Write(std::format("covWEEC3D_{}", k).c_str());
         if (doTrim && respTrimmed)
             respTrimmed->Write(std::format("response_wEEC3D_trimmed_{}", k).c_str());

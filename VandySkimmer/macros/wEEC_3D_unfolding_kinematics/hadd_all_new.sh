@@ -8,8 +8,8 @@ export MYINSTALL=/sphenix/user/bkimelman/sPHENIX/install/
 source /opt/sphenix/core/bin/sphenix_setup.sh -n
 source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 
-DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr28_2026/
-
+#DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr30_2026_0p25/
+DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr30_2026_${1}/
 run_pipeline() {
     local kMode=$1
     local pids=()
@@ -61,12 +61,13 @@ run_pipeline() {
 run_pipeline kFull &
 pid_full=$!
 
+: '
 run_pipeline kHalf &
 pid_half=$!
 
 run_pipeline kData &
 pid_data=$!
-
+'
 # --- wait for both pipelines and track failures ---
 fail_any=0
 
@@ -75,6 +76,7 @@ if ! wait "$pid_full"; then
     fail_any=1
 fi
 
+: '
 if ! wait "$pid_half"; then
     echo "kHalf pipeline failed" >&2
     fail_any=1
@@ -84,6 +86,7 @@ if ! wait "$pid_data"; then
     echo "kData pipeline failed" >&2
     fail_any=1
 fi
+'
 
 # --- only run final hadd if both succeeded ---
 if (( fail_any )); then
@@ -95,6 +98,6 @@ fi
 echo "Running final data hadd"
 
 
-hadd -f -j 8 -n 100 "$DIR/data_measured-all.root" "$DIR"/Data/data_measured_*.root
+#hadd -f -j 8 -n 100 "$DIR/data_measured-all.root" "$DIR"/Data/data_measured_*.root
 
 echo "done with all hadds"

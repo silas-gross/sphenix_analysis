@@ -20,7 +20,8 @@ export MYINSTALL=/sphenix/user/bkimelman/sPHENIX/install/
 source /opt/sphenix/core/bin/sphenix_setup.sh -n
 source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 
-DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr28_2026/
+#DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr28_2026/
+DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr29_2026/
 MODE=$1
 
 if [ -z "$DIR" ] || [ -z "$MODE" ]; then
@@ -43,13 +44,15 @@ if [ "$MODE" = "kData" ]; then
     # kData: no truth reference needed, pass null for respFile
     RESP_FILE="${DIR}/response-all-${LABEL}.root"
     echo "Running drawClosure: mode=${MODE}, dir=${DIR}, resp=${RESP_FILE}"
+    root -b -q "draw_misses_fakes.C(\"${DIR}\",\"${RESP_FILE}\",Mode::${MODE})"
     root -b -q "drawClosure.C(\"${DIR}\",\"${RESP_FILE}\",Mode::${MODE})"
 else
     RESP_FILE="${DIR}/response-all-${LABEL}.root"
     if [ "$MODE" = "kFull" ]; then
         root -b -q "draw_3DClosure.C(\"${DIR}\")"
-        root -b -q "drawResponse.C(\"${DIR}\",\"${RESP_FILE}\",Mode::${MODE},15,2,2,5)"
+        root -b -q "drawResponse.C(\"${DIR}\",\"${RESP_FILE}\",Mode::${MODE},7,2,2,5)"
     fi
+    root -b -q "draw_misses_fakes.C(\"${DIR}\",\"${RESP_FILE}\",Mode::${MODE})"
     echo "Running drawClosure: mode=${MODE}, dir=${DIR}, resp=${RESP_FILE}"
     root -b -q "drawClosure.C(\"${DIR}\",\"${RESP_FILE}\",Mode::${MODE})"
 fi

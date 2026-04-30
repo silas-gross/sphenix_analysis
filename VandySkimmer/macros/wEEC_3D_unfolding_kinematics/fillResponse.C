@@ -43,7 +43,7 @@
 //  response_wEEC_{ft}       — old per-ft flat-2D response (kept for reference)
 // ─────────────────────────────────────────────────────────────────────────────
 void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
-                  Mode mode = Mode::kFull)
+                  Mode mode = Mode::kFull, float towCut = 0.25)
 {
     const bool halfClosure = (mode == Mode::kHalf);
     const bool vtxOnly     = (mode == Mode::kVtx);
@@ -163,12 +163,19 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
     // Closure target: after unfolding hWEEC3D_meas, the projected result
     // should match the projection of this histogram.
     std::vector<TH1D*> hWEEC3D_truth(nDphi, nullptr);
+    std::vector<TH1D*> hWEEC3D_misses(nDphi, nullptr);
     for (int k = 0; k < nDphi; ++k) {
         hWEEC3D_truth[k] = new TH1D(
             std::format("hWEEC3D_truth_{}", k).c_str(),
             std::format("Truth wEEC 3D k{};flat(iL,iS,iPw);pairs", k).c_str(),
             nTrueFlat3D(), 0, nTrueFlat3D());
         hWEEC3D_truth[k]->Sumw2();
+
+        hWEEC3D_misses[k] = new TH1D(
+            std::format("hWEEC3D_misses_{}", k).c_str(),
+            std::format("Misses wEEC 3D k{};flat(iL,iS,iPw);pairs", k).c_str(),
+            nTrueFlat3D(), 0, nTrueFlat3D());
+        hWEEC3D_misses[k]->Sumw2();
     }
 
     std::cout << "made 3D truth hists" << std::endl;
@@ -198,12 +205,26 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
 
     // ── 3D wEEC measured histograms (per ΔΦ bin k, measured half) ─────────
     std::vector<TH1D*> hWEEC3D_meas(nDphi, nullptr);
+    std::vector<TH1D*> hWEEC3D_fakes(nDphi, nullptr);
+    std::vector<TH1D*> hWEEC3D_meas_truth(nDphi, nullptr);
     for (int k = 0; k < nDphi; ++k) {
         hWEEC3D_meas[k] = new TH1D(
             std::format("hWEEC3D_meas_{}", k).c_str(),
             std::format("Meas wEEC 3D k{};flat(iL,iS,iPw);pairs", k).c_str(),
             nRecoFlat3D(), 0, nRecoFlat3D());
         hWEEC3D_meas[k]->Sumw2();
+
+        hWEEC3D_fakes[k] = new TH1D(
+            std::format("hWEEC3D_fakes_{}", k).c_str(),
+            std::format("Fakes wEEC 3D k{};flat(iL,iS,iPw);pairs", k).c_str(),
+            nRecoFlat3D(), 0, nRecoFlat3D());
+        hWEEC3D_fakes[k]->Sumw2();
+
+        hWEEC3D_meas_truth[k] = new TH1D(
+            std::format("hWEEC3D_meas_truth_{}", k).c_str(),
+            std::format("Truth Meas Half wEEC 3D k{};flat(iL,iS,iPw);pairs", k).c_str(),
+            nTrueFlat3D(), 0, nTrueFlat3D());
+        hWEEC3D_meas_truth[k]->Sumw2();
     }
 
     std::cout << "made 3D meas hists" << std::endl;
@@ -441,8 +462,6 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                 // Restrict to calorimeter acceptance — same η range as towers
                 if (std::abs(eta) > 1.1) continue;
                 double phi = pj.phi();
-                while (phi >  TMath::Pi()) phi -= 2*TMath::Pi();
-                while (phi < -TMath::Pi()) phi += 2*TMath::Pi();
                 double pT = part.e() / std::cosh(eta);
                 if (pT <= 0) continue;
                 plist.push_back({pT, phi});
@@ -459,19 +478,15 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
             // Same tower thresholds and eta/phi lookup as the unfolding truth.
             for (int i = 0; i < 24*64; ++i) {
                 const int ei = i/64, pi = i%64;
-                if (truthMap[ei][pi] <= 0.25 || truthMap[ei][pi] >= 80) continue;
                 double phi_i = getPhiCenter(pi);
-                while (phi_i >  TMath::Pi()) phi_i -= 2*TMath::Pi();
-                while (phi_i < -TMath::Pi()) phi_i += 2*TMath::Pi();
                 const double tpT_i = truthMap[ei][pi] / cosh(getEtaCenter(ei, 0.0));
+                if (tpT_i <= towCut || tpT_i >= 80) continue;
 
                 for (int j = i+1; j < 24*64; ++j) {
                     const int ej = j/64, pj = j%64;
-                    if (truthMap[ej][pj] <= 0.25 || truthMap[ej][pj] >= 80) continue;
                     double phi_j = getPhiCenter(pj);
-                    while (phi_j >  TMath::Pi()) phi_j -= 2*TMath::Pi();
-                    while (phi_j < -TMath::Pi()) phi_j += 2*TMath::Pi();
                     const double tpT_j = truthMap[ej][pj] / cosh(getEtaCenter(ej, 0.0));
+                    if (tpT_j <= towCut || tpT_j >= 80) continue;
 
                     double dphi  = DeltaPhi(phi_i, phi_j);
                     double pairW = tpT_i * tpT_j / tPTmean2;
@@ -482,7 +497,14 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
         }
 
         // ── matched dijet ─────────────────────────────────────────────────
-        if (fillResp && isMatched)
+        // Handles all four tower-pair cases in one loop:
+        //   hasReco && hasTruth  → response Fill + truth/meas hists
+        //   hasReco only         → Fake + meas hist
+        //   hasTruth only        → Miss + truth hist
+        //   neither              → skipped
+        // fillMeas fills (hWEEC3D_meas) are included here so no separate
+        // reco-pair loop is needed for matched events.
+        if (isMatched)
         {
             const double rPTmean2 = 0.25*(rLeadPT+rSublPT)*(rLeadPT+rSublPT);
             const double tPTmean2 = 0.25*(tLeadPT+tSublPT)*(tLeadPT+tSublPT);
@@ -491,29 +513,27 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                 const int ei = i/64, pi = i%64;
                 const double rE_i = recoMap[ei][pi];
                 const double tE_i = truthMap[ei][pi];
-                const bool rOk_i = (rE_i > 0.25 && rE_i < 80);
-                const bool tOk_i = (tE_i > 0.25 && tE_i < 80);
-                if (!rOk_i && !tOk_i) continue;
 
                 double phi_i = getPhiCenter(pi);
-                while (phi_i >  TMath::Pi()) phi_i -= 2*TMath::Pi();
-                while (phi_i < -TMath::Pi()) phi_i += 2*TMath::Pi();
-                const double rpT_i = rOk_i ? rE_i/cosh(getEtaCenter(ei, vtx_z)) : 0.0;
-                const double tpT_i = tOk_i ? tE_i/cosh(getEtaCenter(ei, 0.0))   : 0.0;
+                const double rpT_i = rE_i/cosh(getEtaCenter(ei, vtx_z));
+                const double tpT_i = tE_i/cosh(getEtaCenter(ei, 0.0));
+                
+                const bool rOk_i = (rpT_i > towCut && rpT_i < 80);
+                const bool tOk_i = (tpT_i > towCut && tpT_i < 80);
+                if (!rOk_i && !tOk_i) continue;
 
                 for (int j = i+1; j < 24*64; ++j) {
                     const int ej = j/64, pj = j%64;
                     const double rE_j = recoMap[ej][pj];
                     const double tE_j = truthMap[ej][pj];
-                    const bool rOk_j = (rE_j > 0.25 && rE_j < 80);
-                    const bool tOk_j = (tE_j > 0.25 && tE_j < 80);
-                    if (!rOk_j && !tOk_j) continue;
 
                     double phi_j = getPhiCenter(pj);
-                    while (phi_j >  TMath::Pi()) phi_j -= 2*TMath::Pi();
-                    while (phi_j < -TMath::Pi()) phi_j += 2*TMath::Pi();
-                    const double rpT_j = rOk_j ? rE_j/cosh(getEtaCenter(ej, vtx_z)) : 0.0;
-                    const double tpT_j = tOk_j ? tE_j/cosh(getEtaCenter(ej, 0.0))   : 0.0;
+                    const double rpT_j = rE_j/cosh(getEtaCenter(ej, vtx_z));
+                    const double tpT_j = tE_j/cosh(getEtaCenter(ej, 0.0));
+
+                    const bool rOk_j = (rpT_j > towCut && rpT_j < 80);
+                    const bool tOk_j = (tpT_j > towCut && tpT_j < 80);
+                    if (!rOk_j && !tOk_j) continue;
 
                     const double dphi  = DeltaPhi(phi_i, phi_j);
                     const int    iDphi = FindBin(dphi, dPhiBins);
@@ -530,23 +550,19 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                             const int rIPw = FindBin(rPairW, pairWeightBins);
                             const int tIPw = FindBin(tPairW, pairWeightBins);
                             if (rIPw >= 0 && tIPw >= 0) {
-                                respWEEC3D[iDphi]->Fill(
-                                    RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw)),
-                                    TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw)),
-                                    evtWeight);
-                                // Fill counts with unity weight for cell-by-cell trimming
-                                hWEEC3D_counts[iDphi]->Fill(
-                                    RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw)),
-                                    TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw)));
-                                hWEEC3D_truth[iDphi]->Fill(
-                                    TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw)), evtWeight);
-                                // Weighted mean pair weight accumulators (truth side)
+                                const double rF3Dcen = RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw));
                                 const double tF3Dcen = TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw));
-                                hWEEC3D_pwNum[iDphi]->Fill(tF3Dcen, evtWeight * tPairW);
-                                hWEEC3D_pwDen[iDphi]->Fill(tF3Dcen, evtWeight);
-                                if (fillMeas)
-                                    hWEEC3D_meas[iDphi]->Fill(
-                                        RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw)), evtWeight);
+                                if (fillResp) {
+                                    respWEEC3D[iDphi]->Fill(rF3Dcen, tF3Dcen, evtWeight);
+                                    hWEEC3D_counts[iDphi]->Fill(rF3Dcen, tF3Dcen);
+                                    hWEEC3D_truth[iDphi]->Fill(tF3Dcen, evtWeight);
+                                    hWEEC3D_pwNum[iDphi]->Fill(tF3Dcen, evtWeight * tPairW);
+                                    hWEEC3D_pwDen[iDphi]->Fill(tF3Dcen, evtWeight);
+                                }
+                                if (fillMeas) {
+                                    hWEEC3D_meas[iDphi]->Fill(rF3Dcen, evtWeight);
+                                    hWEEC3D_meas_truth[iDphi]->Fill(tF3Dcen, evtWeight);
+                                }
                             }
                         }
                     } else if (hasReco) {
@@ -554,11 +570,12 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                         if (rPairW >= pairWeightMin && rPairW <= pairWeightMax) {
                             const int rIPw = FindBin(rPairW, pairWeightBins);
                             if (rIPw >= 0) {
-                                respWEEC3D[iDphi]->Fake(
-                                    RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw)), evtWeight);
-                                if (fillMeas)
-                                    hWEEC3D_meas[iDphi]->Fill(
-                                        RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw)), evtWeight);
+                                const double rF3Dcen = RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw));
+                                if (fillResp) {
+                                    respWEEC3D[iDphi]->Fake(rF3Dcen, evtWeight);
+                                    hWEEC3D_fakes[iDphi]->Fill(rF3Dcen, evtWeight);                                    
+                                }
+                                if (fillMeas) hWEEC3D_meas[iDphi]->Fill(rF3Dcen, evtWeight);
                             }
                         }
                     } else { // hasTruth only
@@ -566,13 +583,17 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                         if (tPairW >= pairWeightMin && tPairW <= pairWeightMax) {
                             const int tIPw = FindBin(tPairW, pairWeightBins);
                             if (tIPw >= 0) {
-                                respWEEC3D[iDphi]->Miss(
-                                    TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw)), evtWeight);
-                                hWEEC3D_truth[iDphi]->Fill(
-                                    TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw)), evtWeight);
                                 const double tF3Dcen = TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw));
-                                hWEEC3D_pwNum[iDphi]->Fill(tF3Dcen, evtWeight * tPairW);
-                                hWEEC3D_pwDen[iDphi]->Fill(tF3Dcen, evtWeight);
+                                if (fillResp) {
+                                    respWEEC3D[iDphi]->Miss(tF3Dcen, evtWeight);
+                                    hWEEC3D_truth[iDphi]->Fill(tF3Dcen, evtWeight);
+                                    hWEEC3D_pwNum[iDphi]->Fill(tF3Dcen, evtWeight * tPairW);
+                                    hWEEC3D_pwDen[iDphi]->Fill(tF3Dcen, evtWeight);
+                                    hWEEC3D_misses[iDphi]->Fill(tF3Dcen, evtWeight);
+                                }
+                                if (fillMeas) {
+                                    hWEEC3D_meas_truth[iDphi]->Fill(tF3Dcen, evtWeight);
+                                }
                             }
                         }
                     }
@@ -581,25 +602,23 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
         }
 
         // ── fake dijet ────────────────────────────────────────────────────
-        else if (fillResp && isFake)
+        // Reco dijet with no matching truth dijet.  One reco-pair loop.
+        //else if (isFake)
+        if (isFake)
         {
             const double rPTmean2 = 0.25*(rLeadPT+rSublPT)*(rLeadPT+rSublPT);
 
             for (int i = 0; i < 24*64; ++i) {
                 const int ei = i/64, pi = i%64;
-                if (recoMap[ei][pi] <= 0.25 || recoMap[ei][pi] >= 80) continue;
                 double phi_i = getPhiCenter(pi);
-                while (phi_i >  TMath::Pi()) phi_i -= 2*TMath::Pi();
-                while (phi_i < -TMath::Pi()) phi_i += 2*TMath::Pi();
                 const double rpT_i = recoMap[ei][pi]/cosh(getEtaCenter(ei, vtx_z));
+                if (rpT_i <= towCut || rpT_i >= 80) continue;
 
                 for (int j = i+1; j < 24*64; ++j) {
                     const int ej = j/64, pj = j%64;
-                    if (recoMap[ej][pj] <= 0.25 || recoMap[ej][pj] >= 80) continue;
                     double phi_j = getPhiCenter(pj);
-                    while (phi_j >  TMath::Pi()) phi_j -= 2*TMath::Pi();
-                    while (phi_j < -TMath::Pi()) phi_j += 2*TMath::Pi();
                     const double rpT_j = recoMap[ej][pj]/cosh(getEtaCenter(ej, vtx_z));
+                    if (rpT_j <= towCut || rpT_j >= 80) continue;
 
                     const double dphi   = DeltaPhi(phi_i, phi_j);
                     const double rPairW = rpT_i*rpT_j/rPTmean2;
@@ -609,34 +628,34 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                     const int rIPw  = FindBin(rPairW, pairWeightBins);
                     if (iDphi < 0 || rIPw < 0) continue;
 
-                    const double rF3D = RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw));
-                    respWEEC3D[iDphi]->Fake(rF3D, evtWeight);
-                    if (fillMeas)
-                        hWEEC3D_meas[iDphi]->Fill(rF3D, evtWeight);
+                    const double rF3Dcen = RecoFlat3DBinCenter(RecoFlat3DIndex(iLreco,iSreco,rIPw));
+                    if (fillResp) {
+                        respWEEC3D[iDphi]->Fake(rF3Dcen, evtWeight);
+                        hWEEC3D_fakes[iDphi]->Fill(rF3Dcen, evtWeight);
+                    }
+                    if (fillMeas) hWEEC3D_meas[iDphi]->Fill(rF3Dcen, evtWeight);
                 }
             }
         }
 
         // ── missed dijet ──────────────────────────────────────────────────
-        else if (fillResp && isMiss)
+        // Truth dijet with no matching reco dijet.  One truth-pair loop.
+        //else if (isMiss)
+        if (isMiss)
         {
             const double tPTmean2 = 0.25*(tLeadPT+tSublPT)*(tLeadPT+tSublPT);
 
             for (int i = 0; i < 24*64; ++i) {
                 const int ei = i/64, pi = i%64;
-                if (truthMap[ei][pi] <= 0.25 || truthMap[ei][pi] >= 80) continue;
                 double phi_i = getPhiCenter(pi);
-                while (phi_i >  TMath::Pi()) phi_i -= 2*TMath::Pi();
-                while (phi_i < -TMath::Pi()) phi_i += 2*TMath::Pi();
                 const double tpT_i = truthMap[ei][pi]/cosh(getEtaCenter(ei, 0.0));
+                if (tpT_i <= towCut || tpT_i >= 80) continue;
 
                 for (int j = i+1; j < 24*64; ++j) {
                     const int ej = j/64, pj = j%64;
-                    if (truthMap[ej][pj] <= 0.25 || truthMap[ej][pj] >= 80) continue;
                     double phi_j = getPhiCenter(pj);
-                    while (phi_j >  TMath::Pi()) phi_j -= 2*TMath::Pi();
-                    while (phi_j < -TMath::Pi()) phi_j += 2*TMath::Pi();
                     const double tpT_j = truthMap[ej][pj]/cosh(getEtaCenter(ej, 0.0));
+                    if (tpT_j <= towCut || tpT_j >= 80) continue;
 
                     const double dphi   = DeltaPhi(phi_i, phi_j);
                     const double tPairW = tpT_i*tpT_j/tPTmean2;
@@ -646,16 +665,24 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                     const int tIPw  = FindBin(tPairW, pairWeightBins);
                     if (iDphi < 0 || tIPw < 0) continue;
 
-                    const double tF3D = TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw));
-                    respWEEC3D[iDphi]->Miss(tF3D, evtWeight);
-                    hWEEC3D_truth[iDphi]->Fill(tF3D, evtWeight);
-                    hWEEC3D_pwNum[iDphi]->Fill(tF3D, evtWeight * tPairW);
-                    hWEEC3D_pwDen[iDphi]->Fill(tF3D, evtWeight);
+                    const double tF3Dcen = TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw));
+                    if (fillResp) {
+                        respWEEC3D[iDphi]->Miss(tF3Dcen, evtWeight);
+                        hWEEC3D_truth[iDphi]->Fill(tF3Dcen, evtWeight);
+                        hWEEC3D_pwNum[iDphi]->Fill(tF3Dcen, evtWeight * tPairW);
+                        hWEEC3D_pwDen[iDphi]->Fill(tF3Dcen, evtWeight);
+                        hWEEC3D_misses[iDphi]->Fill(tF3Dcen, evtWeight);
+                    }
+                    if (fillMeas) {
+                        hWEEC3D_meas_truth[iDphi]->Fill(tF3Dcen, evtWeight);
+                    }
                 }
             }
         }
 
-        // ── measured half only (kHalf: this event not used for response) ──
+        /*
+        // ── measured-half reco only (kHalf: not matched/fake/miss on resp side) ──
+        // Events where !fillResp but fillMeas and recoInRange — pure reco fill.
         else if (!fillResp && fillMeas && recoInRange)
         {
             const double rPTmean2 = 0.25*(rLeadPT+rSublPT)*(rLeadPT+rSublPT);
@@ -689,6 +716,45 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
                 }
             }
         }
+
+        // ── measured-half truth (kHalf only) ─────────────────────────────
+        // Fill truth-tower pairs for odd-half events that are trueInRange
+        // but were not matched/fake/miss (i.e. !fillResp).  Events that
+        // were matched/fake/miss already filled hWEEC3D_meas_truth above.
+        if (!fillResp && fillMeas && trueInRange)
+        {
+            const double tPTmean2 = 0.25*(tLeadPT+tSublPT)*(tLeadPT+tSublPT);
+
+            for (int i = 0; i < 24*64; ++i) {
+                const int ei = i/64, pi = i%64;
+                if (truthMap[ei][pi] <= 0.25 || truthMap[ei][pi] >= 80) continue;
+                double phi_i = getPhiCenter(pi);
+                while (phi_i >  TMath::Pi()) phi_i -= 2*TMath::Pi();
+                while (phi_i < -TMath::Pi()) phi_i += 2*TMath::Pi();
+                const double tpT_i = truthMap[ei][pi]/cosh(getEtaCenter(ei, 0.0));
+
+                for (int j = i+1; j < 24*64; ++j) {
+                    const int ej = j/64, pj = j%64;
+                    if (truthMap[ej][pj] <= 0.25 || truthMap[ej][pj] >= 80) continue;
+                    double phi_j = getPhiCenter(pj);
+                    while (phi_j >  TMath::Pi()) phi_j -= 2*TMath::Pi();
+                    while (phi_j < -TMath::Pi()) phi_j += 2*TMath::Pi();
+                    const double tpT_j = truthMap[ej][pj]/cosh(getEtaCenter(ej, 0.0));
+
+                    const double dphi   = DeltaPhi(phi_i, phi_j);
+                    const double tPairW = tpT_i*tpT_j/tPTmean2;
+                    if (tPairW < pairWeightMin || tPairW > pairWeightMax) continue;
+
+                    const int iDphi = FindBin(dphi, dPhiBins);
+                    const int tIPw  = FindBin(tPairW, pairWeightBins);
+                    if (iDphi < 0 || tIPw < 0) continue;
+
+                    hWEEC3D_meas_truth[iDphi]->Fill(
+                        TrueFlat3DBinCenter(TrueFlat3DIndex(iLtrue,iStrue,tIPw)), evtWeight);
+                }
+            }
+        }
+        */
 
     } // end event loop
 
@@ -732,8 +798,20 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
 
     std::cout << "done writing meas plots" << std::endl;
 
+    if (halfClosure) {
+        for (int k = 0; k < nDphi; ++k)
+            hWEEC3D_meas_truth[k]->Write();
+        std::cout << "done writing meas truth plots" << std::endl;
+    }
+
     for (int k = 0; k < nDphi; ++k)
         hWEEC3D_counts[k]->Write();
+
+    for (int k = 0; k < nDphi; ++k)
+        hWEEC3D_misses[k]->Write();
+
+    for (int k = 0; k < nDphi; ++k)
+        hWEEC3D_fakes[k]->Write();
 
     std::cout << "done writing counts hists" << std::endl;
 
