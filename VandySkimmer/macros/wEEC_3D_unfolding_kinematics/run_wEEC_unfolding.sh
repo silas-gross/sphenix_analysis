@@ -20,7 +20,7 @@ export MYINSTALL=/sphenix/user/bkimelman/sPHENIX/install/
 source /opt/sphenix/core/bin/sphenix_setup.sh -n
 source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 
-DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr27_2026/
+DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr29_2026/
 MODE=$1
 NITER=${2:-4}
 
@@ -42,7 +42,7 @@ esac
 OUT_FILE="${DIR}/wEEC-${LABEL}.root"
 
 if [ "$MODE" = "kData" ]; then
-    RESP_FILE="${DIR}/response-all-fullClosure.root"
+    RESP_FILE="${DIR}/response-all-${LABEL}.root"
     MEAS_FILE="${DIR}/data_measured-all.root"
     echo "Running wEEC_doUnfolding: mode=${MODE}, resp=${RESP_FILE}, meas=${MEAS_FILE}, out=${OUT_FILE}"
     root -b -q "wEEC_doUnfolding.C(\"${RESP_FILE}\",\"${OUT_FILE}\",${NITER},Mode::${MODE},\"${MEAS_FILE}\")"

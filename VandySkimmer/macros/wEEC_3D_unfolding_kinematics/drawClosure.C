@@ -11,7 +11,7 @@
 //
 //  Truth reference for wEEC per-bin plots:
 //    kFull — hWEEC3D_truth_{k} from respFile (fullClosure response)
-//    kHalf — hWEEC3D_truth_{k} from respFile (halfClosure response, training half)
+//    kHalf — hWEEC3D_meas_truth_{k} from respFile (odd-half truth = correct closure target)
 //    kData — hWEEC3D_truth_{k} from respFile (fullClosure response, full sim)
 //
 //  Dijet pT plots:
@@ -87,9 +87,9 @@ TH1D* MakeRatioHist(TH1D* hNum, TH1D* hDen, const char* name)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-void drawClosure(const char* outDir   = ".",
-                 const char* respFile = nullptr,
-                 Mode        mode     = Mode::kFull)
+void drawClosure(const char* outDir      = ".",
+                 const char* respFile    = nullptr,
+                 Mode        mode        = Mode::kFull)
 {
     gROOT->SetBatch(true);
     gStyle->SetOptStat(0); gStyle->SetOptTitle(0);
@@ -98,8 +98,37 @@ void drawClosure(const char* outDir   = ".",
     const bool doTrim    = true;
     const bool usePWMean = true;   // true  → luminosity-weighted mean pair weight per bin
                                    // false → arithmetic bin-center approximation
+    const bool projAccessibleOnly = false;  // true  → skip truth bins below reco threshold
+    const bool       useDirectCov = true; // true  → covDirectWEEC3D_{k} (RooUnfold Errunfold, preferred)
+                                        // false → covWEEC3D_{k}       (hand-built M*Vmeas*M^T)
+
+    // ── Analysis-quality bin mask ─────────────────────────────────────────
+    // Bins listed here are grayed out in the *_masked variants of the grid
+    // plots.  Indices are 0-based (iL, iS).  Edit this list to change the
+    // mask without touching anything else.
+    const std::vector<std::pair<int,int>> maskedBins = {
+        {3, 1},  // 40-50 GeV lead / 15-20 GeV subl
+        {4, 1},  // 50-60 GeV lead / 15-20 GeV subl
+        {5, 1},  // 60-80 GeV lead / 15-20 GeV subl
+        {4, 2},  // 50-60 GeV lead / 20-30 GeV subl
+        {5, 2},  // 60-80 GeV lead / 20-30 GeV subl
+        {5, 3},  // (reserved — update if bin structure changes)
+    };
+                                           //          in wEEC_projections (cleaner closure)
+                                           // false → include all truth bins (shows full
+                                           //          unfolding scope incl. miss-only bins)
     const bool isData    = (mode == Mode::kData);
+    const bool isHalf    = (mode == Mode::kHalf);
     const bool isClosure = !isData;
+
+    // Name of the per-ΔΦ truth histogram to use as the closure reference:
+    //   kFull/kData → hWEEC3D_truth_{k}       (training-half or full-sim truth)
+    //   kHalf       → hWEEC3D_meas_truth_{k}  (odd-half truth = correct target)
+    auto truth3DName = [&](int k) -> std::string {
+        return isHalf
+            ? std::format("hWEEC3D_meas_truth_{}", k)
+            : std::format("hWEEC3D_truth_{}", k);
+    };
     const std::string label   = ModeLabel(mode);
     const std::string plotDir = std::format("{}/Plots", outDir);
 
@@ -136,6 +165,40 @@ void drawClosure(const char* outDir   = ".",
         }
     }
 
+    // ── Load unfolding covariance matrices ────────────────────────────────
+    // Two covariance options written by wEEC_doUnfolding.C:
+    //   covDirectWEEC3D_{k} — directly from RooUnfoldBayes::Errunfold()
+    //                         (kCovariance mode); full off-diagonal propagation
+    //                         through the Bayesian iterations.  Preferred.
+    //   covWEEC3D_{k}       — hand-built analytic M*Vmeas*M^T; correct only
+    //                         in the linear (low-iteration) limit and ignores
+    //                         correlations introduced by the Bayesian updates.
+    // Selected via useDirectCov (default: true → covDirectWEEC3D).
+    // nullptr entries mean the covariance is unavailable — projections fall
+    // back to naive diagonal (GetBinError) propagation automatically.
+    std::vector<TMatrixD*> hCov(nDphi, nullptr);
+    {
+        const std::string covKeyFmt = useDirectCov
+            ? "covDirectWEEC3D_{}"
+            : "covWEEC3D_{}";
+        const std::string covLabel  = useDirectCov
+            ? "covDirectWEEC3D (RooUnfold Errunfold)"
+            : "covWEEC3D (M*Vmeas*M^T)";
+        int nLoaded = 0;
+        for (int k = 0; k < nDphi; ++k) {
+            hCov[k] = (TMatrixD*)fWEEC->Get(
+                std::format(useDirectCov
+            ? "covDirectWEEC3D_{}"
+            : "covWEEC3D_{}", k).c_str());
+            if (hCov[k]) ++nLoaded;
+        }
+        std::cout << std::format("Loaded {}/{} covariance matrices [{}] from {}\n",
+            nLoaded, nDphi, covLabel, wEECFile);
+        if (nLoaded > 0 && hCov[0])
+            std::cout << std::format("  cov[0] dimensions: {}×{}\n",
+                hCov[0]->GetNrows(), hCov[0]->GetNcols());
+    }
+
     // ════════════════════════════════════════════════════════════════════════
     //  Project hWEEC3D_unfolded_{k} → per-dijet-pT-bin and inclusive wEEC
     //  This replaces loading pre-projected hWEEC_bin_{ft} / hWEEC_inclusive
@@ -161,9 +224,9 @@ void drawClosure(const char* outDir   = ".",
         // Inclusive projection — IsRecoAccessible gate is inside ProjectWEEC3DSlice
         double ival, ierr;
         if (usePWMean && hPWNum[k] && hPWDen[k])
-            ProjectWEEC3DSlice(hU3D, ival, ierr, hPWNum[k], hPWDen[k]);
+            ProjectWEEC3DSlice(hU3D, ival, ierr, hPWNum[k], hPWDen[k], hCov[k]);
         else
-            ProjectWEEC3DSlice(hU3D, ival, ierr);
+            ProjectWEEC3DSlice(hU3D, ival, ierr, hCov[k]);
         hInclUnfolded->SetBinContent(k+1, ival);
         hInclUnfolded->SetBinError  (k+1, ierr);
         // Per-bin projection — skip bins with no reco support
@@ -172,9 +235,9 @@ void drawClosure(const char* outDir   = ".",
             if (!IsRecoAccessible(iL,iS)) continue;
             double val,err;
             if (usePWMean && hPWNum[k] && hPWDen[k])
-                ProjectWEEC3DSliceForBin(hU3D, iL, iS, val, err, hPWNum[k], hPWDen[k]);
+                ProjectWEEC3DSliceForBin(hU3D, iL, iS, val, err, hPWNum[k], hPWDen[k], hCov[k]);
             else
-                ProjectWEEC3DSliceForBin(hU3D, iL, iS, val, err);
+                ProjectWEEC3DSliceForBin(hU3D, iL, iS, val, err, hCov[k]);
             hUnfBin[ft]->SetBinContent(k+1, val);
             hUnfBin[ft]->SetBinError  (k+1, err);
         }
@@ -296,8 +359,7 @@ void drawClosure(const char* outDir   = ".",
             hT->Sumw2();
             hT->SetDirectory(0);
             for (int k=0; k<nDphi; ++k) {
-                TH1D* hT3D=(TH1D*)fResp->Get(
-                    std::format("hWEEC3D_truth_{}",k).c_str());
+                TH1D* hT3D=(TH1D*)fResp->Get(truth3DName(k).c_str());
                 if (!hT3D) continue;
                 double val,err;
                 if (usePWMean && hPWNum[k] && hPWDen[k])
@@ -319,8 +381,7 @@ void drawClosure(const char* outDir   = ".",
         hInclTruth->Sumw2();
         hInclTruth->SetDirectory(0);
         for (int k=0; k<nDphi; ++k) {
-                TH1D* hT3D=(TH1D*)fResp->Get(
-                    std::format("hWEEC3D_truth_{}",k).c_str());
+                TH1D* hT3D=(TH1D*)fResp->Get(truth3DName(k).c_str());
                 if (!hT3D) continue;
                 double val,err;
                 // ProjectWEEC3DSlice already gates on IsRecoAccessible
@@ -442,7 +503,8 @@ void drawClosure(const char* outDir   = ".",
                         const std::vector<TH1D*>& hC,
                         bool isRatio,
                         double yLo, double yHi,
-                        const char* legA, const char* legB, const char* legC)
+                        const char* legA, const char* legB, const char* legC,
+                        const std::vector<std::pair<int,int>>& binMask = {})
     {
         TCanvas* cG=new TCanvas(canName,canName,nTrueLead*padW,nTrueSubl*padH);
         cG->Divide(nTrueLead,nTrueSubl,0,0);
@@ -458,10 +520,17 @@ void drawClosure(const char* outDir   = ".",
 
             int ft = TrueFlatIndex(iL,iS);
 
-            // Gray out kinematically forbidden bins (subl lower edge >= lead upper edge).
-            // All other bins are drawn even if outside the primary reporting region.
+            // Gray out kinematically forbidden bins
             if (ft < 0 || !hA[ft]) {
                 gPad->SetFillColor(kGray);
+                tex.DrawLatex(0.22,0.88,bl.c_str()); continue;
+            }
+
+            // Gray out analysis-quality masked bins (darker than forbidden)
+            bool isMasked = std::any_of(binMask.begin(), binMask.end(),
+                [&](const std::pair<int,int>& p){ return p.first==iL && p.second==iS; });
+            if (isMasked) {
+                gPad->SetFillColor(kGray+2);
                 tex.DrawLatex(0.22,0.88,bl.c_str()); continue;
             }
 
@@ -481,7 +550,7 @@ void drawClosure(const char* outDir   = ".",
                 gPad->SetLogy();
                 TH1D* hBase = hB[ft] ? hB[ft] : (hC[ft] ? hC[ft] : hA[ft]);
                 hBase->GetYaxis()->SetRangeUser(yLo,yHi);
-                hBase->GetYaxis()->SetTitle("1/N dN/d#Delta#phi");
+                hBase->GetYaxis()->SetTitle("dwEEC/d#Delta#phi");
                 hBase->GetYaxis()->SetTitleSize(0.09); hBase->GetYaxis()->SetTitleOffset(0.9);
                 hBase->GetYaxis()->SetLabelSize(0.08);
                 hBase->GetXaxis()->SetTitle("#Delta#phi");
@@ -521,12 +590,57 @@ void drawClosure(const char* outDir   = ".",
                  hUnfBin, hTruthBin, hNull,
                  false, yLo, yHi,
                  "Unfolded", "Truth (truth towers)", "");
+        DrawGrid("cPerBinMasked",
+                 std::format("{}/wEEC_perBin_masked-{}.png",plotDir,label).c_str(),
+                 hUnfBin, hTruthBin, hNull,
+                 false, yLo, yHi,
+                 "Unfolded", "Truth (truth towers)", "", maskedBins);
+
+        for(int ft=0; ft<nTrueFlat(); ++ft) {
+            if(!hUnfBin[ft] || !hTruthBin[ft]) continue;
+
+            TCanvas *cBinByBin = new TCanvas("cBinByBin","",padW,padH);
+            cBinByBin->SetLogy();
+
+            int iL, iS;
+            TrueFlatToIJ(ft, iL, iS);
+            gPad->SetLeftMargin(0.18); gPad->SetBottomMargin(0.18);
+            gPad->SetRightMargin(0.04); gPad->SetTopMargin(0.10);
+            TLatex tex; tex.SetNDC(); tex.SetTextSize(0.09); tex.SetTextAlign(13);
+            std::string bl=std::format("{:.0f}-{:.0f}/{:.0f}-{:.0f} GeV",
+                trueLeadPtBins[iL],trueLeadPtBins[iL+1],trueSublPtBins[iS],trueSublPtBins[iS+1]);
+
+            hUnfBin[ft]->GetYaxis()->SetTitle("dwEEC/d#Delta#phi");
+            hUnfBin[ft]->GetYaxis()->SetTitleSize(0.09); hUnfBin[ft]->GetYaxis()->SetTitleOffset(0.9);
+            hUnfBin[ft]->GetYaxis()->SetLabelSize(0.08);
+            hUnfBin[ft]->GetXaxis()->SetTitle("#Delta#phi");
+            hUnfBin[ft]->GetXaxis()->SetTitleSize(0.09); hUnfBin[ft]->GetXaxis()->SetLabelSize(0.08);
+            hUnfBin[ft]->SetTitle("");
+            
+            StyleLine(hUnfBin[ft],kColUnfolded,kMarUnfolded);
+            StyleLine(hTruthBin[ft],kColTruth,kMarTruth);
+
+            hUnfBin[ft]->Draw("E");
+            hTruthBin[ft]->Draw("E SAME");
+
+            TLegend* lg=new TLegend(0.40,0.72,0.96,0.88);
+            lg->SetTextSize(0.07);
+            lg->AddEntry(hUnfBin[ft],"Unfolded","lp");
+            lg->AddEntry(hTruthBin[ft],"Truth (truth towers)","lp");
+            lg->Draw();
+
+            tex.DrawLatex(0.22,0.88,bl.c_str());
+
+            cBinByBin->SaveAs(std::format("{}/wEEC_singleBinBin-{}-{}-{}.png",plotDir,iL,iS,label).c_str());
+
+            delete cBinByBin;
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════
     //  Plot 2: ratio unfolded/truth  (wEEC_ratio)  — only if truth available
     // ════════════════════════════════════════════════════════════════════════
-    if (fResp) {
+    {
         std::vector<TH1D*> hRatioBin(nTrueFlat(), nullptr);
         for (int ft=0; ft<nTrueFlat(); ++ft) {
             if (hUnfBin[ft] && hTruthBin[ft])
@@ -539,6 +653,44 @@ void drawClosure(const char* outDir   = ".",
                  hRatioBin, hNull, hNull,
                  true, 0.5, 1.5,
                  "Unf/Truth", "", "");
+        DrawGrid("cRatioMasked",
+                 std::format("{}/wEEC_ratio_masked-{}.png",plotDir,label).c_str(),
+                 hRatioBin, hNull, hNull,
+                 true, 0.5, 1.5,
+                 "Unf/Truth", "", "", maskedBins);
+
+        for(int ft=0; ft<nTrueFlat(); ++ft) {
+            if(!hUnfBin[ft] || !hTruthBin[ft]) continue;
+
+            TCanvas *cRBinByBin = new TCanvas("cRBinByBin","",padW,padH);
+            
+            int iL, iS;
+            TrueFlatToIJ(ft, iL, iS);
+            gPad->SetLeftMargin(0.18); gPad->SetBottomMargin(0.18);
+            gPad->SetRightMargin(0.04); gPad->SetTopMargin(0.10);
+            TLatex tex; tex.SetNDC(); tex.SetTextSize(0.09); tex.SetTextAlign(13);
+            std::string bl=std::format("{:.0f}-{:.0f}/{:.0f}-{:.0f} GeV",
+                trueLeadPtBins[iL],trueLeadPtBins[iL+1],trueSublPtBins[iS],trueSublPtBins[iS+1]);
+
+            hRatioBin[ft]->GetYaxis()->SetRangeUser(0.5,1.5);
+            hRatioBin[ft]->GetYaxis()->SetTitle("Unf/Truth");
+            hRatioBin[ft]->GetYaxis()->SetTitleSize(0.09); hRatioBin[ft]->GetYaxis()->SetTitleOffset(0.9);
+            hRatioBin[ft]->GetYaxis()->SetLabelSize(0.08);
+            hRatioBin[ft]->GetXaxis()->SetTitle("#Delta#phi");
+            hRatioBin[ft]->GetXaxis()->SetTitleSize(0.09); hRatioBin[ft]->GetXaxis()->SetLabelSize(0.08);
+            hRatioBin[ft]->SetTitle("");
+            
+            StyleLine(hRatioBin[ft],kColUnfolded,kMarUnfolded);
+
+            hRatioBin[ft]->Draw("E");
+            DrawRefLine(hRatioBin[ft]);
+
+            tex.DrawLatex(0.22,0.88,bl.c_str());
+
+            cRBinByBin->SaveAs(std::format("{}/wEEC_ratio_singleBinBin-{}-{}-{}.png",plotDir,iL,iS,label).c_str());
+
+            delete cRBinByBin;
+        }
         for (int ft=0; ft<nTrueFlat(); ++ft) delete hRatioBin[ft];
     }
 
@@ -565,91 +717,164 @@ void drawClosure(const char* outDir   = ".",
                  false, yLo, yHi,
                  "Unfolded", "Truth (truth towers)",
                  !isData ? "Measured" : "");
+        DrawGrid("cMeasVsUnfMasked",
+                 std::format("{}/wEEC_measVsUnf_masked-{}.png",plotDir,label).c_str(),
+                 hUnfBin,
+                 hTruthBin,
+                 !isData ? hMeasBinTrue : hNull,
+                 false, yLo, yHi,
+                 "Unfolded", "Truth (truth towers)",
+                 !isData ? "Measured" : "", maskedBins);
     }
 
     // ════════════════════════════════════════════════════════════════════════
     //  1D closure projections: lead pT, subl pT, pair weight
     //  wEEC_projections-{label}.png
     // ════════════════════════════════════════════════════════════════════════
+    //  wEEC projections: one image per ΔΦ bin
+    //  For each ΔΦ bin k, project hWEEC3D_unfolded_{k} and hWEEC3D_truth_{k}
+    //  onto lead pT, subl pT, and pair weight by summing the flat3D bins.
+    //  All (iL,iS) truth bins are included — no IsRecoAccessible gate — so
+    //  the full closure of each independently unfolded ΔΦ bin is visible.
+    //  Saved to plotDir/wEEC_projections_{k}-{label}.png
+    // ════════════════════════════════════════════════════════════════════════
     if (isClosure && fResp) {
-        TH1D* hUnfLead = new TH1D("hUnfLead","",nTrueLead,trueLeadPtBins.data());
-        TH1D* hUnfSubl = new TH1D("hUnfSubl","",nTrueSubl,trueSublPtBins.data());
-        TH1D* hUnfPW   = new TH1D("hUnfPW",  "",nPairWeight,pairWeightBins.data());
-        TH1D* hTruLead = new TH1D("hTruLead","",nTrueLead,trueLeadPtBins.data());
-        TH1D* hTruSubl = new TH1D("hTruSubl","",nTrueSubl,trueSublPtBins.data());
-        TH1D* hTruPW   = new TH1D("hTruPW",  "",nPairWeight,pairWeightBins.data());
-        for (TH1D* h:{hUnfLead,hUnfSubl,hUnfPW,hTruLead,hTruSubl,hTruPW})
-            { h->SetDirectory(0); h->Sumw2(); }
-
-        // Read unfolded 3D histograms directly from already-open fWEEC
         for (int k=0; k<nDphi; ++k) {
-                TH1D* hU=(TH1D*)fWEEC->Get(std::format("hWEEC3D_unfolded_{}",k).c_str());
-                TH1D* hT=(TH1D*)fResp->Get(std::format("hWEEC3D_truth_{}",k).c_str());
-                for (int ft=0; ft<nTrueFlat(); ++ft)
-                for (int iPw=0; iPw<nPairWeight; ++iPw) {
-                    int iL, iS; TrueFlatToIJ(ft, iL, iS);
-                    if (!IsRecoAccessible(iL, iS)) continue;
-                    int    iF   = ft * nPairWeight + iPw;
-                    double den  = (usePWMean && hPWDen[k]) ? hPWDen[k]->GetBinContent(iF+1) : 0.0;
-                    double wMean = (den > 0)
-                        ? hPWNum[k]->GetBinContent(iF+1) / den
-                        : 0.5*(pairWeightBins[iPw]+pairWeightBins[iPw+1]);
-                    double lCen=0.5*(trueLeadPtBins[iL]+trueLeadPtBins[iL+1]);
-                    double sCen=0.5*(trueSublPtBins[iS]+trueSublPtBins[iS+1]);
-                    if (hU) {
-                        double v=hU->GetBinContent(iF+1), e=hU->GetBinError(iF+1);
-                        hUnfLead->Fill(lCen,v);
-                        hUnfSubl->Fill(sCen,v);
-                        hUnfPW  ->Fill(wMean,v);
-                        int bL=hUnfLead->FindBin(lCen);
-                        int bS=hUnfSubl->FindBin(sCen);
-                        int bP=hUnfPW  ->FindBin(wMean);
-                        hUnfLead->SetBinError(bL,std::hypot(hUnfLead->GetBinError(bL),e));
-                        hUnfSubl->SetBinError(bS,std::hypot(hUnfSubl->GetBinError(bS),e));
-                        hUnfPW  ->SetBinError(bP,std::hypot(hUnfPW  ->GetBinError(bP),e));
-                    }
-                    if (hT) {
-                        double v=hT->GetBinContent(iF+1);
-                        hTruLead->Fill(lCen,v);
-                        hTruSubl->Fill(sCen,v);
-                        hTruPW  ->Fill(wMean,v);
-                    }
-                }
-        }
+            TH1D* hU3D = (TH1D*)fWEEC->Get(std::format("hWEEC3D_unfolded_{}",k).c_str());
+            TH1D* hT3D = (TH1D*)fResp->Get(truth3DName(k).c_str());
+            if (!hU3D || !hT3D) continue;
 
-        struct ProjSpec { TH1D* hU; TH1D* hT; const char* xL; bool logx; };
-        std::vector<ProjSpec> projs = {
-            {hUnfLead,hTruLead,"Lead p_{T} (GeV)",false},
-            {hUnfSubl,hTruSubl,"Subl p_{T} (GeV)",false},
-            {hUnfPW,  hTruPW,  "Pair weight",      true }
-        };
-        TCanvas* cProj=new TCanvas("cProj","wEEC projections",1800,600);
-        cProj->Divide(3,1);
-        for (int p=0; p<3; ++p) {
-            auto [hU,hT,xL,logx]=projs[p];
-            StyleLine(hT,kColTruth,kMarTruth);
-            StyleLine(hU,kColUnfolded,kMarUnfolded);
-            auto [pTop,pBot]=MakeRatioPads(cProj->cd(p+1));
-            pTop->cd(); pTop->SetLogy(); if (logx) pTop->SetLogx();
-            double ymax=std::max(hT->GetMaximum(),hU->GetMaximum());
-            double ymin=1e30;
-            for (int b=1;b<=hT->GetNbinsX();++b)
-                if (hT->GetBinContent(b)>0) ymin=std::min(ymin,hT->GetBinContent(b));
-            if (ymin>ymax) ymin=ymax*1e-4;
-            hT->GetYaxis()->SetRangeUser(ymin*0.3,ymax*3.0);
-            hT->GetXaxis()->SetLabelSize(0);
-            hT->GetYaxis()->SetTitle("Pairs (arb.)");
-            hT->Draw("E"); hU->Draw("E SAME");
-            TLegend* lg=new TLegend(0.55,0.72,0.88,0.88);
-            lg->AddEntry(hT,"Truth","lp"); lg->AddEntry(hU,"Unfolded","lp"); lg->Draw();
-            pBot->cd(); if (logx) pBot->SetLogx();
-            TH1D* hR=MakeRatioHist(hU,hT,std::format("hProjR_{}",p).c_str());
-            StyleRatio(hR,xL); hR->Draw("E"); DrawRefLine(hR);
+            TH1D* hUnfLead = new TH1D(std::format("hUnfLead_{}",k).c_str(),"",
+                nTrueLead,trueLeadPtBins.data());
+            TH1D* hUnfSubl = new TH1D(std::format("hUnfSubl_{}",k).c_str(),"",
+                nTrueSubl,trueSublPtBins.data());
+            TH1D* hUnfPW   = new TH1D(std::format("hUnfPW_{}",k).c_str(),"",
+                nPairWeight,pairWeightBins.data());
+            TH1D* hTruLead = new TH1D(std::format("hTruLead_{}",k).c_str(),"",
+                nTrueLead,trueLeadPtBins.data());
+            TH1D* hTruSubl = new TH1D(std::format("hTruSubl_{}",k).c_str(),"",
+                nTrueSubl,trueSublPtBins.data());
+            TH1D* hTruPW   = new TH1D(std::format("hTruPW_{}",k).c_str(),"",
+                nPairWeight,pairWeightBins.data());
+            for (TH1D* h:{hUnfLead,hUnfSubl,hUnfPW,hTruLead,hTruSubl,hTruPW})
+                { h->SetDirectory(0); h->Sumw2(); }
+
+            // Project flat3D bins onto lead pT, subl pT, and pair weight axes.
+            // For the unfolded histograms, use the full covariance matrix so
+            // off-diagonal correlations are included when bins are summed.
+            // Truth bins use independent Sumw2 errors — quadrature is correct there.
+
+            // First pass: accumulate values and covariance sums for unfolded.
+            // For each projected bin B, Var(sum_B x_i) = sum_{i,j in B} C_{ij}.
+            // We accumulate the variance incrementally as we visit each (i,j) pair.
+            // Map from projected histogram bin index → variance accumulator.
+            std::map<int,double> varL, varS, varP;
+
+            for (int ft=0; ft<nTrueFlat(); ++ft)
+            for (int iPw=0; iPw<nPairWeight; ++iPw) {
+                int iL, iS; TrueFlatToIJ(ft, iL, iS);
+                if (projAccessibleOnly && !IsRecoAccessible(iL, iS)) continue;
+                int iF = ft * nPairWeight + iPw;
+                double lCen = 0.5*(trueLeadPtBins[iL]+trueLeadPtBins[iL+1]);
+                double sCen = 0.5*(trueSublPtBins[iS]+trueSublPtBins[iS+1]);
+                double den   = (usePWMean && hPWDen[k]) ? hPWDen[k]->GetBinContent(iF+1) : 0.0;
+                double wMean = (den > 0)
+                    ? hPWNum[k]->GetBinContent(iF+1) / den
+                    : 0.5*(pairWeightBins[iPw]+pairWeightBins[iPw+1]);
+
+                int bL = hUnfLead->FindBin(lCen);
+                int bS = hUnfSubl->FindBin(sCen);
+                int bP = hUnfPW  ->FindBin(wMean);
+
+                // Accumulate values (weights=1 for lead/subl, wMean for pair weight)
+                double uV = hU3D->GetBinContent(iF+1);
+                hUnfLead->AddBinContent(bL, uV);
+                hUnfSubl->AddBinContent(bS, uV);
+                hUnfPW  ->AddBinContent(bP, uV);
+
+                // Truth: independent bins, quadrature sum is correct
+                double tV = hT3D->GetBinContent(iF+1), tE = hT3D->GetBinError(iF+1);
+                double tBLE = hTruLead->GetBinError(bL);
+                double tBSE = hTruSubl->GetBinError(bS);
+                double tBPE = hTruPW  ->GetBinError(bP);
+                hTruLead->AddBinContent(bL, tV);
+                hTruSubl->AddBinContent(bS, tV);
+                hTruPW  ->AddBinContent(bP, tV);
+                hTruLead->SetBinError(bL, std::hypot(tBLE, tE));
+                hTruSubl->SetBinError(bS, std::hypot(tBSE, tE));
+                hTruPW  ->SetBinError(bP, std::hypot(tBPE, tE));
+
+                // Unfolded variance: sum C_{ij} over all j in the same projected bin.
+                // We do this as a second inner loop over j.
+                for (int ft2=0; ft2<nTrueFlat(); ++ft2)
+                for (int jPw=0; jPw<nPairWeight; ++jPw) {
+                    int jL, jS; TrueFlatToIJ(ft2, jL, jS);
+                    if (projAccessibleOnly && !IsRecoAccessible(jL, jS)) continue;
+                    int jF = ft2 * nPairWeight + jPw;
+                    double jlCen = 0.5*(trueLeadPtBins[jL]+trueLeadPtBins[jL+1]);
+                    double jsCen = 0.5*(trueSublPtBins[jS]+trueSublPtBins[jS+1]);
+                    double jden   = (usePWMean && hPWDen[k]) ? hPWDen[k]->GetBinContent(jF+1) : 0.0;
+                    double jwMean = (jden > 0)
+                        ? hPWNum[k]->GetBinContent(jF+1) / jden
+                        : 0.5*(pairWeightBins[jPw]+pairWeightBins[jPw+1]);
+                    int jbL = hUnfLead->FindBin(jlCen);
+                    int jbS = hUnfSubl->FindBin(jsCen);
+                    int jbP = hUnfPW  ->FindBin(jwMean);
+
+                    double cij = hCov[k] ? (*hCov[k])(iF, jF)
+                                         : (iF==jF ? std::pow(hU3D->GetBinError(iF+1),2) : 0.0);
+
+                    // Only accumulate if both bins project to the same output bin
+                    if (bL == jbL) varL[bL] += cij;
+                    if (bS == jbS) varS[bS] += cij;
+                    if (bP == jbP) varP[bP] += cij;
+                }
+            }
+            // Set unfolded errors from accumulated variances
+            for (auto& [b, v] : varL) hUnfLead->SetBinError(b, std::sqrt(std::max(v,0.0)));
+            for (auto& [b, v] : varS) hUnfSubl->SetBinError(b, std::sqrt(std::max(v,0.0)));
+            for (auto& [b, v] : varP) hUnfPW  ->SetBinError(b, std::sqrt(std::max(v,0.0)));
+
+            struct ProjSpec { TH1D* hU; TH1D* hT; const char* xL; bool logx; };
+            std::vector<ProjSpec> projs = {
+                {hUnfLead,hTruLead,"Lead p_{T} (GeV)",false},
+                {hUnfSubl,hTruSubl,"Subl p_{T} (GeV)",false},
+                {hUnfPW,  hTruPW,  "Pair weight",      true }
+            };
+            std::string dphiStr = std::format("#Delta#phi bin {}: [{:.2f},{:.2f})",
+                k, dPhiBins[k], dPhiBins[k+1]);
+            TCanvas* cProj = new TCanvas(
+                std::format("cProj_{}",k).c_str(), "", 1800, 600);
+            cProj->Divide(3,1);
+            for (int p=0; p<3; ++p) {
+                auto [hU,hT,xL,logx] = projs[p];
+                StyleLine(hT,kColTruth,kMarTruth);
+                StyleLine(hU,kColUnfolded,kMarUnfolded);
+                auto [pTop,pBot] = MakeRatioPads(cProj->cd(p+1));
+                pTop->cd(); pTop->SetLogy(); if (logx) pTop->SetLogx();
+                double ymax = std::max(hT->GetMaximum(), hU->GetMaximum());
+                double ymin = 1e30;
+                for (int b=1; b<=hT->GetNbinsX(); ++b)
+                    if (hT->GetBinContent(b)>0) ymin=std::min(ymin,hT->GetBinContent(b));
+                if (ymin>ymax) ymin=ymax*1e-4;
+                hT->GetYaxis()->SetRangeUser(ymin*0.3, ymax*3.0);
+                hT->GetXaxis()->SetLabelSize(0);
+                hT->GetYaxis()->SetTitle("Pairs (arb.)");
+                hT->SetTitle(dphiStr.c_str());
+                hT->Draw("E"); hU->Draw("E SAME");
+                TLegend* lg = new TLegend(0.55,0.72,0.88,0.88);
+                lg->AddEntry(hT,"Truth","lp"); lg->AddEntry(hU,"Unfolded","lp");
+                lg->Draw();
+                pBot->cd(); if (logx) pBot->SetLogx();
+                TH1D* hR = MakeRatioHist(hU,hT,std::format("hProjR_{}_{}",k,p).c_str());
+                StyleRatio(hR,xL); hR->Draw("E"); DrawRefLine(hR);
+            }
+            cProj->SaveAs(std::format("{}/wEEC_projections_{}-{}.png",
+                plotDir, k, label).c_str());
+            cProj->Close(); delete cProj;
+            for (TH1D* h:{hUnfLead,hUnfSubl,hUnfPW,hTruLead,hTruSubl,hTruPW})
+                delete h;
         }
-        cProj->SaveAs(std::format("{}/wEEC_projections-{}.png",plotDir,label).c_str());
-        cProj->Close(); delete cProj;
-        delete hUnfLead; delete hUnfSubl; delete hUnfPW;
-        delete hTruLead; delete hTruSubl; delete hTruPW;
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -754,56 +979,112 @@ void drawClosure(const char* outDir   = ".",
         cPWGrid->Close(); delete cPWGrid;
 
         // ── Plot 2: PDF — one page per ΔΦ bin, nTrueLead×nTrueSubl grid ──
+            
+        TH2D *hFrameA = new TH2D("hFrameA","",1,4e-8,2.0,1,1e-3,1e12);
+        TH2D *hFrameB = new TH2D("hFrameB","",1,4e-8,2.0,1,0.5,1.5);        
         std::string pdfName=std::format("{}/pairWeight_closure_perBin-{}.pdf",plotDir,label);
         for (int k=0; k<nDphi; ++k) {
             TCanvas* cPage=new TCanvas(
                 std::format("cPWPage_{}",k).c_str(),"",nTrueLead*220,nTrueSubl*220);
+
             cPage->Divide(nTrueLead,nTrueSubl,0,0);
             for (int iS=0; iS<nTrueSubl; ++iS)
             for (int iL=0; iL<nTrueLead; ++iL) {
                 int ft=TrueFlatIndex(iL,iS);
-                auto [pTop,pBot]=MakeRatioPads(cPage->cd(iS*nTrueLead+iL+1));
+                int cell=iS*nTrueLead+iL;
+                TVirtualPad* parent=cPage->cd(cell+1);
                 std::string bl=std::format("{:.0f}-{:.0f}/{:.0f}-{:.0f} GeV",
                     trueLeadPtBins[iL],trueLeadPtBins[iL+1],
                     trueSublPtBins[iS],trueSublPtBins[iS+1]);
-                // Gray out kinematically forbidden bins
+
+                // Gray out kinematically forbidden bins — TRatioPlot needs
+                // valid histograms so handle these before attempting to build it.
                 if (ft < 0) {
-                    gPad->SetFillColor(kGray);
+                    parent->SetFillColor(kGray);
+                    parent->cd();
                     TLatex tx; tx.SetNDC(); tx.SetTextSize(0.08);
                     tx.DrawLatex(0.15,0.85,bl.c_str()); continue;
                 }
+
                 TH1D* hU=hPWUnfBin[k*nTrueFlat()+ft];
                 TH1D* hT=hPWTruBin[k*nTrueFlat()+ft];
-                StyleLine(hT,kColTruth,kMarTruth);
-                StyleLine(hU,kColUnfolded,kMarUnfolded);
-                // Draw all bins, even those outside the reporting region —
-                // gray only kinematically forbidden bins (ft < 0, handled above)
-                // and bins with no truth entries (empty histogram).
+
                 if (hT->Integral()==0) {
-                    gPad->SetFillColor(kGray+1);  // darker gray = truth-only / empty
+                    parent->SetFillColor(kGray+1);
+                    parent->cd();
                     TLatex tx; tx.SetNDC(); tx.SetTextSize(0.08);
                     tx.DrawLatex(0.15,0.85,bl.c_str()); continue;
                 }
-                pTop->cd(); pTop->SetLogy(); pTop->SetLogx();
-                double ymax=std::max(hT->GetMaximum(),hU->GetMaximum());
+
+                // Clone so each pad owns its histograms independently
+                TH1D* hUc=(TH1D*)hU->Clone(std::format("hUc_{}_{}",k,ft).c_str());
+                TH1D* hTc=(TH1D*)hT->Clone(std::format("hTc_{}_{}",k,ft).c_str());
+                StyleLine(hTc,kColTruth,kMarTruth);
+                StyleLine(hUc,kColUnfolded,kMarUnfolded);
+
+                double ymax=std::max(hTc->GetMaximum(),hUc->GetMaximum());
                 double ymin=1e30;
-                for (int b=1;b<=hT->GetNbinsX();++b)
-                    if (hT->GetBinContent(b)>0) ymin=std::min(ymin,hT->GetBinContent(b));
+                for (int b=1;b<=hTc->GetNbinsX();++b)
+                    if (hTc->GetBinContent(b)>0) ymin=std::min(ymin,hTc->GetBinContent(b));
                 if (ymin>ymax) ymin=ymax*1e-4;
-                hT->GetYaxis()->SetRangeUser(ymin*0.3,ymax*3.0);
-                hT->GetXaxis()->SetLabelSize(0);
-                hT->GetYaxis()->SetTitleSize(0.08); hT->GetYaxis()->SetTitle("Pairs");
-                hT->SetTitle(""); hT->Draw("E"); hU->Draw("E SAME");
+
+                // Manual split pads with unique names — TRatioPlot is not used
+                // because the first pair weight bin starts at 0, which makes
+                // log-x impossible for TRatioPlot internally.
+                // Both pads use the same histogram bin edges so axes align exactly.
+                parent->cd();
+                TPad* pTop2 = new TPad(
+                    std::format("pTop2_{}_{}_{}", k, iL, iS).c_str(), "",
+                    0, 0.30, 1, 1.0);
+                TPad* pBot2 = new TPad(
+                    std::format("pBot2_{}_{}_{}", k, iL, iS).c_str(), "",
+                    0, 0.00, 1, 0.30);
+                pTop2->SetBottomMargin(0.02);
+                pTop2->SetTopMargin(0.05);
+                pBot2->SetTopMargin(0.02);
+                pBot2->SetBottomMargin(0.38);
+                pTop2->Draw(); pBot2->Draw();
+
+                pTop2->cd();
+                pTop2->SetLogy();
+                pTop2->SetLogx();
+                hFrameA->GetYaxis()->SetRangeUser(ymin*0.3, ymax*3.0);
+                hFrameA->GetYaxis()->SetTitleSize(0.08);
+                hFrameA->GetYaxis()->SetLabelSize(0.07);
+                hFrameA->GetYaxis()->SetTitle("Pairs");
+                hFrameA->GetXaxis()->SetLabelSize(0);
+                hFrameA->SetTitle("");
+                hFrameA->Draw();
+                hTc->Draw("pSAME"); hUc->Draw("p SAME");
                 TLatex tx; tx.SetNDC(); tx.SetTextSize(0.08); tx.SetTextAlign(13);
-                tx.DrawLatex(0.15,0.88,bl.c_str());
-                pBot->cd(); pBot->SetLogx();
-                TH1D* hR=MakeRatioHist(hU,hT,std::format("hPWBinR_{}_{}",k,ft).c_str());
-                StyleRatio(hR,"Pair weight"); hR->Draw("E"); DrawRefLine(hR);
+                tx.DrawLatex(0.15, 0.88, bl.c_str());
+
+                pBot2->cd();
+                pBot2->SetLogx();
+                TH1D* hR = MakeRatioHist(hUc, hTc,
+                    std::format("hPWBinR_{}_{}",k,ft).c_str());
+                hR->SetDirectory(0);
+                StyleLine(hR, kColUnfolded, kMarUnfolded);
+                hFrameB->GetYaxis()->SetRangeUser(0.8, 1.2);
+                hFrameB->GetYaxis()->SetTitle("Unf/Truth");
+                hFrameB->GetYaxis()->SetTitleSize(0.12);
+                hFrameB->GetYaxis()->SetTitleOffset(0.38);
+                hFrameB->GetYaxis()->SetLabelSize(0.10);
+                hFrameB->GetYaxis()->SetNdivisions(504);
+                hFrameB->GetXaxis()->SetTitle("Pair weight bin");
+                hFrameB->GetXaxis()->SetTitleSize(0.12);
+                hFrameB->GetXaxis()->SetLabelSize(0.10);
+                hFrameB->SetTitle("");
+                hFrameB->Draw();
+                hR->Draw("pSAME");
+                DrawRefLine(hR);
+                // Do not delete hR — ROOT needs it alive until SaveAs repaints
             }
             cPage->cd();
             TLatex ct; ct.SetNDC(); ct.SetTextSize(0.015); ct.SetTextAlign(22);
             ct.DrawLatex(0.5,0.002,std::format("#Delta#phi: {:.2f}-{:.2f} (bin {})",
                 dPhiBins[k],dPhiBins[k+1],k).c_str());
+            cPage->Update();  // flush all TRatioPlot pads before saving
             std::string pageOpt=(k==0)?(pdfName+"("):((k==nDphi-1)?(pdfName+")"):pdfName);
             cPage->SaveAs(pageOpt.c_str());
             cPage->Close(); delete cPage;
@@ -939,10 +1220,11 @@ void drawClosure(const char* outDir   = ".",
             cRespTrimmed->SaveAs(std::format("{}/respMatrixTrimmed_full3D-{}.pdf",
                                     plotDir, label).c_str());
         }
-        
+
         // ── Cleanup ───────────────────────────────────────────────────────────
         fWEEC->Close(); delete fWEEC;
 
+        /*
         // ── dijet pT response: sum over all ΔΦ and pair weight bins ──────
         TH2D* hJetResp = new TH2D("hJetResp",
             "Dijet pT response (from wEEC resp, marginalized);"
@@ -997,6 +1279,25 @@ void drawClosure(const char* outDir   = ".",
                                 plotDir,label).c_str());
         cJR->Close(); delete cJR;
         delete hJetResp;
+        */
+
+        RooUnfoldResponse *jetResp = (RooUnfoldResponse*)fResp->Get("response_jet_pT");
+        TH2D *hJetResp = (TH2D*)jetResp->Hresponse();
+        
+        TCanvas* cJR = new TCanvas("cJR","Dijet pT response",800,700);
+        cJR->cd(); gPad->SetLogz();
+        gPad->SetLeftMargin(0.12); gPad->SetBottomMargin(0.12);
+        gPad->SetRightMargin(0.15); gPad->SetTopMargin(0.08);
+        double jrMax = hJetResp->GetMaximum();
+        if (jrMax > 0) hJetResp->GetZaxis()->SetRangeUser(jrMax*1e-5, jrMax);
+        hJetResp->GetXaxis()->SetTitle("Reco flat dijet pT bin");
+        hJetResp->GetYaxis()->SetTitle("Truth flat dijet pT bin");
+        hJetResp->Draw("COLZ");
+        cJR->SaveAs(std::format("{}/respMatrix_dijetPt-{}.png",
+                                plotDir,label).c_str());
+        cJR->Close(); delete cJR;
+        delete hJetResp;
+        delete jetResp;
 
         fResp->Close(); delete fResp;
     }
