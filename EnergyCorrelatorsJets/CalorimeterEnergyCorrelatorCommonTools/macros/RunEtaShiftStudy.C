@@ -31,14 +31,14 @@
 #include <jetbackground/TimingCut.h>
 
 #include <jetbackground/RetowerCEMC.h>
-#include <etashiftstudy/EtaShiftStudy.h>
+#include <etashiftqa/EtaShiftStudy.h>
 
 R__LOAD_LIBRARY(libfun4all.so);
 R__LOAD_LIBRARY(libfun4allraw.so);
 R__LOAD_LIBRARY(libcalo_io.so);
 R__LOAD_LIBRARY(libffamodules.so);
 R__LOAD_LIBRARY(libjetbase.so);
-R__LOAD_LIBRARY(libjetbackgroud.so);
+R__LOAD_LIBRARY(libjetbackground.so);
 R__LOAD_LIBRARY(libg4dst.so);
 R__LOAD_LIBRARY(libEtaShiftStudy.so);
 
@@ -60,7 +60,7 @@ void RunEtaShiftStudy(std::string caloFile, std::string globalFile, std::string 
        	Fun4AllInputManager *inTruth = new Fun4AllDstInputManager("InputManagerTruth");
        	if(n_files > 1) 
        	{
-	       	std::ifstream ifs(caloDSTlist);
+	       	std::ifstream ifs(caloFile);
 	       	std::string filepath;
 		std::getline(ifs,filepath);
 		std::pair<int,int> runseg = Fun4AllUtils::GetRunSegment(filepath);
@@ -71,12 +71,20 @@ void RunEtaShiftStudy(std::string caloFile, std::string globalFile, std::string 
 		inGlobal->AddListFile(globalFile);
 		inJet->AddListFile(jetFile);
 		if( doSim )	
-			inTruth->addListFile(truthFile);
+			inTruth->AddListFile(truthFile);
 
 
 	}
 	else
 	{
+		std::pair<int, int> runseg = Fun4AllUtils::GetRunSegment(caloFile);
+		runnumber = runseg.first;
+		seg = runseg.second;
+		inCalo->AddFile(caloFile);
+		inGlobal->AddFile(globalFile);
+		inJet->AddFile(jetFile);
+		if( doSim )	
+			inTruth->AddFile(truthFile);
 	}
 	se->registerInputManager(inCalo);
 	se->registerInputManager(inGlobal);
@@ -93,7 +101,7 @@ void RunEtaShiftStudy(std::string caloFile, std::string globalFile, std::string 
 
 	CDBInterface::instance()->Verbosity(0);
 	Process_Calo_Calib();
-
+	std::cout<<__LINE__<<std::endl;
 	RawClusterBuilderTopo* ClusterBuilder = new RawClusterBuilderTopo("HcalRawClusterBuilderTopo");
 	ClusterBuilder->Verbosity(0);
 	ClusterBuilder->set_nodename("TOPOCLUSTER_ALLCALO");
@@ -108,16 +116,21 @@ void RunEtaShiftStudy(std::string caloFile, std::string globalFile, std::string 
 	ClusterBuilder->set_use_only_good_towers(true);
 	ClusterBuilder->set_absE(true);
 	se->registerSubsystem(ClusterBuilder);
+	std::cout<<__LINE__<<std::endl;
 
 	RetowerCEMC* rtcemc = new RetowerCEMC("RetowerCEMV");
 	rtcemc->Verbosity(0);
 	rtcemc->set_towerinfo(true);
 	rtcemc->set_frac_cut(0.5);
 	se->registerSubsystem(rtcemc);
+	std::cout<<__LINE__<<std::endl;
 	
 	std::string outfile=outDir+"/EtaShift"+generatorLabel+"-"+std::to_string(runnumber)+"_"+std::to_string(seg)+".root";
+	std::cout<<__LINE__<<std::endl;
 	EtaShiftStudy* ess = new EtaShiftStudy(outfile);
+	std::cout<<__LINE__<<std::endl;
 	se->registerSubsystem(ess);
+	std::cout<<__LINE__<<std::endl;
 
 	se->run(0);
 	se->End();
