@@ -13,7 +13,8 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  EtaShiftStudy.h
+  EtaShiftStudy.h \
+  BuildMetaTowers.h
 
 lib_LTLIBRARIES = \
   libEtaShiftStudy.la
