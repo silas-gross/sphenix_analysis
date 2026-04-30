@@ -8,7 +8,7 @@ bool printMarkdownTables = true;
 bool printLatexTables = true;
 
 //Custom binning scheme for LF analysis
-float lower_bin_bounds[] = {0.5, 0.8, 1.1, 1.4, 1.8, 2.2, 3, 4};
+float lower_bin_bounds[] = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.4, 1.8, 2.2, 3, 4};
 const unsigned int n_variable_bins = sizeof(lower_bin_bounds)/sizeof(lower_bin_bounds[0]) - 1; 
 
 template <typename T>
@@ -51,7 +51,7 @@ TH1F makeHisto(int nBins, float* min, string type, string xAxisTitle, string uni
 //What branches to read into the analysis
 struct variableMap
 {
-  float floats[7];
+  float floats[11];
   int ints[2];
 
   //any and variant are a pain here with TBranch 
@@ -63,6 +63,10 @@ struct variableMap
     {"true_mother_phi", floats[4]},
     {"true_primary_vertex_z", floats[5]},
     {"true_secondary_vertex_z", floats[6]},
+    {"reco_track_1_pT", floats[7]},
+    {"reco_track_2_pT", floats[8]},
+    {"true_track_1_pT", floats[9]},
+    {"true_track_2_pT", floats[10]},
   };
     
   map<string, int> int_vars{
@@ -156,8 +160,8 @@ void savePlots(T myPlot, string plotName, bool logY = false, float yMin = 0, flo
 
 void processData(string type = "Kshort2pipi")
 {
-  string fileName = type == "Kshort2pipi" ? "files/outputHFTrackEff_Kshort2pipi_CR_2_mode_pTref_3p0_extra_high_pT_points.root"
-                                          : "files/outputHFTrackEff_Lambda2ppi_CR_2_mode_pTref_3p0_extra_high_pT_points.root";
+  string fileName = type == "Kshort2pipi" ? "files/outputHFTrackEff_Kshort2pipi_20260423_noDecVolLim_fromTony.root"
+                                          : "files/outputHFTrackEff_Lambda2ppi_20260423_noDecVolLim_fromTony.root";
   TFile *file = new TFile(fileName.c_str());
   TTree* data = (TTree*)file->Get("HFTrackEfficiency");
 
@@ -192,6 +196,8 @@ void processData(string type = "Kshort2pipi")
 
     data->GetEntry(l);
 
+    if (min(inputMap.float_vars["true_track_1_pT"], inputMap.float_vars["true_track_2_pT"]) < 0.25) continue;
+
     int sign = inputMap.float_vars["true_secondary_vertex_z"] > inputMap.float_vars["true_primary_vertex_z"] ? 1 : -1;
     float pz = sqrt(pow(inputMap.float_vars["true_mother_p"], 2) - pow(inputMap.float_vars["true_mother_pT"], 2));
     float E = sqrt(pow(inputMap.float_vars["true_mother_p"], 2) + pow(inputMap.float_vars["true_mother_mass"], 2));
@@ -214,7 +220,7 @@ void processData(string type = "Kshort2pipi")
       phi.Lambda0_all.Fill(inputMap.float_vars["true_mother_phi"]);
     }
 
-    bool accepted = min(inputMap.int_vars["reco_track_1_silicon_seeds"], inputMap.int_vars["reco_track_2_silicon_seeds"]) > 0;
+    bool accepted = min(inputMap.int_vars["reco_track_1_silicon_seeds"], inputMap.int_vars["reco_track_2_silicon_seeds"]) > 0 ? true : false;
 
     if (accepted)
     {
@@ -233,6 +239,7 @@ void processData(string type = "Kshort2pipi")
         phi.Lambda0_inGeo.Fill(inputMap.float_vars["true_mother_phi"]);
       }
     }
+
   }
 
   cout << "[";
@@ -248,7 +255,7 @@ void processData(string type = "Kshort2pipi")
   cout<<endl;
 }
 
-void makeRatiosAndSave(histos &histoSet, string trailer)
+void makeRatios(histos &histoSet, string trailer)
 {
   string K_S0_saveName = "KS0_geometric_acceptance_ratio_" + trailer;
   string Lambda0_saveName = "Lambda0_geometric_acceptance_ratio_" + trailer;
@@ -263,8 +270,6 @@ void makeRatiosAndSave(histos &histoSet, string trailer)
 
   histoSet.Lambda0_inGeo.Divide(&histoSet.Lambda0_all);
   histoSet.K_S0_inGeo.Divide(&histoSet.K_S0_all);
-  savePlots(histoSet.K_S0_inGeo, K_S0_saveName.c_str(), false, 0, 0.035);
-  savePlots(histoSet.Lambda0_inGeo, Lambda0_saveName.c_str(), false, 0, 0.035);
 
   histoSet.ratio = histoSet.Lambda0_inGeo;
   histoSet.ratio.Divide(&histoSet.K_S0_inGeo);
@@ -272,8 +277,14 @@ void makeRatiosAndSave(histos &histoSet, string trailer)
   histoSet.inv_ratio = histoSet.K_S0_inGeo;
   histoSet.inv_ratio.Divide(&histoSet.Lambda0_inGeo);
 
-  savePlots(histoSet.ratio, ratio_saveName.c_str(), false, 0, 1);
-  savePlots(histoSet.inv_ratio, inv_ratio_saveName.c_str(), false, 0, 3);
+  if (saveFinalPlots)
+  {
+    savePlots(histoSet.K_S0_inGeo, K_S0_saveName.c_str(), false, 0, 0.070);
+    savePlots(histoSet.Lambda0_inGeo, Lambda0_saveName.c_str(), false, 0, 0.040);
+
+    savePlots(histoSet.ratio, ratio_saveName.c_str(), false, 0, 1);
+    savePlots(histoSet.inv_ratio, inv_ratio_saveName.c_str(), false, 0, 3);
+  }
 }
 
 void makeTable(string var, histos theseHistos, string type = "Markdown")
@@ -322,13 +333,10 @@ void calcGeomAccept()
   cout << "Processing Lambda0 data" << endl;
   processData("Lambda02ppi");
 
-  if (saveFinalPlots)
-  {
-    makeRatiosAndSave(pT, "pT");
-    makeRatiosAndSave(eta, "eta");
-    makeRatiosAndSave(phi, "phi");
-    makeRatiosAndSave(rap, "rap");
-  }
+  makeRatios(pT, "pT");
+  makeRatios(eta, "eta");
+  makeRatios(phi, "phi");
+  makeRatios(rap, "rap");
 
   if (printMarkdownTables)
   {
