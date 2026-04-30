@@ -42,7 +42,7 @@
 //  hWEEC_meas_{fr}          — flat 2D, measured reco pairs per reco dijet pT bin
 //  response_wEEC_{ft}       — old per-ft flat-2D response (kept for reference)
 // ─────────────────────────────────────────────────────────────────────────────
-void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
+void fillResponse(int jetSample = 20, int seg = 0, const char* Herwig = "", const char* outDir = ".",
                   Mode mode = Mode::kFull, float towCut = 0.25)
 {
     const bool halfClosure = (mode == Mode::kHalf);
@@ -74,7 +74,7 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
         // ── kVtx fast path ────────────────────────────────────────────────
         // Open the MC file and loop over events, filling hVtxMC with the
         // cross-section weight.  No tower maps, no jet matching, no pair loops.
-        TFile* simFile = new TFile(SimFilePath(jetSample, seg).c_str(), "READ");
+        TFile* simFile = new TFile(SimFilePath(jetSample, seg, Herwig).c_str(), "READ");
         if (!simFile || simFile->IsZombie()) {
             std::cerr << "Cannot open sim file\n";
             fOut->Close(); return;
@@ -268,9 +268,9 @@ void fillResponse(int jetSample = 20, int seg = 0, const char* outDir = ".",
     hWEEC_particle  ->Sumw2();
     hWEEC_truthTower->Sumw2();
 
-    TFile* simFile = new TFile(SimFilePath(jetSample, seg).c_str(), "READ");
+    TFile* simFile = new TFile(SimFilePath(jetSample, seg, Herwig).c_str(), "READ");
     if (!simFile || simFile->IsZombie()) {
-        std::cerr << "Cannot open " << SimFilePath(jetSample, seg) << "\n";
+        std::cerr << "Cannot open " << SimFilePath(jetSample, seg, Herwig) << "\n";
         if (simFile) delete simFile; return;
     }
     TTree* T = (TTree*)simFile->Get("T");

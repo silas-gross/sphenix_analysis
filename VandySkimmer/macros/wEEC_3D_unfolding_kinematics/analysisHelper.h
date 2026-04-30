@@ -401,12 +401,12 @@ inline bool GetGeoMatch(
 // ═════════════════════════════════════════════════════════════════════════════
 //  Input file path
 // ═════════════════════════════════════════════════════════════════════════════
-inline std::string SimFilePath(int jetSample, int seg)
+inline std::string SimFilePath(int jetSample, int seg, std::string Herwig="")
 {
     return std::format(
-        "/sphenix/tg/tg01/jets/sgross/VandyDSTs/Jet{0}/"
-        "VandyDSTs_run2pp_ana521_2025p007_v001_Jet{0}-28-{1:06d}_to-{2:06d}.root",
-        jetSample, seg, seg + 24);
+        "/sphenix/tg/tg01/jets/sgross/VandyDSTs/{3}Jet{0}/"
+        "VandyDSTs_run2pp_ana521_2025p007_v001_{3}Jet{0}-28-{1:06d}_to-{2:06d}.root",
+        jetSample, seg, seg + 24, Herwig);
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
