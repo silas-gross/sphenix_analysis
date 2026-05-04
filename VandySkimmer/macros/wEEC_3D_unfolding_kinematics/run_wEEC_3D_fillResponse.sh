@@ -14,6 +14,6 @@ segStart=$((10#$segStart))
 outDir=$3
 mode=$4
 Herwig=${5:-''}
-root -b -q fillResponse.C\($jetSample,$segStart,\"$Herwig\"\"$outDir\",Mode::$mode\)
+root -b -q fillResponse.C\($jetSample,$segStart,\"$Herwig\",\"$outDir\",Mode::$mode\)
 
 echo "done with fillResponse job"

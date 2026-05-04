@@ -9,7 +9,12 @@ source /opt/sphenix/core/bin/sphenix_setup.sh -n
 source /opt/sphenix/core/bin/setup_local.sh $MYINSTALL
 
 #DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr30_2026_0p25/
-DIR=/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr30_2026_${1}/
+sample=${2:-"Jet30"}
+DIR=${1:-/sphenix/tg/tg01/jets/bkimelman/VandyDSTs_wEEC_3D_unfolding_kinematics_Apr30_2026_}
+tag=${3:-""}
+if [[ $tag != "" ]]; then 
+	DIR=${DIR}${tag}
+fi
 run_pipeline() {
     local kMode=$1
     local pids=()

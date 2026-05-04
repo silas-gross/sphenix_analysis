@@ -1,4 +1,6 @@
 #include "analysisHelper.h"
+#include "sPhenixStyle.h"
+#include "sPhenixStyle.C"
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  drawResponse.C
@@ -83,6 +85,7 @@ void drawResponse(const char* outDir   = ".",
                   int  iPwsel  = 5)    // pair weight bin index (0-based)
 {
     // ── sanity checks ────────────────────────────────────────────────────
+    SetsPhenixStyle();
     if (iLsel  < 0 || iLsel  >= nTrueLead) {
         std::cerr << "iLsel out of range [0," << nTrueLead-1 << "]\n"; return; }
     if (iSsel  < 0 || iSsel  >= nTrueSubl) {
