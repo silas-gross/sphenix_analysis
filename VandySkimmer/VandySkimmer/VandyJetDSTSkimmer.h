@@ -153,6 +153,9 @@ class VandyJetDSTSkimmer : public SubsysReco
     std::vector<Tower> m_truthParticles;
     std::vector<JetInfo> m_truthJetInfo[4];
 
+    std::vector<Tower> m_truthtowers;
+    std::vector<JetInfo> m_truthtowerJetInfo[4];
+    
     const std::vector<GlobalVertex::VTXTYPE> vtxTypes {GlobalVertex::MBD};
 
     TFile *outfile{nullptr};

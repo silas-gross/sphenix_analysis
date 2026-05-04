@@ -136,9 +136,13 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
   if(m_doSim)
   {
     T->Branch("TruthParticles",&m_truthParticles);
+    T->Branch("TruthTowers", &m_truthTowers);
+
     for(int i=0; i<4; i++)
     {
       T->Branch(std::format("TruthJetInfo_r{}",jetRStr[i]).c_str(),&m_truthJetInfo[i]);
+      T->Branch(std::format("TruthTowerJetInfo_r{}",jetRStr[i]).c_str(),&m_truthtowerJetInfo[i]);
+      
     }
   }
 
@@ -186,6 +190,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 
   m_towerInfo.clear();
   m_truthParticles.clear();
+  m_truthtowers.clear();
   m_towerInfo_map.clear();
   m_towerInfo_map2.clear();
   m_towerInfoTruth_map.clear();
@@ -193,6 +198,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   {
     m_jetInfo[i].clear();
     m_truthJetInfo[i].clear();
+    m_truthtowerJetInfo[i].clear();
   }
   m_topoclusters.clear();
 
