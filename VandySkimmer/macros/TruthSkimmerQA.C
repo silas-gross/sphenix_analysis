@@ -23,6 +23,7 @@
 #include <math.h>
 #include <string>
 #include <numbers>
+#include <utilities>
 
 R__LOAD_LIBRARY(libVandyClasses.so);
 
@@ -40,6 +41,214 @@ TH1F* wEECtruthtowers 	{nullptr};
 TH1F* wEECtruthparticles{nullptr};
 TH1F* wEECrecotowers	{nullptr};
 
+TH1F* pairtruthtowers 	{nullptr};
+TH1F* pairtruthparticles{nullptr};
+TH1F* pairrecotowers	{nullptr};
+
+const std::vector<double> new_dPhiBins = {
+//    0.0000000, 0.041592654, 0.14159265,
+    0.0000000, 0.14159265,
+    0.34159265, 0.54159265, 0.74159265, 0.94159265,
+    1.2415927, 1.5415927, 1.8415927, 2.1415927,
+    2.3415927, 2.5415927, 2.7415927, 2.9415927,
+    3.0415927, 3.1415927
+};
+const std::vector<double> pairweights = { };
+void InitJetHistos(
+		std::array<std::pair<JetInfo, TH1F*>, 4>* holding_array,
+		JetInfo* jt,
+		TH1F* pt, 
+		int type,
+		std::string nametag,
+		std::string tag
+		)
+{
+	ha=new TH1F(std::format("h_{}_jet_r0{}", nametag, type+2).c_str(), 
+			std::format("{} Jet R=0.{}; p_{{T}} [GeV]; #sigma", tag, type+2).c_str(),
+		       25, -0.5, 99.5 );
+	std::pair<JetInfo, TH1F*> ha = std::make_pair(*jt, pt);
+	holding_array->at(type)=ha;
+	return;	
+}
+void InitTowerHistos(
+		TH1F* h_,
+		
+		)
+{
+}
+
+void InitwEECHistos()
+{
+	wEECtruthtowers 	= new TH1F("h_truth_wEEC", "Truth tower wEEC; #Delta #varphi; wEEC", 
+		32, new_dPhiBins.data() );
+	wEECtruthparticles	= new TH1F("h_part_wEEC", "Truth Particles wEEC; #Delta #varphi; wEEC", 
+		32, new_dPhiBins.data() );
+
+	wEECrecotowers		= new TH1F(
+		"h_truth_wEEC", 
+		"Truth tower wEEC; #Delta #varphi; wEEC", 
+		32, new_dPhiBins.data() );
+
+	wEECtruthparticles		= new TH1F(
+		"h_part_wEEC", 
+		"Truth particle level wEEC; #Delta #varphi; wEEC", 
+		32, new_dPhiBins.data() );
+
+	wEECrecotowers		= new TH1F(
+		"h_reco_wEEC", 
+		"Reco tower wEEC; #Delta #varphi; wEEC", 
+		32, new_dPhiBins.data() );
+	return;
+}
+
+void SetJetBranches(
+		TTree* t, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* truthjets, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* towerjets, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* truthtowerjets
+		)
+{
+	if(!isData)
+	{
+		for(int i=0; i<(int)truthjets->size(); i++)
+		{
+			if(!truthjets->at(i)) continue;
+			t->SetBranchAddress(&(truthjets->at(i)->first), std::format("TruthJetInfo_r0{}", i+2).c_str());
+		}
+		for(int i=0; i<(int)truthtowerjets->size(); i++)
+		{
+			if(!t->FindBranch(std::format("TruthTowerJetInfo_r0{}", i+2).c_str())) break;
+			if(!truthtowerjets->at(i) ) continue;
+			t->SetBranchAddress(&(truthtowerjets->at(i)->first), std::format("TruthTowerJetInfo_r0{}", i+2).c_str());
+		}
+	}
+	for(int i=0; i<(int)towerjets->size(); i++)
+	{
+		if(!towerjets->at(i)) continue;
+		t->SetBranchAddress(&(towerjets->at(i)->first), std::format("JetInfo_r0{}", i+2).c_str());
+	}
+	return;	
+}
+
+void SetTowerBranches(
+		TTree* t,
+		std::vector<Tower>* particle,
+		std::vector<Tower>* truth_tower,
+		std::vector<Tower>* reco_tower
+		)
+{
+	if(isData)
+	{
+		if(particle)	t->SetBranchAddress("TruthParticles", &particle);
+		if(truth_tower) t->SetBranchAddress("TruthTowers", &truth_tower);
+	}
+	}
+	if(reco_tower)	t->SetBranchAddress("TowerInfo", &reco_tower);
+	return;
+}
+
+void getwEEC(std::vector<Tower>* towers, TH1F* output_hist, float Q2)
+{
+	for(int i=0; i<(int)towers->size()-1; i++)
+	{
+		float pt1 = std::pow(towers->at(i)->px(), 2) + std::pow(towers->at(i)->py(), 2);
+		float phi1 = std::atan2(towers->at(i)->py(), towers->at(i)->px());
+		pt1 = std::sqrt(pt1);
+		for(int j=i+1; j<(int)towers->size(); j++)
+		{
+			float pt2 = std::pow(towers->at(j)->px(), 2) + std::pow(towers->at(j)->py(), 2);
+			pt2 = std::sqrt(pt2);
+			float phi2 = std::atan2(towers->at(j)->py(), towers->at(j)->px());
+			float pw = pt1 * pt2/Q2;
+			float dphi = phi1 - phi2;
+			if(dphi < -pi) dphi+=2*pi;
+			if(dphi > pi ) dphi-=2*pi;
+			output_hist->Fill(dphi, pw);
+		}
+	}
+	return;
+}
+
+void eventLoop(
+		int event_n,	
+		TTree* t, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* 	truthjets, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* 	towerjets, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>*	truthtowerjets,
+		std::pair<std::vector<Tower>*, TH1F*>*		truthparticles,
+		std::pair<std::vector<Tower>*, TH1F*>*		truthtowers,
+		std::pair<std::vector<Tower>*, TH1F*>*		recotowers,
+		EventInfo*					event
+	      )
+{
+	t->GetEntry(event_n);
+	bool isDijet = true;
+	for(int i=0; i<(int)event->dijet_event->size(); i++)
+	{
+		if(!event->is_dijet_event(i)) isDijet=false;
+	}
+	if(!isDijet) return;
+
+	if(!isData)
+	{
+		bool isTruthDijet = true;
+		for(int i=0; i<(int)event->dijetTruth_event->size(); i++)
+		{
+			if(!event->is_dijetTruth_event(i)) isTruthDijet=false;
+		}
+		if(!isTruthDijet) return;
+		float Q2 = event->get_leadTruth_pT(2) + event->get_subleadTruth_pT(2);
+		for(int i=0; i<(int)truthjets->size(); i++)
+		{
+			if(!truthjets->at(i) || 
+					!truthjets->at(i)->second
+					) continue;
+			truthjets->at(i)->second->Fill(truthjets->at(i)->first->pt());
+		}
+		getwEEC(truthparticles->first, wEECtruthparticles, Q2);
+
+		for(int i=0; i<(int)truthtowerjets->size(); i++)
+		{
+			if(!t->FindBranch(std::format("TruthTowerJetInfo_r0{}", i+2).c_str())) break;
+			if(!truthtowerjets->at(i) || 
+					!truthtowerjets->at(i)->second
+					) continue;
+			truthtowerjets->at(i)->second->Fill(truthtowerjets->at(i)->first->pt());
+		}
+
+		for(int i=0; i<(int)truthtowers->first->size(); i++)
+		{
+			if(!truthtowers || 
+					!truthtowers->first ||
+					!truthtowers->second
+			  ) continue;
+			truthtowers->second->Fill(truthtowers->first->at(i)->e());
+		}
+
+		getwEEC(truthtowers->first, wEECtruthtowers, Q2);
+
+	}
+	Q2 = event->get_lead_pT(2) + event->get_sublead_pT(2);
+
+	for(int i=0; i<(int)towerjets->size(); i++)
+	{
+		if(!towerjets->at(i) || 
+				!towerjets->at(i)->second
+				) continue;
+		towerjets->at(i)->second->Fill(towerjets->at(i)->first->pt());
+	}
+	for(int i=0; i<(int)recotowers->first->size(); i++)
+	{
+		if(!recotowers || 
+				!recotowers->first ||
+				!recotowers->second
+		  ) continue;
+		recotowers->second->Fill(recotowers->first->at(i)->e());
+		
+		getwEEC(recotowers->first, wEECrecotowers, Q2);
+	}
+	return;	
+}
 
 int TruthSkimmerQA(std::string input_file_name, std::string outputQA_name, bool isD=false, std::string gen="Pythia")
 {
@@ -51,7 +260,6 @@ int TruthSkimmerQA(std::string input_file_name, std::string outputQA_name, bool 
 	bi=new TExec("bi_pallet", "gStyle->SetPalette(100, style_points->Trans_gradient_PT);");
 	les=new TExec("les_pallet", "gStyle->SetPalette(100, style_points->Trans_gradient_PT);");
 	enby=new TExec("enby_pallet", "gStyle->SetPalette(100, style_points->Trans_gradient_PT);");
-	
 	TFile* input_file = new TFile(input_file_name.c_str(), "READ");
 	input_file->cd();
 	//make the branches
@@ -126,179 +334,5 @@ int TruthSkimmerQA(std::string input_file_name, std::string outputQA_name, bool 
 		 );
 	return 0;
 };
-void InitJetHistos(
-		std::array<std::pair<JetInfo, TH1F*>, 4>* holding_array,
-		JetInfo* jt,
-		TH1F* pt, 
-		int type,
-		std::string nametag,
-		std::string tag
-		)
-{
-	ha=new TH1F(std::format("h_{}_jet_r0{}", nametag, type+2).c_str(), 
-			std::format("{} Jet R=0.{}; p_{{T}} [GeV]; #sigma", tag, type+2).c_str(),
-		       25, 
-	       		-0.5,
-	 		99.5 );
-	std::pair<JetInfo, TH1F*> ha = std::make_pair(*jt, pt);
-	holding_array->at(type)=ha;
-	return;	
-}
-void InitTowerHistos(
-
-		)
-{
-}
-void InitwEECHistos()
-{
-	wEECtruthtowers 	= new TH1F("h_truth_wEEC", "Truth tower wEEC; #Delta #varphi; wEEC";
-	wEECtruthparticles	= new TH1F("h_part_wEEC", "Truth Particles wEEC; #Delta #varphi; wEEC";
-
-	wEECrecotowers		= new TH1F("h_reco_wEEC", "Reco tower wEEC; #Delta #varphi; wEEC";
-
-}
-void SetJetBranches(
-		TTree* t, 
-		std::array<std::pair<JetInfo, TH1F*>*, 4>* truthjets, 
-		std::array<std::pair<JetInfo, TH1F*>*, 4>* towerjets, 
-		std::array<std::pair<JetInfo, TH1F*>*, 4>* truthtowerjets
-		)
-{
-	if(!isData)
-	{
-		for(int i=0; i<(int)truthjets->size(); i++)
-		{
-			if(!truthjets->at(i)) continue;
-			t->SetBranchAddress(&(truthjets->at(i)->first), std::format("TruthJetInfo_r0{}", i+2).c_str());
-		}
-		for(int i=0; i<(int)truthtowerjets->size(); i++)
-		{
-			if(!t->FindBranch(std::format("TruthTowerJetInfo_r0{}", i+2).c_str())) break;
-			if(!truthtowerjets->at(i) ) continue;
-			t->SetBranchAddress(&(truthtowerjets->at(i)->first), std::format("TruthTowerJetInfo_r0{}", i+2).c_str());
-		}
-	}
-	for(int i=0; i<(int)towerjets->size(); i++)
-	{
-		if(!towerjets->at(i)) continue;
-		t->SetBranchAddress(&(towerjets->at(i)->first), std::format("JetInfo_r0{}", i+2).c_str());
-	}
-	return;	
-}
-void SetTowerBranches(
-		TTree* t,
-		std::vector<Tower>* particle,
-		std::vector<Tower>* truth_tower,
-		std::vector<Tower>* reco_tower
-		)
-{
-	if(isData)
-	{
-		if(particle)	t->SetBranchAddress("TruthParticles", &particle);
-		if(truth_tower) t->SetBranchAddress("TruthTowers", &truth_tower);
-	}
-	if(reco_tower)	t->SetBranchAddress("TowerInfo", &reco_tower);
-	return;
-}
-void eventLoop(
-		int event_n,	
-		TTree* t, 
-		std::array<std::pair<JetInfo, TH1F*>*, 4>* 	truthjets, 
-		std::array<std::pair<JetInfo, TH1F*>*, 4>* 	towerjets, 
-		std::array<std::pair<JetInfo, TH1F*>*, 4>*	truthtowerjets,
-		std::pair<std::vector<Tower>*, TH1F*>*	truthparticles,
-		std::pair<std::vector<Tower>*, TH1F*>*	truthtowers,
-		std::pair<std::vector<Tower>*, TH1F*>*	recotowers,
-		EventInfo*					event
-	      )
-{
-	t->GetEntry(event_n);
-	bool isDijet = true;
-	for(int i=0; i<(int)event->dijet_event->size(); i++)
-	{
-		if(!event->is_dijet_event(i)) isDijet=false;
-	}
-	if(!isDijet) return;
-
-	if(!isData)
-	{
-		bool isTruthDijet = true;
-		for(int i=0; i<(int)event->dijetTruth_event->size(); i++)
-		{
-			if(!event->is_dijetTruth_event(i)) isTruthDijet=false;
-		}
-		if(!isTruthDijet) return;
-
-		for(int i=0; i<(int)truthjets->size(); i++)
-		{
-			if(!truthjets->at(i) || 
-					!truthjets->at(i)->second
-					) continue;
-			truthjets->at(i)->second->Fill(truthjets->at(i)->first->pt());
-		}
-		getwEEC(truthparticles->first, wEECtruthparticles);
-
-		for(int i=0; i<(int)truthtowerjets->size(); i++)
-		{
-			if(!t->FindBranch(std::format("TruthTowerJetInfo_r0{}", i+2).c_str())) break;
-			if(!truthtowerjets->at(i) || 
-					!truthtowerjets->at(i)->second
-					) continue;
-			truthtowerjets->at(i)->second->Fill(truthtowerjets->at(i)->first->pt());
-		}
-
-		for(int i=0; i<(int)truthtowers->first->size(); i++)
-		{
-			if(!truthtowers || 
-					!truthtowers->first ||
-					!truthtowers->second
-			  ) continue;
-			truthtowers->second->Fill(truthtowers->first->at(i)->e());
-		}
-
-		getwEEC(truthtowers->first, wEECtruthtowers);
-
-	}
-
-	for(int i=0; i<(int)towerjets->size(); i++)
-	{
-		if(!towerjets->at(i) || 
-				!towerjets->at(i)->second
-				) continue;
-		towerjets->at(i)->second->Fill(towerjets->at(i)->first->pt());
-	}
-	for(int i=0; i<(int)recotowers->first->size(); i++)
-	{
-		if(!recotowers || 
-				!recotowers->first ||
-				!recotowers->second
-		  ) continue;
-		recotowers->second->Fill(recotowers->first->at(i)->e());
-		getwEEC(recotowers->first, wEECrecotowers);
-	}
-	return;	
-}
-
-void getwEEC(std::vector<Tower>* towers, TH1F* output_hist, float Q2)
-{
-	for(int i=0; i<(int)towers->size()-1; i++)
-	{
-		float pt1 = std::pow(towers->at(i)->px(), 2) + std::pow(towers->at(i)->py(), 2);
-		float phi1 = std::atan2(towers->at(i)->py(), towers->at(i)->px());
-		pt1 = std::sqrt(pt1);
-		for(int j=i+1; j<(int)towers->size(); j++)
-		{
-			float pt2 = std::pow(towers->at(j)->px(), 2) + std::pow(towers->at(j)->py(), 2);
-			pt2 = std::sqrt(pt2);
-			float phi2 = std::atan2(towers->at(j)->py(), towers->at(j)->px());
-			float pw = pt1 * pt2/Q2;
-			float dphi = phi1 - phi2;
-			if(dphi < -pi) dphi+=2*pi;
-			if(dphi > pi ) dphi-=2*pi;
-			output_hist->Fill(dphi, pw);
-		}
-	}
-	return;
-}
 
 #endif
