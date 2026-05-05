@@ -53,7 +53,25 @@ const std::vector<double> new_dPhiBins = {
     2.3415927, 2.5415927, 2.7415927, 2.9415927,
     3.0415927, 3.1415927
 };
-const std::vector<double> pairweights = { };
+std::vector<float> pairweights = {0.,5e-5};
+void makePairweightbins()
+{
+	float upper = 2;
+	float second_to_upper = 1;
+	float loglower = std::log10(pairweights[1]);
+	float logupper = std::log10(second_to_upper);
+	int nlogbins = 17;
+	float delta = (logupper-loglower)/((float) nlogbins-2);
+	for(int i=1; i < nlogbins; i++){
+	       float binedge = std::pow(10, loglower + i*delta);
+	       if( binedge == pairweights[1] ) continue;
+	       else if (binedge >= second_to_upper) break;
+	       pairweights.push_back(binedge);
+	}
+	pairweights.push_back(second_to_upper);
+	pairweighs.push_back(upper);
+	return;
+}
 void InitJetHistos(
 		std::array<std::pair<JetInfo, TH1F*>, 4>* holding_array,
 		JetInfo* jt,
@@ -63,7 +81,7 @@ void InitJetHistos(
 		std::string tag
 		)
 {
-	ha=new TH1F(std::format("h_{}_jet_r0{}", nametag, type+2).c_str(), 
+	ha=new TH1F(std::format("h_{0}_jet_r0{1}", nametag, type+2).c_str(), 
 			std::format("{} Jet R=0.{}; p_{{T}} [GeV]; #sigma", tag, type+2).c_str(),
 		       25, -0.5, 99.5 );
 	std::pair<JetInfo, TH1F*> ha = std::make_pair(*jt, pt);
@@ -71,25 +89,26 @@ void InitJetHistos(
 	return;	
 }
 void InitTowerHistos(
-		TH1F* h_,
-		
+		TH1F* h_tower,
+		std::string nametag, 
+		std::string tag
 		)
 {
+	h_tower = new TH1F(std::format("h_{}_e", nametag).c_str(), 
+			std::format("{} Energy; E [GeV]; N_{{towers}}"i, tag).c_str(),
+			1000, 1e-4, 10);
+	return;	
 }
 
 void InitwEECHistos()
 {
-	wEECtruthtowers 	= new TH1F("h_truth_wEEC", "Truth tower wEEC; #Delta #varphi; wEEC", 
-		32, new_dPhiBins.data() );
-	wEECtruthparticles	= new TH1F("h_part_wEEC", "Truth Particles wEEC; #Delta #varphi; wEEC", 
-		32, new_dPhiBins.data() );
 
-	wEECrecotowers		= new TH1F(
+	wEECtruthtowers		= new TH1F(
 		"h_truth_wEEC", 
 		"Truth tower wEEC; #Delta #varphi; wEEC", 
 		32, new_dPhiBins.data() );
 
-	wEECtruthparticles		= new TH1F(
+	wEECtruthparticles	= new TH1F(
 		"h_part_wEEC", 
 		"Truth particle level wEEC; #Delta #varphi; wEEC", 
 		32, new_dPhiBins.data() );
@@ -98,6 +117,25 @@ void InitwEECHistos()
 		"h_reco_wEEC", 
 		"Reco tower wEEC; #Delta #varphi; wEEC", 
 		32, new_dPhiBins.data() );
+	return;
+}
+
+void InitPairHistos()
+{
+	pairtruthtowers		= new TH1F(
+		"h_truth_pair", 
+		"Truth tower pair; #frac{E_{T,1}E_{T,2}}{p_{T, avg}^{2}}; N_{pair}", 
+		pair_weights, pair_weights.data() );
+
+	pairtruthparticles	= new TH1F(
+		"h_part_pair", 
+		"Truth particle level pair; #frac{E_{T,1}E_{T,2}}{p_{T, avg}^{2}}; N_{pair}", 
+		32, pair_weights.data() );
+
+	pairrecotowers		= new TH1F(
+		"h_reco_pair", 
+		"Reco tower pair; #frac{E_{T,1}E_{T,2}}{p_{T, avg}^{2}}; N_{pair}", 
+		32, pair_weights.data() );
 	return;
 }
 
@@ -250,6 +288,21 @@ void eventLoop(
 	return;	
 }
 
+void DrawPlots(
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* 	truthjets, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>* 	towerjets, 
+		std::array<std::pair<JetInfo, TH1F*>*, 4>*	truthtowerjets,
+		std::pair<std::vector<Tower>*, TH1F*>*		truthparticles,
+		std::pair<std::vector<Tower>*, TH1F*>*		truthtowers,
+		std::pair<std::vector<Tower>*, TH1F*>*		recotowers,
+		float weight,
+		std::string output_file_name
+	)
+{
+	TFile* output = new TFile*(output_file_name.c_str(), "RECREATE");
+
+}
+
 int TruthSkimmerQA(std::string input_file_name, std::string outputQA_name, bool isD=false, std::string gen="Pythia")
 {
 	tag 		= gen;
@@ -302,23 +355,23 @@ int TruthSkimmerQA(std::string input_file_name, std::string outputQA_name, bool 
 	std::array< std::pair<JetInfo, TH1F*>*, 4>* towerjets = new std::array<std::pair<JetInfo, TH1F*>, 4> {};
 	std::array< std::pair<JetInfo, TH1F*>*, 4>* truthtowerjets = new std::array<std::pair<JetInfo, TH1F*>, 4> {};
 
-	InitHistos(truthjets, truthjet02, truthjet02pt, 0, "truth");
-	InitHistos(truthjets, truthjet03, truthjet03pt, 1, "truth");
-	InitHistos(truthjets, truthjet04, truthjet04pt, 2, "truth");
-	InitHistos(truthjets, truthjet05, truthjet05pt, 3, "truth");
+	InitHistos(truthjets, truthjet02, truthjet02pt, 0, "truth", "Truth Jets");
+	InitHistos(truthjets, truthjet03, truthjet03pt, 1, "truth", "Truth Jets");
+	InitHistos(truthjets, truthjet04, truthjet04pt, 2, "truth", "Truth Jets");
+	InitHistos(truthjets, truthjet05, truthjet05pt, 3, "truth", "Truth Jets");
 
-	InitHistos(towerjets, towerjet02, towerjet02pt, 0, "reco_tower");
-	InitHistos(towerjets, towerjet03, towerjet03pt, 1, "reco_tower");
-	InitHistos(towerjets, towerjet04, towerjet04pt, 2, "reco_tower");
-	InitHistos(towerjets, towerjet05, towerjet05pt, 3, "reco_tower");
+	InitHistos(towerjets, towerjet02, towerjet02pt, 0, "reco_tower", "Reco Tower Jets");
+	InitHistos(towerjets, towerjet03, towerjet03pt, 1, "reco_tower", "Reco Tower Jets");
+	InitHistos(towerjets, towerjet04, towerjet04pt, 2, "reco_tower", "Reco Tower Jets");
+	InitHistos(towerjets, towerjet05, towerjet05pt, 3, "reco_tower", "Reco Tower Jets");
 
-	InitHistos(truthtowerjets, truthtowerjet02, truthtowerjet02pt, 0, "truth_tower");
-	InitHistos(truthtowerjets, truthtowerjet03, truthtowerjet03pt, 1, "truth_tower");
-	InitHistos(truthtowerjets, truthtowerjet04, truthtowerjet04pt, 2, "truth_tower");
-	InitHistos(truthtowerjets, truthtowerjet05, truthtowerjet05pt, 3, "truth_tower");
+	InitHistos(truthtowerjets, truthtowerjet02, truthtowerjet02pt, 0, "truth_tower", "Truth Tower Jets");
+	InitHistos(truthtowerjets, truthtowerjet03, truthtowerjet03pt, 1, "truth_tower", "Truth Tower Jets");
+	InitHistos(truthtowerjets, truthtowerjet04, truthtowerjet04pt, 2, "truth_tower", "Truth Tower Jets");
+	InitHistos(truthtowerjets, truthtowerjet05, truthtowerjet05pt, 3, "truth_tower", "Truth Tower Jets");
 
 	TTree* t = (TTree*) input_file->Get("T");
-	SetJetBranches(t, truthjets, towerjets, truthtowerjets);
+	SetJetBranches(t, truthjets, towerjets, truthtowerjets, );
 	SetTowerBranches(t, truthparticles, truthtowers, recotowers);
 	EventInfo* event = new EventInfo();
 	t->SetBranchAddress(&event, "EventInfo");
@@ -328,11 +381,15 @@ int TruthSkimmerQA(std::string input_file_name, std::string outputQA_name, bool 
 			truthjets, towerjets, truthtowerjets, 
 			truthparticles, truthtowers, recotowers, 
 			event);	
+	t->GetEntry(2);
+	float sigma = event->get_cross_section();
+	float weight = sigma /(float)n;
 	DrawPlots(
 			truthjets, towerjets, truthtowerjets, 
-			truthparticles, truthtowers, recotowers
-		 );
+			truthparticles, truthtowers, recotowers,
+			weight, outfile_name 
+			);
+	input_file->Close();
 	return 0;
 };
-
 #endif
