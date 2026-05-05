@@ -67,7 +67,7 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
     return Fun4AllReturnCodes::ABORTRUN;
   }
 
-  for(int i=0; i<4; i++)
+  for(int i=0; i<5; i++)
   {
     jets[i] = findNode::getClass<JetContainer>(topNode, std::format("AntiKt_r{}{}",jetRStr[i],(m_doCalib ? "_calib" : "")).c_str());
     if(m_doCalib) jetsUncalib[i] = findNode::getClass<JetContainer>(topNode, std::format("AntiKt_r{}",jetRStr[i]).c_str());
@@ -89,7 +89,7 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
       return Fun4AllReturnCodes::ABORTRUN;
     }
 
-    for(int i=0; i<4; i++)
+    for(int i=0; i<5; i++)
     {
       truthJets[i] = findNode::getClass<JetContainer>(topNode, std::format("AntiKt_Truth_r{}",jetRStr[i]).c_str());
       if (!truthJets[i])
@@ -129,16 +129,16 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
   T->Branch("EventInfo",&m_eventInfo);
   T->Branch("TowerInfo",&m_towerInfo);
   T->Branch("TopoClusters",&m_topoclusters);
-  for(int i=0; i<4; i++)
+  for(int i=0; i<5; i++)
   {
     T->Branch(std::format("JetInfo_r{}",jetRStr[i]).c_str(),&m_jetInfo[i]);
   }
   if(m_doSim)
   {
     T->Branch("TruthParticles",&m_truthParticles);
-    T->Branch("TruthTowers", &m_truthTowers);
+    T->Branch("TruthTowers", &m_truthtowers);
 
-    for(int i=0; i<4; i++)
+    for(int i=0; i<5; i++)
     {
       T->Branch(std::format("TruthJetInfo_r{}",jetRStr[i]).c_str(),&m_truthJetInfo[i]);
       T->Branch(std::format("TruthTowerJetInfo_r{}",jetRStr[i]).c_str(),&m_truthtowerJetInfo[i]);
@@ -175,7 +175,23 @@ int VandyJetDSTSkimmer::InitRun(PHCompositeNode *topNode)
   return Fun4AllReturnCodes::EVENT_OK;
 
 }
-
+void VandyJetDSTSkimmer::getTruthTowers()
+{
+	//tower the truth particles into IHCAL tower sizes
+	int nTowers = m_towerInfoContainiers[2]->size();
+	std::vector<std::pair<float, float>> etabinedges {};
+	std::vector<std::pair<float, float>> phibinedges {};
+	for(int i=0; i<nTowers; i++)
+	{
+		auto key = towerInfoContainers[2]->encode_key(i);
+		auto tower = towerInfoContainers[2]->get_tower_at_channel(i);
+		int etaBin = towerInfoContainers[2]->getTowerEtaBin(key);
+		int phiBin = towerInfoContainers[2]->getTowerPhiBin(key);
+		float etaCenter = geoms[2]->get_etacenter(etaBin);
+		float phiCenter = geoms[2]->get_phicenter(phiBin);
+		float r = geoms[2]->get_radius();
+		
+		m_truthtowers-
 //____________________________________________________________________________..
 int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 {
@@ -194,7 +210,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   m_towerInfo_map.clear();
   m_towerInfo_map2.clear();
   m_towerInfoTruth_map.clear();
-  for(int i=0; i<4; i++)
+  for(int i=0; i<5; i++)
   {
     m_jetInfo[i].clear();
     m_truthJetInfo[i].clear();
@@ -230,8 +246,8 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
   if(m_doSim)
   {
     //get leading truth pT and skip events where it is outside the range for each sample for ALL jet R
-    bool goodTruthLeadJet[4] = {false, false, false, false};
-    for(int r=0; r<4; r++)
+    bool goodTruthLeadJet[5] = {false, false, false, false, false};
+    for(int r=0; r<5; r++)
     {
       float lead_pT = -999;
       for(auto jet : *truthJets[r])
@@ -241,7 +257,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       }
       if(lead_pT >= truthJetR_pTMin[r][sampleNumber] && lead_pT < truthJetR_pTMin[r][sampleNumber+1]) goodTruthLeadJet[r] = true;
     }
-    if(!goodTruthLeadJet[0] && !goodTruthLeadJet[1] && !goodTruthLeadJet[2] && !goodTruthLeadJet[3])
+    if(!goodTruthLeadJet[0] && !goodTruthLeadJet[1] && !goodTruthLeadJet[2] && !goodTruthLeadJet[3] && !goodTruthLeadJet[4])
     {
       if(Verbosity())
       {
@@ -260,7 +276,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
     }
     m_eventInfo->set_z_vtx_truth(m_vtx_z_truth);
 
-    for(int r=0; r<4; r++)
+    for(int r=0; r<5; r++)
     {
       if(goodTruthLeadJet[r])
       {
@@ -296,7 +312,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
       m_towerInfoTruth_map[std::make_pair(4, p->get_track_id())] = m_truthParticles.size() - 1;
     }
 
-    for(int r=0; r<4; r++)
+    for(int r=0; r<5; r++)
     {
       for(auto jet : *truthJets[r])
       {
@@ -453,7 +469,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 
   if(m_doSim && !goodJet)
   {
-    for(int r=0; r<4; r++)
+    for(int r=0; r<5; r++)
     {
       m_eventInfo->set_dijet_event(r, false);
       m_eventInfo->set_lead_pT(r, -999);
@@ -472,7 +488,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 
   if(Verbosity()) std::cout << "good reco event" << std::endl;
 
-  for(int r=0; r<4; r++)
+  for(int r=0; r<5; r++)
   {
     std::pair<float, float> dijet = isGoodDijet(r);
     m_eventInfo->set_dijet_event(r, (dijet.first >= jetR_pTMin[r] && dijet.second >= 5.0 ? true : false));
@@ -590,7 +606,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
 
  
   // jet loop
-  for(int r=0; r<4; r++)
+  for(int r=0; r<5; r++)
   {
     int i=0;
     for(auto jet : *jets[r])
@@ -1127,3 +1143,4 @@ fastjet::PseudoJet VandyJetDSTSkimmer::get_PseudoJet(double eta, double phi, dou
   fastjet::PseudoJet pj(px, py, pz, E);
   return pj;
 }
+
