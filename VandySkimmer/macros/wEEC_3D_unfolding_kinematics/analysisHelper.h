@@ -16,8 +16,9 @@ R__LOAD_LIBRARY(libVandyClasses.so)
 //    kFull — response and pseudo-data from ALL MC events
 //    kHalf — response from random half, pseudo-data from other half
 //    kData — real data; use fillData.C instead of fillResponse.C
+//    kVtx  — vtx distribution pass only; skips all tower-pair loops
 // ═════════════════════════════════════════════════════════════════════════════
-enum class Mode { kFull, kHalf, kData };
+enum class Mode { kFull, kHalf, kData, kVtx };
 
 inline std::string ModeLabel(Mode mode)
 {
@@ -25,6 +26,7 @@ inline std::string ModeLabel(Mode mode)
         case Mode::kFull: return "fullClosure";
         case Mode::kHalf: return "halfClosure";
         case Mode::kData: return "dataClosure";
+        case Mode::kVtx:  return "vtx";
         default:          return "unknown";
     }
 }
@@ -179,7 +181,7 @@ inline int nFlat() { return nRecoFlat(); }
 // ─────────────────────────────────────────────────────────────────────────────
 //  ΔΦ binning — 33 edges = 32 bins
 // ─────────────────────────────────────────────────────────────────────────────
-const std::vector<double> dPhiBins = {
+const std::vector<double> original_dPhiBins = {
     0.0000000,  0.041592654,
     0.14159265, 0.24159265, 0.34159265, 0.44159265, 0.54159265,
     0.64159265, 0.74159265, 0.84159265, 0.94159265, 1.0415927,
@@ -189,7 +191,19 @@ const std::vector<double> dPhiBins = {
     2.6415927,  2.7415927,  2.8415927,  2.9415927,  3.0415927,
     3.1415927
 };
+const std::vector<double> new_dPhiBins = {
+//    0.0000000, 0.041592654, 0.14159265,
+    0.0000000, 0.14159265,
+    0.34159265, 0.54159265, 0.74159265, 0.94159265,
+    1.2415927, 1.5415927, 1.8415927, 2.1415927,
+    2.3415927, 2.5415927, 2.7415927, 2.9415927,
+    3.0415927, 3.1415927
+};
+
+//const std::vector<double> dPhiBins = original_dPhiBins;
+const std::vector<double> dPhiBins = new_dPhiBins;
 const int nDphi = (int)dPhiBins.size() - 1;  // 32
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Pair weight binning — 20 log-uniform bins from 1e-3 to 1
@@ -198,12 +212,10 @@ const int nDphi = (int)dPhiBins.size() - 1;  // 32
 //  Log-uniform spacing ensures good resolution across the dynamic range.
 //  Edges are computed at runtime to avoid floating-point literal clutter.
 // ─────────────────────────────────────────────────────────────────────────────
-//const int    nPairWeight      = 12;
-//const int    nPairWeight      = 42;
-const int    nPairWeight      = 22;
+const int    nPairWeight      = 17;
 const double pairWeightMin    = 0.0;    // physical lower edge of histogram
 const double pairWeightMax    = 2.0;
-const double pairWeightLogMin = 1e-3;   // lower edge of the log-uniform region
+const double pairWeightLogMin = 5e-5;   // lower edge of the log-uniform region
 
 // Pair weight bins:
 //   Bin 0  : [0,    1e-3) — linear underflow bin for very small weights
@@ -221,7 +233,7 @@ inline std::vector<double> MakePairWeightBins()
     // Bins 1-20: log-uniform from 1e-3 to 1.0
     const int    nLogBins = nPairWeight-2;
     const double logMin   = std::log10(pairWeightLogMin);
-    const double logMax   = std::log10(1.0);
+    const double logMax   = std::log10(0.2);
     for (int i = 0; i <= nLogBins; ++i)
         edges[i + 1] = std::pow(10.0, logMin + (logMax - logMin) * i / nLogBins);
     // Bin 21: [1.0, 2.0)
@@ -280,8 +292,8 @@ inline float get_jet_pTHigh(int sample)
 // ═════════════════════════════════════════════════════════════════════════════
 //  Dijet validity cuts
 // ═════════════════════════════════════════════════════════════════════════════
-const double recoLeadMin = 30.0;
-const double recoSublMin =  15.0;
+const double recoLeadMin = 20.0;
+const double recoSublMin =  8.0;
 const double trueLeadMin = 15.0;
 const double trueSublMin =  8.0;
 
@@ -310,8 +322,8 @@ const double geoMatchDR = 0.3;
 // ═════════════════════════════════════════════════════════════════════════════
 inline bool IsRecoAccessible(int iL, int iS)
 {
-    return trueLeadPtBins[iL + 1] > recoLeadMin &&
-           trueSublPtBins[iS + 1] > recoSublMin;
+    return trueLeadPtBins[iL + 1] > 30 &&
+           trueSublPtBins[iS + 1] > 15;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -645,6 +657,152 @@ inline void ProjectWEEC3DSliceForBin(TH1D* h1D, int iL, int iS,
     err = std::sqrt(sumw2);
 }
 
+// ── Covariance-aware projection overloads ────────────────────────────────────
+// These use the full TMatrixD covariance from RooUnfold::Errunfold() so that
+// off-diagonal correlations between unfolded bins are properly accounted for
+// when projecting onto a subset of the flat-3D space.
+//
+// For a linear combination P = sum_i w_i * x_i over bins in set S:
+//   Var(P) = sum_{i,j in S} w_i * w_j * C_{ij}
+//
+// The covariance matrix is 0-based with size nTrueFlat3D() × nTrueFlat3D().
+// Pass nullptr for cov to fall back to naive diagonal (GetBinError) propagation.
+
+inline void ProjectWEEC3DSlice(TH1D* h1D, double& val, double& err,
+                                const TMatrixD* cov)
+{
+    double sum = 0.0, var = 0.0;
+    // Collect (flat3D index, weight) pairs for all accessible bins
+    std::vector<std::pair<int,double>> bins;
+    for (int ft = 0; ft < nTrueFlat(); ++ft) {
+        int iL, iS; TrueFlatToIJ(ft, iL, iS);
+        if (!IsRecoAccessible(iL, iS)) continue;
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF   = ft * nPairWeight + iPw;
+            double wCen = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            sum += wCen * h1D->GetBinContent(iF + 1);
+            bins.push_back({iF, wCen});
+        }
+    }
+    if (cov) {
+        for (auto [i, wi] : bins)
+        for (auto [j, wj] : bins)
+            var += wi * wj * (*cov)(i, j);
+    } else {
+        for (auto [i, wi] : bins) {
+            double e = h1D->GetBinError(i + 1);
+            var += wi * wi * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
+inline void ProjectWEEC3DSliceForBin(TH1D* h1D, int iL, int iS,
+                                      double& val, double& err,
+                                      const TMatrixD* cov)
+{
+    val = 0; err = 0;
+    int ft = TrueFlatIndex(iL, iS);
+    if (ft < 0) return;
+    double sum = 0.0, var = 0.0;
+    int iF0 = ft * nPairWeight;
+    for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+        int    iF   = iF0 + iPw;
+        double wCen = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+        sum += wCen * h1D->GetBinContent(iF + 1);
+    }
+    if (cov) {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF = iF0 + iPw;
+            double wi = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            for (int jPw = 0; jPw < nPairWeight; ++jPw) {
+                int    jF = iF0 + jPw;
+                double wj = 0.5 * (pairWeightBins[jPw] + pairWeightBins[jPw+1]);
+                var += wi * wj * (*cov)(iF, jF);
+            }
+        }
+    } else {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF = iF0 + iPw;
+            double wCen = 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            double e    = h1D->GetBinError(iF + 1);
+            var += wCen * wCen * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
+// Covariance-aware variants with weighted mean pair weight
+inline void ProjectWEEC3DSlice(TH1D* h1D, double& val, double& err,
+                                TH1D* hPWNum, TH1D* hPWDen,
+                                const TMatrixD* cov)
+{
+    double sum = 0.0, var = 0.0;
+    std::vector<std::pair<int,double>> bins;
+    for (int ft = 0; ft < nTrueFlat(); ++ft) {
+        int iL, iS; TrueFlatToIJ(ft, iL, iS);
+        if (!IsRecoAccessible(iL, iS)) continue;
+        int iF0 = ft * nPairWeight;
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            int    iF  = iF0 + iPw;
+            double den = hPWDen ? hPWDen->GetBinContent(iF + 1) : 0.0;
+            double w   = (den > 0)
+                ? hPWNum->GetBinContent(iF + 1) / den
+                : 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+            sum += w * h1D->GetBinContent(iF + 1);
+            bins.push_back({iF, w});
+        }
+    }
+    if (cov) {
+        for (auto [i, wi] : bins)
+        for (auto [j, wj] : bins)
+            var += wi * wj * (*cov)(i, j);
+    } else {
+        for (auto [i, wi] : bins) {
+            double e = h1D->GetBinError(i + 1);
+            var += wi * wi * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
+inline void ProjectWEEC3DSliceForBin(TH1D* h1D, int iL, int iS,
+                                      double& val, double& err,
+                                      TH1D* hPWNum, TH1D* hPWDen,
+                                      const TMatrixD* cov)
+{
+    val = 0; err = 0;
+    int ft = TrueFlatIndex(iL, iS);
+    if (ft < 0) return;
+    double sum = 0.0, var = 0.0;
+    int iF0 = ft * nPairWeight;
+    // Build per-iPw weights
+    std::vector<double> ws(nPairWeight);
+    for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+        int    iF  = iF0 + iPw;
+        double den = hPWDen ? hPWDen->GetBinContent(iF + 1) : 0.0;
+        ws[iPw]    = (den > 0)
+            ? hPWNum->GetBinContent(iF + 1) / den
+            : 0.5 * (pairWeightBins[iPw] + pairWeightBins[iPw+1]);
+        sum += ws[iPw] * h1D->GetBinContent(iF + 1);
+    }
+    if (cov) {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw)
+        for (int jPw = 0; jPw < nPairWeight; ++jPw)
+            var += ws[iPw] * ws[jPw] * (*cov)(iF0 + iPw, iF0 + jPw);
+    } else {
+        for (int iPw = 0; iPw < nPairWeight; ++iPw) {
+            double e = h1D->GetBinError(iF0 + iPw + 1);
+            var += ws[iPw] * ws[iPw] * e * e;
+        }
+    }
+    val = sum;
+    err = std::sqrt(std::max(var, 0.0));
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 //  wEEC normalization helpers
 // ═════════════════════════════════════════════════════════════════════════════
@@ -685,4 +843,63 @@ inline bool NormalizeWEEC(TH1D* h)
     h->Scale(1.0 / integral);
     h->Scale(1.0, "width");
     return true;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  Vertex z reweighting
+//
+//  The vtx_z distribution in data differs from MC.  A per-bin correction is
+//  applied when filling the response matrix for data unfolding so that the
+//  MC vtx_z shape matches data.
+//
+//  Binning: 20 bins of 1 cm width covering [-10, 10) cm, matching the vtx_z
+//  acceptance cut applied in both fillResponse.C and fillData.C.
+//
+//  vtxWeights[] is populated by makeVtxWeights.C after it forms the ratio
+//  hVtxData / hVtxMC (both normalized to unit area within [-10, 10) cm).
+//  Paste the printed array contents from makeVtxWeights.C output here.
+//
+//  Until makeVtxWeights.C has been run, all weights default to 1.0
+//  (no correction applied).
+// ═════════════════════════════════════════════════════════════════════════════
+constexpr double vtxZMin   = -10.0;
+constexpr double vtxZMax   =  10.0;
+constexpr int    nVtxBins  =  20;     // 1 cm per bin
+constexpr double vtxBinWidth = (vtxZMax - vtxZMin) / nVtxBins;  // 1.0 cm
+
+// ── vtx weight array ─────────────────────────────────────────────────────────
+// Bin i covers [vtxZMin + i*vtxBinWidth, vtxZMin + (i+1)*vtxBinWidth).
+// Replace this array with the output of makeVtxWeights.C once available.
+constexpr double vtxWeights[nVtxBins] = {
+    0.962696,  // bin  0: [-10, -9) cm
+    0.987321,  // bin  1: [-9, -8) cm
+    1.006085,  // bin  2: [-8, -7) cm
+    1.020161,  // bin  3: [-7, -6) cm
+    1.034171,  // bin  4: [-6, -5) cm
+    1.037306,  // bin  5: [-5, -4) cm
+    1.046184,  // bin  6: [-4, -3) cm
+    1.040758,  // bin  7: [-3, -2) cm
+    1.041977,  // bin  8: [-2, -1) cm
+    1.042028,  // bin  9: [-1, 0) cm
+    1.027416,  // bin 10: [0, 1) cm
+    1.030098,  // bin 11: [1, 2) cm
+    1.012770,  // bin 12: [2, 3) cm
+    1.012976,  // bin 13: [3, 4) cm
+    0.996425,  // bin 14: [4, 5) cm
+    0.975807,  // bin 15: [5, 6) cm
+    0.966945,  // bin 16: [6, 7) cm
+    0.944144,  // bin 17: [7, 8) cm
+    0.921764,  // bin 18: [8, 9) cm
+    0.888391,  // bin 19: [9, 10) cm
+};
+
+// Return the vtx reweight factor for a given vtx_z value.
+// Returns 1.0 for any vtx_z outside [-10, 10) cm (should not occur after the
+// acceptance cut, but guarded for safety).
+inline double GetVtxWeight(double vtx_z)
+{
+    if (vtx_z < vtxZMin || vtx_z >= vtxZMax) return 0.0;
+    int bin = static_cast<int>((vtx_z - vtxZMin) / vtxBinWidth);
+    if (bin < 0 || bin >= nVtxBins) return 0.0;
+    return vtxWeights[bin];
 }

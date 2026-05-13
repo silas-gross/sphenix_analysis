@@ -3,33 +3,30 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  drawResponse.C
 //
-//  Visualises one ΔΦ-bin response matrix at three successive zoom levels:
+//  Visualises one ΔΦ-bin response matrix at four successive zoom levels.
 //
-//  Level 1 — fixed truth lead pT bin (iLsel):
-//    Rows (reco flat3D) restricted to those where reco lead pT == iLsel.
-//    Columns (truth flat3D) restricted to where truth lead pT == iLsel.
-//    All subleading pT and pair weight bins visible within that lead slice.
+//  Level 0 — full response matrix (nRecoFlat3D × nTrueFlat3D)
+//  Level 1 — fixed truth lead pT bin (iLsel): all subl pT × pair weight bins
+//  Level 2 — fixed truth (lead, subl) bin (iLsel, iSsel): all pair weight bins
+//  Level 3 — fixed truth (lead, subl, pairweight) cell: column + row projections
 //
-//  Level 2 — fixed truth (lead, subl) dijet pT bin (iLsel, iSsel):
-//    Further restrict to a single (iL,iS) truth ft bin and matching reco ft.
-//    All pair weight bins visible.
-//
-//  Level 3 — fixed truth (lead, subl, pairweight) cell (iLsel, iSsel, iPwsel):
-//    A single row and single column of the full response matrix — shows
-//    where one specific truth bin migrates to at reco level and vice versa.
+//  Follows the same calling convention as drawClosure.C:
+//    outDir   — working directory; plots written to outDir/Plots/
+//    respFile — merged response ROOT file (output of merge macro)
+//    mode     — Mode::kFull / kHalf / kData (selects ModeLabel for filenames)
 //
 //  Usage:
-//    root -l 'drawResponse.C("response.root", 4,    // dphi bin k
-//                             2,                     // iLsel  (0-based)
-//                             3,                     // iSsel  (0-based)
-//                             5,                     // iPwsel (0-based)
-//                             "out.pdf")'
+//    root -l 'drawResponse.C(".", "resp_merged.root", Mode::kFull,
+//                             4,   // kDphi  — ΔΦ bin index
+//                             2,   // iLsel  — lead pT bin  (0-based)
+//                             3,   // iSsel  — subl pT bin  (0-based)
+//                             5)'  // iPwsel — pair weight bin (0-based)
 //
-//  Outputs four separate files derived from outPDF:
-//    out_level0.pdf  — Level 0: full response matrix
-//    out_level1.pdf  — Level 1: lead pT slice matrix
-//    out_level2.pdf  — Level 2: dijet pT slice matrix (all pair weights)
-//    out_level3.pdf  — Level 3: single-cell column + row projections
+//  Outputs (in outDir/Plots/):
+//    response_level0-{label}.pdf  — full matrix
+//    response_level1-{label}.pdf  — lead pT slice
+//    response_level2-{label}.pdf  — dijet pT slice
+//    response_level3-{label}.pdf  — single-cell projections
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -56,24 +53,8 @@ TH2D* SubMatrix(TH2D* hFull,
     return hSub;
 }
 
-// Label every bin axis tick with a short "(iL,iS,iPw)" string.
-// Only labels every `stride` bins to avoid overcrowding.
-void LabelAxis(TAxis* ax, const std::vector<int>& sel, bool isTruth, int stride=1)
-{
-    for (int i = 0; i < (int)sel.size(); ++i) {
-        if (i % stride != 0) { ax->SetBinLabel(i+1, ""); continue; }
-        int bin1 = sel[i] - 1;  // convert to 0-based flat3D index
-        int iL, iS, iPw;
-        if (isTruth) TrueFlat3DToIJK(bin1, iL, iS, iPw);
-        else         RecoFlat3DToIJK(bin1, iL, iS, iPw);
-        ax->SetBinLabel(i+1,
-            std::format("({},{},{})", iL, iS, iPw).c_str());
-    }
-    ax->LabelsOption("v");
-    ax->SetLabelSize(0.03);
-}
-
 // Draw a TH2D on the current pad with a COLZ palette, log-z if any bin > 0.
+// A dashed red diagonal is drawn whenever both axes have the same number of bins.
 void DrawMatrix(TH2D* h, const char* ztitle = "cross-section weight")
 {
     h->GetZaxis()->SetTitle(ztitle);
@@ -82,21 +63,24 @@ void DrawMatrix(TH2D* h, const char* ztitle = "cross-section weight")
     gPad->SetBottomMargin(0.20);
     gPad->SetLeftMargin(0.20);
     h->Draw("COLZ");
-    // Draw a diagonal guide line only when axes have the same length
+    gPad->Update();  // establish axis transforms before any overlaid lines
     if (h->GetNbinsX() == h->GetNbinsY()) {
-        TLine* diag = new TLine(0, 0, h->GetNbinsX(), h->GetNbinsY());
+        double xlo = gPad->GetUxmin(), xhi = gPad->GetUxmax();
+        double ylo = gPad->GetUymin(), yhi = gPad->GetUymax();
+        TLine* diag = new TLine(xlo, ylo, xhi, yhi);
         diag->SetLineColor(kRed); diag->SetLineWidth(1);
         diag->SetLineStyle(2); diag->Draw();
     }
 }
 
 // ── main macro ───────────────────────────────────────────────────────────────
-void drawResponse(const char* respFile,
+void drawResponse(const char* outDir   = ".",
+                  const char* respFile = nullptr,
+                  Mode        mode     = Mode::kFull,
                   int  kDphi   = 0,    // ΔΦ bin index
                   int  iLsel   = 2,    // lead pT bin index   (0-based)
                   int  iSsel   = 1,    // subl pT bin index   (0-based)
-                  int  iPwsel  = 5,    // pair weight bin index (0-based)
-                  const char* outPDF = "response_zoom.pdf")
+                  int  iPwsel  = 5)    // pair weight bin index (0-based)
 {
     // ── sanity checks ────────────────────────────────────────────────────
     if (iLsel  < 0 || iLsel  >= nTrueLead) {
@@ -108,7 +92,15 @@ void drawResponse(const char* respFile,
     if (TrueFlatIndex(iLsel, iSsel) < 0) {
         std::cerr << "iLsel/iSsel is a kinematically forbidden (iL,iS) pair\n"; return; }
 
+    gROOT->SetBatch(true);
+    gStyle->SetOptStat(0);
+    gStyle->SetPalette(kBird);
+
+    const std::string label   = ModeLabel(mode);
+    const std::string plotDir = std::format("{}/Plots", outDir);
+
     // ── open file ────────────────────────────────────────────────────────
+    if (!respFile) { std::cerr << "respFile is required\n"; return; }
     TFile* fIn = TFile::Open(respFile, "READ");
     if (!fIn || fIn->IsZombie()) {
         std::cerr << "Cannot open " << respFile << "\n"; return; }
@@ -188,17 +180,9 @@ void drawResponse(const char* respFile,
     for (int ib = 1; ib <= hFull->GetNbinsY(); ++ib)
         hRow->SetBinContent(ib, hFull->GetBinContent(recoCell, ib));
 
-    // ── derive output filenames: strip extension, append _level{N}.pdf ───
-    std::string base(outPDF);
-    auto dot = base.rfind('.');
-    std::string stem = (dot != std::string::npos) ? base.substr(0, dot) : base;
-    std::string ext  = (dot != std::string::npos) ? base.substr(dot)    : ".pdf";
+    // ── derive output filenames ───────────────────────────────────────────
     auto outName = [&](int lvl) {
-        return std::format("{}_level{}{}", stem, lvl, ext); };
-
-    // ── shared style ──────────────────────────────────────────────────────
-    gStyle->SetOptStat(0);
-    gStyle->SetPalette(kBird);
+        return std::format("{}/response_level{}-{}.pdf", plotDir, lvl, label); };
 
     // ══════════════════════════════════════════════════════════════════════
     //  Level 0 — full response matrix
@@ -278,31 +262,40 @@ void drawResponse(const char* respFile,
             hL0->GetYaxis()->SetLabelSize(0.03);
         }
 
-        // Mark the selected lead pT bin with a white box outline
+        /*
+        // Dashed black lines at each lead pT block boundary
         {
-            int x0 = 0, x1 = 0, y0 = 0, y1 = 0;
-            for (int iF = 0; iF < nRecoFlat3D(); ++iF) {
-                int iL, iS, iPw; RecoFlat3DToIJK(iF, iL, iS, iPw);
-                if (iL == iLsel && iPw == 0 && iS == 0) x0 = iF;
-                if (iL == iLsel) x1 = iF + 1;
-            }
-            for (int iF = 0; iF < nTrueFlat3D(); ++iF) {
-                int iL, iS, iPw; TrueFlat3DToIJK(iF, iL, iS, iPw);
-                if (iL == iLsel && iPw == 0 && iS == 0) y0 = iF;
-                if (iL == iLsel) y1 = iF + 1;
-            }
-            std::vector<TLine*> box = {
-                new TLine(x0, y0, x1, y0),
-                new TLine(x0, y1, x1, y1),
-                new TLine(x0, y0, x0, y1),
-                new TLine(x1, y0, x1, y1),
+            double xlo = gPad->GetUxmin(), xhi = gPad->GetUxmax();
+            double ylo = gPad->GetUymin(), yhi = gPad->GetUymax();
+            auto drawLeadBoundaries = [&](bool isTruth) {
+                int nBins   = isTruth ? nTrueFlat3D() : nRecoFlat3D();
+                int nOther  = isTruth ? nRecoFlat3D() : nTrueFlat3D();
+                double span = isTruth ? (xhi - xlo) : (yhi - ylo);
+                double base = isTruth ? xlo : ylo;
+                double otherLo = isTruth ? ylo : xlo;
+                double otherHi = isTruth ? yhi : xhi;
+                int curL = -1;
+                for (int iF = 0; iF < nBins; ++iF) {
+                    int iL, iS, iPw;
+                    if (isTruth) TrueFlat3DToIJK(iF, iL, iS, iPw);
+                    else         RecoFlat3DToIJK(iF, iL, iS, iPw);
+                    if (iL != curL && curL >= 0) {
+                        double pos = base + span * iF / nBins;
+                        TLine* l = isTruth
+                            ? new TLine(otherLo, pos, otherHi, pos)
+                            : new TLine(pos, otherLo, pos, otherHi);
+                        l->SetLineColor(kBlack); l->SetLineWidth(1);
+                        l->SetLineStyle(2); l->Draw();
+                    }
+                    curL = iL;
+                }
             };
-            for (auto* l : box) {
-                l->SetLineColor(kWhite); l->SetLineWidth(2);
-                l->SetLineStyle(1); l->Draw();
-            }
+            drawLeadBoundaries(false);
+            drawLeadBoundaries(true);
         }
+        */
 
+        gPad->Update();  // flush COLZ before printing
         c0->Print(outName(0).c_str());
         std::cout << "Written: " << outName(0) << "\n";
         delete c0;
@@ -320,33 +313,72 @@ void drawResponse(const char* respFile,
         TH2D* hL1 = SubMatrix(hFull, recoSel1, trueSel1, "hL1",
             std::format("Lead pT = {} | {}",
                 leadLbl(iLsel), dphiLbl).c_str(),
-            "reco flat3D  [subl pT bin #times pair weight bin]",
-            "truth flat3D [subl pT bin #times pair weight bin]");
-        LabelAxis(hL1->GetXaxis(), recoSel1, false, nPairWeight);
-        LabelAxis(hL1->GetYaxis(), trueSel1, true,  nPairWeight);
+            "", "");
+        hL1->GetXaxis()->SetTitle("reco subl p_{T} bin");
+        hL1->GetYaxis()->SetTitle("truth subl p_{T} bin");
         DrawMatrix(hL1);
 
-        // White dashed lines boxing the selected iSsel slice
-        int nBeforeX = 0, nBeforeY = 0;
-        for (int ix = 0; ix < (int)recoSel1.size(); ++ix) {
-            int iL, iS, iPw; RecoFlat3DToIJK(recoSel1[ix]-1, iL, iS, iPw);
-            if (iS == iSsel && iPw == 0) { nBeforeX = ix; break; }
-        }
-        for (int iy = 0; iy < (int)trueSel1.size(); ++iy) {
-            int iL, iS, iPw; TrueFlat3DToIJK(trueSel1[iy]-1, iL, iS, iPw);
-            if (iS == iSsel && iPw == 0) { nBeforeY = iy; break; }
-        }
-        int nX1 = (int)recoSel1.size(), nY1 = (int)trueSel1.size();
-        std::vector<TLine*> lines1 = {
-            new TLine(nBeforeX,             0,  nBeforeX,             nY1),
-            new TLine(nBeforeX+nPairWeight, 0,  nBeforeX+nPairWeight, nY1),
-            new TLine(0, nBeforeY,             nX1, nBeforeY),
-            new TLine(0, nBeforeY+nPairWeight, nX1, nBeforeY+nPairWeight),
+        // Label each subl pT block center on both axes — same approach as
+        // Level 0's lead pT block labeling.
+        auto labelSublBins = [&](TAxis* ax, const std::vector<int>& sel, bool isTruth) {
+            int n = (int)sel.size();
+            int prevS = -1, blockStart = 0;
+            for (int i = 0; i <= n; ++i) {
+                int curS = -1;
+                if (i < n) {
+                    int iL, iS, iPw;
+                    if (isTruth) TrueFlat3DToIJK(sel[i]-1, iL, iS, iPw);
+                    else         RecoFlat3DToIJK(sel[i]-1, iL, iS, iPw);
+                    curS = iS;
+                }
+                if (curS != prevS) {
+                    if (prevS >= 0) {
+                        int mid = (blockStart + i) / 2;
+                        ax->SetBinLabel(mid + 1,
+                            std::format("{:.0f}-{:.0f}",
+                                trueSublPtBins[prevS],
+                                trueSublPtBins[prevS+1]).c_str());
+                    }
+                    blockStart = i;
+                    prevS = curS;
+                }
+            }
+            ax->LabelsOption("h");
+            ax->SetLabelSize(0.03);
         };
-        for (auto* l : lines1) {
-            l->SetLineColor(kWhite); l->SetLineWidth(2);
-            l->SetLineStyle(2); l->Draw();
+        labelSublBins(hL1->GetXaxis(), recoSel1, false);
+        labelSublBins(hL1->GetYaxis(), trueSel1, true);
+
+        /*
+        // Dashed black lines at each subl pT block boundary
+        {
+            double xlo = gPad->GetUxmin(), xhi = gPad->GetUxmax();
+            double ylo = gPad->GetUymin(), yhi = gPad->GetUymax();
+            int nX = (int)recoSel1.size(), nY = (int)trueSel1.size();
+            int prevS = -1;
+            for (int ix = 0; ix < nX; ++ix) {
+                int iL, iS, iPw; RecoFlat3DToIJK(recoSel1[ix]-1, iL, iS, iPw);
+                if (iS != prevS && prevS >= 0) {
+                    double pos = xlo + (xhi - xlo) * ix / nX;
+                    TLine* l = new TLine(pos, ylo, pos, yhi);
+                    l->SetLineColor(kBlack); l->SetLineWidth(1);
+                    l->SetLineStyle(2); l->Draw();
+                }
+                prevS = iS;
+            }
+            prevS = -1;
+            for (int iy = 0; iy < nY; ++iy) {
+                int iL, iS, iPw; TrueFlat3DToIJK(trueSel1[iy]-1, iL, iS, iPw);
+                if (iS != prevS && prevS >= 0) {
+                    double pos = ylo + (yhi - ylo) * iy / nY;
+                    TLine* l = new TLine(xlo, pos, xhi, pos);
+                    l->SetLineColor(kBlack); l->SetLineWidth(1);
+                    l->SetLineStyle(2); l->Draw();
+                }
+                prevS = iS;
+            }
         }
+        */
 
         c1->Print(outName(1).c_str());
         std::cout << "Written: " << outName(1) << "\n";
@@ -359,32 +391,32 @@ void drawResponse(const char* respFile,
     {
         TCanvas* c2 = new TCanvas("cL2", "Level 2: dijet pT slice", 800, 750);
         c2->SetRightMargin(0.15);
-        c2->SetBottomMargin(0.22);
-        c2->SetLeftMargin(0.18);
+        c2->SetBottomMargin(0.28);
+        c2->SetLeftMargin(0.28);
 
         TH2D* hL2 = SubMatrix(hFull, recoSel2, trueSel2, "hL2",
             std::format("Lead {} / Subl {} | {}",
                 leadLbl(iLsel), sublLbl(iSsel), dphiLbl).c_str(),
-            "reco pair weight bin", "truth pair weight bin");
-        LabelAxis(hL2->GetXaxis(), recoSel2, false, 1);
-        LabelAxis(hL2->GetYaxis(), trueSel2, true,  1);
-        DrawMatrix(hL2);
+            "", "");
+        hL2->GetXaxis()->SetTitle("reco pair weight bin");
+        hL2->GetYaxis()->SetTitle("truth pair weight bin");
 
-        // White dashed lines boxing the selected iPwsel cell
-        std::vector<TLine*> lines2 = {
-            new TLine(iPwsel,   0,           iPwsel,   nPairWeight),
-            new TLine(iPwsel+1, 0,           iPwsel+1, nPairWeight),
-            new TLine(0,        iPwsel,      nPairWeight, iPwsel),
-            new TLine(0,        iPwsel+1,    nPairWeight, iPwsel+1),
+        // Label each bin with its low and high pair weight edge.
+        auto labelPWBins = [&](TAxis* ax, const std::vector<int>& sel, bool isTruth) {
+            ax->SetLabelSize(0.025);
+            for (int i = 0; i < (int)sel.size(); ++i) {
+                int iL, iS, iPw;
+                if (isTruth) TrueFlat3DToIJK(sel[i]-1, iL, iS, iPw);
+                else         RecoFlat3DToIJK(sel[i]-1, iL, iS, iPw);
+                ax->SetBinLabel(i + 1,
+                    std::format("{:.2g}-{:.2g}",
+                        pairWeightBins[iPw], pairWeightBins[iPw+1]).c_str());
+            }
+            ax->LabelsOption("v");
         };
-        for (auto* l : lines2) {
-            l->SetLineColor(kWhite); l->SetLineWidth(2);
-            l->SetLineStyle(2); l->Draw();
-        }
-        // Red diagonal
-        TLine* diag2 = new TLine(0, 0, nPairWeight, nPairWeight);
-        diag2->SetLineColor(kRed); diag2->SetLineWidth(1);
-        diag2->SetLineStyle(2); diag2->Draw();
+        labelPWBins(hL2->GetXaxis(), recoSel2, false);
+        labelPWBins(hL2->GetYaxis(), trueSel2, true);
+        DrawMatrix(hL2);
 
         c2->Print(outName(2).c_str());
         std::cout << "Written: " << outName(2) << "\n";
@@ -404,8 +436,6 @@ void drawResponse(const char* respFile,
         gPad->SetLeftMargin(0.15); gPad->SetBottomMargin(0.12);
         hCol->SetFillColor(kAzure+7); hCol->SetLineColor(kAzure+9);
         hCol->Draw("HIST");
-        TLine* lD1 = new TLine(recoCell-1, 0, recoCell-1, hCol->GetMaximum());
-        lD1->SetLineColor(kRed); lD1->SetLineWidth(2); lD1->Draw();
         TLatex tx3; tx3.SetNDC(); tx3.SetTextSize(0.038);
         tx3.DrawLatex(0.17, 0.93,
             std::format("Truth ({},{},{}) #rightarrow reco",
@@ -421,8 +451,6 @@ void drawResponse(const char* respFile,
         gPad->SetLeftMargin(0.15); gPad->SetBottomMargin(0.12);
         hRow->SetFillColor(kOrange-3); hRow->SetLineColor(kOrange+2);
         hRow->Draw("HIST");
-        TLine* lD2 = new TLine(truthCell-1, 0, truthCell-1, hRow->GetMaximum());
-        lD2->SetLineColor(kRed); lD2->SetLineWidth(2); lD2->Draw();
         TLatex tx4; tx4.SetNDC(); tx4.SetTextSize(0.038);
         tx4.DrawLatex(0.17, 0.93,
             std::format("Reco ({},{},{}) #leftarrow truth",
