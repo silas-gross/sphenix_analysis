@@ -1,0 +1,13 @@
+*_output/*
+*_output/
+*.tex
+*.txt
+*.root
+*/build/*
+*/*/build/*
+macros/*.list
+macros/*make*
+macros/condor_file_dir/*
+macros/data_lists/
+macros/*/*.list
+
