@@ -2,10 +2,20 @@
 //  -*- C++ -*-.
 #ifndef SHOWERTOWERMATCHING_H
 #define SHOWERTOWERMATCHING_H
-
+//fun4all basic stuff
 #include <fun4all/SubsysReco.h>
 
+//root 
+#include <TH1.h>
+#include <TH2.h>
+#include <TFile.h>
+#include <TTree.h>
+
+//c++
 #include <string>
+#include <vector>
+#include <math.h>
+
 
 class PHCompositeNode;
 
@@ -29,7 +39,6 @@ class ShowerTowerMatching : public SubsysReco
       database, because you know the run number. A place
       to book histograms which have to know the run number.
    */
-  int InitRun(PHCompositeNode *topNode) override;
 
   /** Called for each event.
       This is where you do the real work.
@@ -37,18 +46,12 @@ class ShowerTowerMatching : public SubsysReco
   int process_event(PHCompositeNode *topNode) override;
 
   /// Clean up internals after each event.
-  int ResetEvent(PHCompositeNode *topNode) override;
 
   /// Called at the end of each run.
-  int EndRun(const int runnumber) override;
 
   /// Called at the end of all processing.
   int End(PHCompositeNode *topNode) override;
 
-  /// Reset
-  int Reset(PHCompositeNode * /*topNode*/) override;
-
-  void Print(const std::string &what = "ALL") const override;
 
  private:
 };
