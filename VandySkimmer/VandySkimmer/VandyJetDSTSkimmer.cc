@@ -1122,6 +1122,7 @@ HepMC::GenParticle* VandyJetDSTSkimmer::findCommonAncestor( std::vector<std::vec
 	bool isCommon 	= false; 
 	bool foundCommon= false;
 	auto j = Jettree.at(0);
+	std::cout<<"Jettree has size: " <<Jettree.size() <<std::endl;
 	for(auto p:j)
 	{
 		if(!p) continue;
@@ -1131,6 +1132,7 @@ HepMC::GenParticle* VandyJetDSTSkimmer::findCommonAncestor( std::vector<std::vec
 		while(isCommon)
 		{
 			std::cout<<__LINE__<<std::endl;
+			if(Jettree.size() == 1) break;
 			for(int j_n=1; j_n<(int)Jettree.size(); j_n++)
 			{
 				i++;
