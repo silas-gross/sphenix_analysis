@@ -460,7 +460,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         tmpJet.set_pt_uncalib(jet->get_pt());
         tmpJet.set_hCaloFrac(getHCalFracTruth(jet, topNode));
         tmpJet.set_constituents(cons);
-//	getJetParentParton(jet, &tmpJet, topNode);	
+	getJetParentParton(jet, &tmpJet, topNode);	
         m_truthJetInfo[r].push_back(tmpJet);
      }
     }
@@ -1085,6 +1085,7 @@ std::vector<HepMC::GenParticle*> VandyJetDSTSkimmer::getFinalStateAncestors(HepM
 			it != prodvtx->particles_in_const_end(); 
 			++it )
 	{
+		if(!prodvtx) break;
 		float time = prodvtx->position().t();
 		while (tempparents.find(time) != tempparents.end() ) time+=(time+1)/1000.; //just make sure that there are unique keys
 		tempparents[time]=*it;
@@ -1120,31 +1121,39 @@ HepMC::GenParticle* VandyJetDSTSkimmer::findCommonAncestor( std::vector<std::vec
 	HepMC::GenParticle* parent {nullptr};
 	bool isCommon 	= false; 
 	bool foundCommon= false;
-	auto j = Jettree.begin();
-	for(auto p:*j)
+	auto j = Jettree.at(0);
+	for(auto p:j)
 	{
+		if(!p) continue;
 		isCommon=true;
 		int i=0;
+		std::cout<<"Particle 1 pid: " <<p->pdg_id() <<std::endl;
 		while(isCommon)
 		{
-			for(auto j2=Jettree.begin()+1; j2 != Jettree.end(); ++j2)
+			std::cout<<__LINE__<<std::endl;
+			for(int j_n=1; j_n<(int)Jettree.size(); j_n++)
 			{
 				i++;
-				for(auto p2:*j2)
+				auto j2 = Jettree.at(j_n);
+				std::cout<<"Scanning through second order" <<std::endl;
+				for(auto p2:j2)
 				{
+					if(!p2) continue;
+					std::cout<<"Particle 2 pid: " <<p2->pdg_id() <<std::endl;
 					if( p->barcode() == p2->barcode() )
 					{
 						foundCommon = true;
 						break;
 					}
+					else continue;
 				}
-				if( !foundCommon || i > 10  )
+				if( !foundCommon /*|| i > 10*/  )
 				{
 					isCommon = false;
 					break;
 				}
 			}
-			if(!isCommon || i > 10 ) break;
+			if(!isCommon /*|| i > 10 */) break;
 		}
 		if(isCommon){
 			std::cout<<p->pdg_id()<<std::endl;
