@@ -64,6 +64,7 @@
 
 #include <vector>
 #include <string>
+#include <thread>
 
 class PHCompositeNode;
 class Jet;

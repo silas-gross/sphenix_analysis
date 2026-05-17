@@ -421,6 +421,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
  	getTruthTowers();
     for(int r=0; r<5; r++)
     {
+      std::vector<std::thread> parentPartonThreads {};
       for(auto jet : *truthJets[r])
       {
         if (jet->get_pt() < m_minJetPt)
@@ -451,7 +452,7 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
           }
         }
         
-	      JetInfo tmpJet;
+	JetInfo tmpJet;
         tmpJet.set_px(jet->get_px());
         tmpJet.set_py(jet->get_py());
         tmpJet.set_pz(jet->get_pz());
@@ -460,10 +461,25 @@ int VandyJetDSTSkimmer::process_event(PHCompositeNode *topNode)
         tmpJet.set_pt_uncalib(jet->get_pt());
         tmpJet.set_hCaloFrac(getHCalFracTruth(jet, topNode));
         tmpJet.set_constituents(cons);
-	getJetParentParton(jet, &tmpJet, topNode);	
         m_truthJetInfo[r].push_back(tmpJet);
-     }
+	parentPartonThreads.push_back( 
+			std::thread( &VandyJetDSTSkimmer::getJetParentParton, this, jet, &tmpJet, topNode )
+			);
+      }
+      for(int pPT=0; pPT <(int) parentPartonThreads.size(); pPT++)
+	{
+		parentPartonThreads[pPT].join();
+	}
+	int n_bad = 0; 
+	for(auto jet:m_truthJetInfo[r]){
+		int pid = jet.parentPID();
+		if(pid == -999) n_bad++;
+		if(Verbosity())std::cout<<"Jet parent : " <<pid <<std::endl;
+	}
+	if(Verbosity()) std::cout<<std::format("For jets of radius 0.{}, there are {} \% of jets with a bad parent", r+2, n_bad*100/(float)m_truthJetInfo[r].size() )<<std::endl;
+
     }
+   
     maketruthtowerJets();
   }//end of all truth stuff
   else
@@ -1039,7 +1055,6 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, JetInfo* jetinfo, PHCompos
 			}
 		}
 	}
-	std::cout<<"There are " <<jet->get_comp_vec().size() <<" particles in the jet final state" <<std::endl;
 	for(auto p: jet_final_state)
 	{
 		std::vector<HepMC::GenParticle*> ancestors {};
@@ -1048,7 +1063,6 @@ void VandyJetDSTSkimmer::getJetParentParton(Jet* jet, JetInfo* jetinfo, PHCompos
 	}
 	HepMC::GenParticle* parent = findCommonAncestor(parton_parents);
 	if(!parent){
-	       std::cout<<"Bad parent" <<std::endl;
 	       jetinfo->set_parentPID(-999);
 	       jetinfo->set_isQuark(false);
 	       jetinfo->set_parent("");
@@ -1121,48 +1135,37 @@ HepMC::GenParticle* VandyJetDSTSkimmer::findCommonAncestor( std::vector<std::vec
 	HepMC::GenParticle* parent {nullptr};
 	bool isCommon 	= false; 
 	bool foundCommon= false;
+	if(Jettree.empty()) return parent;
 	auto j = Jettree.at(0);
-	std::cout<<"Jettree has size: " <<Jettree.size() <<std::endl;
 	for(auto p:j)
 	{
 		if(!p) continue;
 		isCommon=true;
-		int i=0;
-		std::cout<<"Particle 1 pid: " <<p->pdg_id() <<std::endl;
-		while(isCommon)
+		for(int j_n = 1; j_n <(int) Jettree.size(); j_n++)
 		{
-			std::cout<<__LINE__<<std::endl;
-			if(Jettree.size() == 1) break;
-			for(int j_n=1; j_n<(int)Jettree.size(); j_n++)
+			auto j2 = Jettree.at(j_n);
+			foundCommon = false;
+			for(auto p2:j2)
 			{
-				i++;
-				auto j2 = Jettree.at(j_n);
-				std::cout<<"Scanning through second order" <<std::endl;
-				for(auto p2:j2)
+				if(!p2) continue;
+				if( p->barcode() == p2->barcode() )
 				{
-					if(!p2) continue;
-					std::cout<<"Particle 2 pid: " <<p2->pdg_id() <<std::endl;
-					if( p->barcode() == p2->barcode() )
-					{
-						foundCommon = true;
-						break;
-					}
-					else continue;
-				}
-				if( !foundCommon /*|| i > 10*/  )
-				{
-					isCommon = false;
+					foundCommon = true; 
 					break;
 				}
 			}
-			if(!isCommon /*|| i > 10 */) break;
+			if(!foundCommon)
+			{
+				isCommon = false; 
+				break;
+			}
 		}
-		if(isCommon){
-			std::cout<<p->pdg_id()<<std::endl;
+		if(isCommon)
+		{
 			parent = p;
 			break;
 		}
-	}
+	}	
 	return parent;
 }
 //____________________________________________________________________________..
