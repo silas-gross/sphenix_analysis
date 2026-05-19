@@ -18,10 +18,10 @@
 
 
 class PHCompositeNode;
-class Tower
+class tower
 {
 	public:
-		Tower(
+		tower(
 			float etaC = -999.,
 			float phiC = -999. , 
 			float e=-999., 
@@ -35,7 +35,7 @@ class Tower
 			tower_N = tN;
 			isTruth = isT;
 		};
-		Tower(
+		tower(
 			std::array<float, 3> etaC { -999., -999., -999.},
 			std::array<float, 3> phiC { -999., -999., -999.},
 			float e=-999., 
@@ -55,7 +55,7 @@ class Tower
 			tower_N = tN;
 			isTruth = isT;
 		};
-		~Tower(){};
+		~tower(){};
 		int tower_N {-999};
 		float etaCenter {-999.};
 		float etalow {-999.};
@@ -72,7 +72,7 @@ class Shower
 	public:
 		Shower(){};
 		~Shower(){};
-		void AddTower( Tower tw)
+		void AddTower( tower tw)
 		{
 			StruckTowers.push_back(tw);
 			if( tw.etalow != -999 && tw.etahigh != -999) 
@@ -97,7 +97,7 @@ class Shower
 			}
 			return;
 		}
-		bool IsInHits(Tower tw)
+		bool IsInHits(tower tw)
 		{
 			bool geomMatch {false};
 			if(tw.etaCenter > etaDown && tw.etaCenter < etaUp )
@@ -125,39 +125,46 @@ class Shower
 };
 class ShowerTowerMatching : public SubsysReco
 {
- public:
+	public:
 
-  ShowerTowerMatching(const std::string &name = "ShowerTowerMatching");
+		ShowerTowerMatching(const std::string &name = "ShowerTowerMatching");
 
-  ~ShowerTowerMatching() override;
+		~ShowerTowerMatching() override;
 
-  /** Called during initialization.
-      Typically this is where you can book histograms, and e.g.
-      register them to Fun4AllServer (so they can be output to file
-      using Fun4AllServer::dumpHistos() method).
-   */
-  int Init(PHCompositeNode *topNode) override;
+		/** Called during initialization.
+		Typically this is where you can book histograms, and e.g.
+		register them to Fun4AllServer (so they can be output to file
+		using Fun4AllServer::dumpHistos() method).
+		*/
+		int Init(PHCompositeNode *topNode) override;
 
-  /** Called for first event when run number is known.
-      Typically this is where you may want to fetch data from
-      database, because you know the run number. A place
-      to book histograms which have to know the run number.
-   */
+		/** Called for first event when run number is known.
+		Typically this is where you may want to fetch data from
+		database, because you know the run number. A place
+		to book histograms which have to know the run number.
+		*/
 
-  /** Called for each event.
-      This is where you do the real work.
-   */
-  int process_event(PHCompositeNode *topNode) override;
+		/** Called for each event.
+		This is where you do the real work.
+		*/
+		int process_event(PHCompositeNode *topNode) override;
 
-  /// Clean up internals after each event.
+		/// Clean up internals after each event.
 
-  /// Called at the end of each run.
+		/// Called at the end of each run.
 
-  /// Called at the end of all processing.
-  int End(PHCompositeNode *topNode) override;
+		/// Called at the end of all processing.
+		int End(PHCompositeNode *topNode) override;
 
 
- private:
+	private:
+		void buildTruthTowers(
+				std::map<PHG4Particle*, Shower*>, 
+				std::vector<PHG4Particle*> );
+
+		std::vector<tower> shower_having_truth_towers {};
+		std::vector<tower> unshowerd_truth_towers {};
+
 };
 
 #endif // SHOWERTOWERMATCHING_H
