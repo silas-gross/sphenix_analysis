@@ -18,7 +18,111 @@
 
 
 class PHCompositeNode;
+class Tower
+{
+	public:
+		Tower(
+			float etaC = -999.,
+			float phiC = -999. , 
+			float e=-999., 
+			int tn=-999, 
+			bool isT=false
+		){
+			etaCenter = etaC;
+			phiCenter = phiC;
+			E 	= e;
+			ET	= E / std::cosh(etaCenter);
+			tower_N = tN;
+			isTruth = isT;
+		};
+		Tower(
+			std::array<float, 3> etaC { -999., -999., -999.},
+			std::array<float, 3> phiC { -999., -999., -999.},
+			float e=-999., 
+			int tn=-999, 
+			bool isT=false
+		){
+			etalow		= etaC[0];
+			etaCenter 	= etaC[1];
+			etahigh		= etaC[2];
 
+			philow		= phiC[0];
+			phiCenter 	= phiC[1];
+			phihigh		= phiC[2];
+
+			E 	= e;
+			ET 	= E / std::cosh(etaCenter);
+			tower_N = tN;
+			isTruth = isT;
+		};
+		~Tower(){};
+		int tower_N {-999};
+		float etaCenter {-999.};
+		float etalow {-999.};
+		float etahigh {-999.};
+		float phiCenter {-999.};
+		float philow {-999.};
+		float phihigh {-999.};
+		float E {0};
+		float ET {0};
+		bool isTruth {false};
+};
+class Shower
+{
+	public:
+		Shower(){};
+		~Shower(){};
+		void AddTower( Tower tw)
+		{
+			StruckTowers.push_back(tw);
+			if( tw.etalow != -999 && tw.etahigh != -999) 
+			{
+				if(tw.etalow < etaDown) etaDown = tw.etalow;
+				if(tw.etahigh > etaUp) etaUp = tw.etahigh;
+			}
+			else 
+			{
+				if(tw.etaCenter < etaDown) etaDown = tw.etaCenter;
+				if(tw.etaCenter > etaUp) etaUp = tw.etaCenter
+			}
+			if( tw.philow != -999 && tw.phihigh != -999) 
+			{
+				if(tw.philow < phiDown) phiDown = tw.philow;
+				if(tw.phihigh > phiUp) phiUp = tw.phihigh;
+			}
+			else 
+			{
+				if(tw.phiCenter < phiDown) phiDown = tw.phiCenter;
+				if(tw.phiCenter > phiUp) phiUp = tw.phiCenter
+			}
+			return;
+		}
+		bool IsInHits(Tower tw)
+		{
+			bool geomMatch {false};
+			if(tw.etaCenter > etaDown && tw.etaCenter < etaUp )
+				if(tw.phiCenter > phiDown && tw.phiCenter < phiUp) 
+					geomMatch=true;
+			return geomMatch;
+		}
+
+		std::vector<Tower> getStruck() {	
+			return StruckTowers;
+		};
+		std::array<float, 2> get_etaBounds() { 
+			return std::array<float, 2> {etaDown, etaUp};
+		};
+		std::array<float, 2> get_phiBounds() { 
+			return std::array<float, 2> {etaDown, etaUp};
+		};
+	private:
+		std::vector<Tower> StruckTowers{};
+		float etaDown	{-999.};
+		float etaUp 	{-999.};
+		float phiDown	{-999.};
+		float phiUp 	{-999.};
+
+};
 class ShowerTowerMatching : public SubsysReco
 {
  public:
