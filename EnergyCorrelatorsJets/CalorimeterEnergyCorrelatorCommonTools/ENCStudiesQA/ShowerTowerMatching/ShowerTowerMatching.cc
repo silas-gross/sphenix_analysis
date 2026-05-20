@@ -105,9 +105,12 @@ int ShowerTowerMatching::process_event(PHCompositeNode*  topNode)
 	matchTheTowers(topNode);
 	matchTheClusters(topNode);
 }
-void ShowerTowerMatching::buildTruthTowers(std::map<PHG4Particle*, Shower*> matched, std::vector<PHG4Particle*> unmatched)
+void ShowerTowerMatching::buildTruthTowers(
+		std::map<PHG4Particle*, Shower*> matched, 
+		std::vector<PHG4Particle*> unmatched
+		)
 {
-	
+	BuildMetaTowers* bm = new BuildMetaTowers();
 	for(auto pm: matched)
 	{
 	}
@@ -116,6 +119,7 @@ void ShowerTowerMatching::buildTruthTowers(std::map<PHG4Particle*, Shower*> matc
 void ShowerTowerMatching::matchTheTowers
 {
 	//matchign the meta towers to the shower 
+}
 bool ShowerTowerMatching::KinCuts(PHG4Particle* p)
 {
 	bool kingood {false};

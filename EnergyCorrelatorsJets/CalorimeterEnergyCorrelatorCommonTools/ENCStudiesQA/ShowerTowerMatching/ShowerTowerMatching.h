@@ -5,6 +5,7 @@
 //fun4all basic stuff
 #include <fun4all/SubsysReco.h>
 
+#include "BuildMetaTowers.h"
 //root 
 #include <TH1.h>
 #include <TH2.h>
@@ -158,6 +159,15 @@ class ShowerTowerMatching : public SubsysReco
 
 
 	private:
+		void buildTowerBins(int n_bins = 10);
+		void matchTheTower();
+		void KinCuts(PHG4Particle*);
+		void getParticleShower(
+			PHG4Particle*,
+			PHG4Shower*,
+			Shower*,
+			PHCompositeNode* 
+			);	
 		void buildTruthTowers(
 				std::map<PHG4Particle*, Shower*>, 
 				std::vector<PHG4Particle*> );
@@ -165,6 +175,17 @@ class ShowerTowerMatching : public SubsysReco
 		std::vector<tower> shower_having_truth_towers {};
 		std::vector<tower> unshowerd_truth_towers {};
 
+		std::vector<float>* tower_bins = new std::vector<float> {};
+
+		TH1F* h_tow_fake {nullptr};
+		TH1F* h_tow_miss {nullptr};
+		TH1F* h_cls_fake {nullptr};
+		TH1F* h_cls_miss {nullptr};
+		
+		TH1F* h_tow_fake_tr {nullptr};
+		TH1F* h_tow_miss_tr {nullptr};
+		TH1F* h_cls_fake_tr {nullptr};
+		TH1F* h_cls_miss_tr {nullptr};
 };
 
 #endif // SHOWERTOWERMATCHING_H
