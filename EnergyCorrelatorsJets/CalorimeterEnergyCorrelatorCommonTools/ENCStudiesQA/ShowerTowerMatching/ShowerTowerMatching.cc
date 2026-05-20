@@ -4,10 +4,54 @@ ShowerTowerMatching::ShowerTowerMatching(const std::string name)
 {
 	//this is the initializer
 }
-
+void ShowerTowerMatching::buildTowerBins(int n_bins/*=100*/)
+{
+	tower_bins->clear();
+	float first_bin = 1e-01;
+	float last_realbin = 50; //use a 50 GeV upper bin 
+	float lastbin = 1e+02; //catchall for above 50 GeV
+	tower_bins->push_back(1e-06); //1 keV bottom bin
+	tower_bins->push_back(firstbin); //100 MeV is the start of the actual bins
+	float width = (std::log10(last_realbin) - std::log10(first_bin) )/((float)n_bins-2.);
+	for(int i=1; i<n_bins; i++)
+	{
+		float bin_edge = first_bin * std::pow(10, width * i);
+		if(bin_edge == tower_bins->at(i)) continue;
+		else if (bin_edge >= last_realbin) break;
+		tower_bins->push_back(bin_edge);
+	}
+	tower_bins->push_back(last_realbin);
+	tower_bins->push_back(lastbin);
+	return;
+}
 int ShowerTowerMatching::Init(PHCompositeNode* topNode)
 {
-
+	buildtowerbins();
+	h_tow_fake = new TH1F("tow_fake", 
+			"Fakes on Meta Towers from truth particle showers; E_{T}^{tow} [GeV]; Fake rate", 
+			tower_bins->data());
+	h_tow_miss = new TH1F("tow_miss",
+			"Miss truth particle showers to Meta Towers; E_{T}^{particle} [GeV]; Miss rate",
+			tower_bins->data());
+	h_cls_fake = new TH1F("cls_fake", 
+			"Fakes on Topo Clusterss from truth particle showers; E_{T}^{cls} [GeV]; Fake rate", 
+			tower_bins->data());
+	h_cls_miss = new TH1F("cls_miss",
+			"Miss truth particle showers to Topo Clusterss; E_{T}^{particle} [GeV]; Miss rate",
+			tower_bins->data());
+	h_tow_fake_tr 	= new TH1F("tow_fake_tr", 
+			"Fakes on Meta Towers from truth tower showers; E_{T}^{tow} [GeV]; Fake rate", 
+			tower_bins->data());
+	h_tow_miss_tr 	= new TH1F("tow_miss_tr",
+			"Miss truth tower showers to Meta Towers; E_{T}^{tower} [GeV]; Miss rate",
+			tower_bins->data());
+	h_cls_fake_tr 	= new TH1F("cls_fake", 
+			"Fakes on Topo Clusters from truth tower showers; E_{T}^{cls} [GeV]; Fake rate", 
+			tower_bins->data());
+	h_cls_miss_tr 	= new TH1F("cls_miss",
+			"Miss truth tower showers to Topo Clusters; E_{T}^{tower} [GeV]; Miss rate",
+			tower_bins->data());
+	return Fun4AllReturnCodes::EVENT_OK;
 }
 int ShowerTowerMatching::process_event(PHCompositeNode*  topNode)
 {
