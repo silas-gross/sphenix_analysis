@@ -116,9 +116,20 @@ void ShowerTowerMatching::buildTruthTowers(
 	}
 	return;
 }
-void ShowerTowerMatching::matchTheTowers
+void ShowerTowerMatching::buildTopoTowers(
+		PHCompositeNode* topNode
+		)
+{
+	BuildMetaTower* bm = new BuildMetaTowers();
+	
+
+}
+void ShowerTowerMatching::matchTheTowers()
 {
 	//matchign the meta towers to the shower 
+}
+void ShowerTowerMatching::matchTheClusters()
+{
 }
 bool ShowerTowerMatching::KinCuts(PHG4Particle* p)
 {
