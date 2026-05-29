@@ -3,6 +3,10 @@
 ShowerTowerMatching::ShowerTowerMatching(const std::string name)
 {
 	//this is the initializer
+	dataTowers = new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
+	truthTowers = new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
+	dataClusters = new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
+	dataTowers = new std::array<BuildMetaTowers::TowerArrayEntry*, 1536> {};
 }
 void ShowerTowerMatching::buildTowerBins(int n_bins/*=100*/)
 {
@@ -120,9 +124,34 @@ void ShowerTowerMatching::buildTopoTowers(
 		PHCompositeNode* topNode
 		)
 {
-	BuildMetaTower* bm = new BuildMetaTowers();
-	
+	dataTowers->clear();
+	BuildMetaTower* bm = new BuildMetaTowers( BuildMetaTowers::CALO::EMCAL, "Fun4AllTowers");
+	bm->LoadFun4AllTowers(topNode);
+	float zvtx = 0.;
+        try{
+                GlobalVertexMap* vertexmap=findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
+                if(vertexmap){
+                        if(vertexmap->empty())
+                                std::cout<<"Empty Vertex Map. \n Setting vertex to origin" <<std::endl;
+                        else{
 
+                                GlobalVertex* gl_vtx=nullptr;
+                                for(auto vertex_iter:*vertexmap){
+                                        if(vertex_iter.first == GlobalVertex::VTXTYPE::MBD || vertex_iter.first == GlobalVertex::VTXTYPE::SVTX_MBD )
+                                        {
+                                                gl_vtx=vertex_iter.second;
+                                        }
+                                }
+                                if(gl_vtx){
+                                        zvtx=gl_vtx->get_z();
+                                }
+                        }
+                }
+        }
+        catch(std::exception& e){std::cout<<"Could not find the vertex. \n Setting to origin" <<std::endl;}
+	bm->RunMetaTowerBuilder(zvtx);	
+	dataTowers = bm->getMetaTowers();	
+	return;
 }
 void ShowerTowerMatching::matchTheTowers()
 {

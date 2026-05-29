@@ -186,6 +186,10 @@ class ShowerTowerMatching : public SubsysReco
 		TH1F* h_tow_miss_tr {nullptr};
 		TH1F* h_cls_fake_tr {nullptr};
 		TH1F* h_cls_miss_tr {nullptr};
+	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* dataTowers {nullptr};
+	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* truthTowers {nullptr}; 
+	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* dataClusters {nullptr};  
+	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* truthParticles {nullptr}
 };
 
 #endif // SHOWERTOWERMATCHING_H
