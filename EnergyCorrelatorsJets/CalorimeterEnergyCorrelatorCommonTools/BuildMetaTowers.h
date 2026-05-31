@@ -382,6 +382,25 @@ class BuildMetaTowers
 			}
 			return;
 		}
+		
+		void convertPhParticles(
+				std::vector<PHG4Particle*> truth_particles,
+				std::vector<int>* particle_index
+				)
+		{
+			int i= 0;
+			for(auto tp: truth_particles)
+			{
+				auto pt = convertPhParticle(tp);
+				int index = calcuateIndex(pt);
+				if(particle_index->size() != truth_particles.size()) particle_index->push_back(index);
+				else particle_index->at(i) = index;
+				addMetaTower(*pt);
+				i++;
+			}
+			return;
+		}
+		
 		TowerArrayEntry* convertPhParticle
 			(
 			 PHG4Particle* truth_particle
