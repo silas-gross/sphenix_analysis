@@ -10,12 +10,12 @@
 // 	single "shifted em+hadronic calorimeter" w/ HCAL bins		//
 // 	Works with vandy skimmer data and Tower info			//
 //									//
-//	Authors: 	Ben Kimelman, Skaydi 				//
+//	Authors: 	Skaydi, Ben Kimelman	 			//
 //	First commit: 	9 March 2026					//
-//	This commit: 	28 April 2026					//
-//	version: 	v1.9						//
+//	This commit: 	31 May 2026					//
+//	version: 	v2.0						//
 //									//
-//	Notes on this commit: First commit				//
+//	Notes on this commit: added support for truth particles		//
 //									//
 //////////////////////////////////////////////////////////////////////////
 
@@ -370,13 +370,41 @@ class BuildMetaTowers
 		void 		setInput
 				( std::string input = "VandyClass" ) { this->T = input; }; 
 		std::string 	getInput() { return this->T; }; 
-		
+	
+		void convertPhParticles(
+				std::vector<PHG4Particle*> truth_particles
+				)
+		{
+			for(auto tp: truth_particles)
+			{
+				auto pt = convertPhParticle(tp);
+				addMetaTower(*pt);
+			}
+			return;
+		}
+		TowerArrayEntry* convertPhParticle
+			(
+			 PHG4Particle* truth_particle
+			)
+		{
+
+			float e 	= truth_particle->e();
+			float px	= truth_particle->px();
+			float py	= truth_particle->py();
+			float pz	= truth_particle->pz();
+			double p	= std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2));
+			double phi 	= std::atan2(px, py);
+			double eta	= std::atanh(pz/p);
+			TowerArrayEntry* tr = new TowerArrayEntry {e, phi, eta};
+			return tr;
+		}	
 		//return the final object
 		std::array<TowerArrayEntry*, 1536>* getEMReTowers() { return this->EMReTowers; };
 		std::array<TowerArrayEntry*, 1536>* getIHCaTowers() { return this->IHCaTowers; };
 		std::array<TowerArrayEntry*, 1536>* getOHCaTowers() { return this->OHCaTowers; };
 		std::array<TowerArrayEntry*, 1536>* getMetaTowers() { return this->MetaTowers; };
 		std::array<double, 25> getShiftedEdges() { return this->shiftedetaEdges; };
+	
 	private:
 		//Private variables
 		float 		R { 1245 }; //IHCAL half radius in cm

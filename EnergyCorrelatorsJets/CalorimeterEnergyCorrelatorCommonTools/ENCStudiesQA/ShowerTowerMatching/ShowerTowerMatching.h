@@ -116,6 +116,14 @@ class Shower
 		std::array<float, 2> get_phiBounds() { 
 			return std::array<float, 2> {etaDown, etaUp};
 		};
+		void addtoShower(Shower* s)
+		{
+			for(auto t:s->getStruck())
+			{
+				AddTower(t)
+			}
+			return;
+		}
 	private:
 		std::vector<Tower> StruckTowers{};
 		float etaDown	{-999.};

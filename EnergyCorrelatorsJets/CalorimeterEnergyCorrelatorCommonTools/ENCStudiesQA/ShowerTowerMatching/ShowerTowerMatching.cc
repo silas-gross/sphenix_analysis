@@ -87,6 +87,7 @@ int ShowerTowerMatching::process_event(PHCompositeNode*  topNode)
 		PHG4Particle* p = iter->second;
 		if(!p) continue;
 		bool isKinematicGood = KinCuts(p);
+		
 		if(!isKinematicGood) continue;
 		int track_id = p->get_track_id();
 		if(showers.find(track_id)== showers.end())
@@ -105,27 +106,68 @@ int ShowerTowerMatching::process_event(PHCompositeNode*  topNode)
 		if(afake.second == true) continue;
 		else fakeShower.push_back(showers[afake.first]);
 	}
-	buildTruthTowers(particles_to_match, unmatched_truth_particles);
+	float truth_zvtx = 0; 
+	auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
+	if(hepmc_gen_event)
+	{
+		for( PHHepMCGenEventMap::ConstIter evtIter=hepmc_gen_event->begin(); evtIter != hepmc_gen_event->end(); ++evtIter)
+		{
+			PHHepMCGenEvent* hpev=evtIter->second;
+			if(hpev){
+				HepMC::GenEvent* ev=hpev->getEvent();	
+				if(ev)
+				{
+					auto vtx = ev->signal_process_vertex();
+					truth_zvtx = vtx->position().z(); 
+				}
+			}
+		}
+	}	
+	std::map<BuildMetaTowers::TowerArrayEntry*, Shower*> matched_towers {};
+	std::vector<BuildMetaTowers::TowerArrayEntry*> unmatched_towers {};
+	buildTruthTowers(
+			particles_to_match, 
+			unmatched_truth_particles, 
+			&matched_towers, 
+			&unmatched_towers, 
+			truth_zvtx );
+	
 	matchTheTowers(topNode);
 	matchTheClusters(topNode);
 }
 void ShowerTowerMatching::buildTruthTowers(
 		std::map < PHG4Particle*, Shower* > matched, 
 		std::vector < PHG4Particle* > unmatched, 
-		std::map < BuildMetaTowers::TowerArrayEntry*, Shower*> matched_towers, 
-		std::vector <TowerArrayEntry*> unmatched_towers
+		std::map < BuildMetaTowers::TowerArrayEntry*, Shower*>* matched_towers, 
+		std::vector <TowerArrayEntry*>* unmatched_towers,
+		float truth_zvtx;
 		)
 {
 	BuildMetaTowers* bm = new BuildMetaTowers();
-	auto metaTowers = bm->getmetaTower();
-	for(auto mt:metaTowers)
-	{
-		//a
-	}
+	bm->RunMetaTowerBuilder(truth_zvtx);
+	BuildMetaTower* um = new BuildMetaTowers();
+	um->RunMetaTowerBuilder(truth_zvtx);
+	um->ConvertPhParticles(unmatched);
+	unmatched_towers = &(um->getMetaTowers());
+	std::vector<PHG4Particle*> matched_particles {};
+	std::vector<int> shower_to_tower_index; 
 	for(auto pm: matched)
+	{	
+		matched_particles.push_back(pm.first);
+		shower_to_tower_index.push_back(-999);
+	}
+	bm->ConvertPhParticles(matched_particles, shower_to_tower_index);
+	auto mt = bm->getMetaTowers();
+	for(auto m:mt)
 	{
-		BuildMetaTowers::TowerArrayEntry* tr = bm->convertPhParticle(pm.first);
+		Shower* sh  = new Shower();
+		*matched_towers[m] = sh;
+	}
 
+	for(auto sti: shower_to_tower_index)
+	{
+		auto m = mt[sti];
+		matched_towers->at(m)->addtoShower(matched[matched_particles.at(sti)]);
 	}
 	return;
 }
@@ -164,7 +206,8 @@ void ShowerTowerMatching::buildTopoTowers(
 }
 void ShowerTowerMatching::matchTheTowers()
 {
-	//matchign the meta towers to the shower 
+	//matching the meta towers to the shower 
+	//
 }
 void ShowerTowerMatching::matchTheClusters()
 {
