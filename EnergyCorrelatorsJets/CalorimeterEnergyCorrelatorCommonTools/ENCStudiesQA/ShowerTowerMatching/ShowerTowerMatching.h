@@ -114,7 +114,7 @@ class Shower
 			return std::array<float, 2> {etaDown, etaUp};
 		};
 		std::array<float, 2> get_phiBounds() { 
-			return std::array<float, 2> {etaDown, etaUp};
+			return std::array<float, 2> {phiDown, phiUp};
 		};
 		void addtoShower(Shower* s)
 		{

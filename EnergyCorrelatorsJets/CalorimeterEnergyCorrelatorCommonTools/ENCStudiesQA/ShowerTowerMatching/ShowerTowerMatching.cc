@@ -132,8 +132,8 @@ int ShowerTowerMatching::process_event(PHCompositeNode*  topNode)
 			&unmatched_towers, 
 			truth_zvtx );
 	
-	matchTheTowers(topNode);
-	matchTheClusters(topNode);
+	matchTheTowers(particles_to_match, matched_towers);
+	matchTheClusters(particles_to_match, matched_towers);
 }
 void ShowerTowerMatching::buildTruthTowers(
 		std::map < PHG4Particle*, Shower* > matched, 
@@ -204,10 +204,36 @@ void ShowerTowerMatching::buildTopoTowers(
 	dataTowers = bm->getMetaTowers();	
 	return;
 }
-void ShowerTowerMatching::matchTheTowers()
+void ShowerTowerMatching::matchTheTowers(
+		std::map<PHG4Particle*, Shower*> particles,
+		std::map<BuildMetaTowers::TowerArrayEntry*, Shower*> truth_towers
+		)
 {
 	//matching the meta towers to the shower 
-	//
+	std::vector<bool> is_this_real_or_fake {};
+	std::array<std::pair<PHG4Particle*, float>, 1536> TowerParticleWeight {};
+	std::vector<bool> is_this_a_miss {};
+	for(auto p:particles)
+	{
+		bool is_matched = false;
+		std::array<float, 2> eB = p.second->get_etaBounds();
+		std::array<float, 2> pB = p.second->get_phiBounds()
+		for(auto tower:dataTowers)
+		{
+			float phi = tower->phi;
+			float eta = tower->eta;
+			if(phi >= pB[0] && phi <= pB[1])
+				is_matched = (eta > eB[0] && eB[1] < eB[1]) ? true : false;
+		       if(is_matched) break;
+		       setWeight(&TowerParticleWeight, p.first);
+		}
+ 		is_this_a_miss.push_back(is_matched);		
+	}
+	return;	
+}
+void ShowerTowerMatching::setWeight(std::array<std::pair<PHG4Particle*, float>, 1536>* TowerParticleWeight, PHG4Particle* p)
+{
+	
 }
 void ShowerTowerMatching::matchTheClusters()
 {
