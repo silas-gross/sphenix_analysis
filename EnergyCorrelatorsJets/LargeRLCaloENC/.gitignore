@@ -1,4 +1,4 @@
-root_output/
+root_output*/
 *.tex
 *.txt
 *.root
@@ -8,3 +8,4 @@ macros/*make*
 macros/condor_files/
 macros/data_lists/
 macros/*/*.list
+macros/Pythia*GeV*/*

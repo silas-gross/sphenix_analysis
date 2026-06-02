@@ -196,7 +196,7 @@ int RunLargeRLENC(std::string data_dst="none", std::string data_fitting_dst="non
 	std::cout<<"Loaded all subparts in, now loading in the analysis code" <<std::endl;
 //	std::string text_out_filename="/gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EnergyCorrelatorsJets/LargeRLCaloENC/Missing_pT_for_felix_run-"+std::to_string(run_number)+"-"+std::to_string(segment)+".csv";
 	//std::fstream* ofs=new std::fstream(text_out_filename);
-	LargeRLENC* rlenc=new LargeRLENC(run_number, segment, std::stof(minpt), data, cluster);
+	LargeRLENC* rlenc=new LargeRLENC(run_number, segment, std::stof(minpt), data, cluster, false, nullptr, "ET");
 
 //	LEDPedestalScan* sc=new LEDPedestalScan(run_number, segment, false, false);
 	se->registerSubsystem(rlenc);
