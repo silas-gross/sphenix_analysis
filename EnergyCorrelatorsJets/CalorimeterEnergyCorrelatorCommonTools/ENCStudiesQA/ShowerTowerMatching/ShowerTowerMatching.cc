@@ -210,25 +210,52 @@ void ShowerTowerMatching::matchTheTowers(
 		)
 {
 	//matching the meta towers to the shower 
-	std::vector<bool> is_this_real_or_fake {};
+	std::array<bool, 1536> is_this_real_or_fake {};
 	std::array<std::pair<PHG4Particle*, float>, 1536> TowerParticleWeight {};
+	std::vector<std::vector<std::pair<TowerArrayEntry*, float>>> ParticleTowerWeight {};
 	std::vector<bool> is_this_a_miss {};
+	std::vector<float> particle_ET; 
+	for(auto i:is_this_real_or_fake) i = false;
 	for(auto p:particles)
 	{
 		bool is_matched = false;
 		std::array<float, 2> eB = p.second->get_etaBounds();
-		std::array<float, 2> pB = p.second->get_phiBounds()
-		for(auto tower:dataTowers)
+		std::array<float, 2> pB = p.second->get_phiBounds();
+		std::vector<Tower> sts = p.second->getStruck();
+		float pz {p.first->get_pz()};
+		float e	 {p.first->get_e()};
+		float eta { std::atanh(pz / e)}; 
+		float eT = e / std::cosh(eta);
+		particle_ET.push_back(eT);
+		for(int i=0; i<(int)dataTowers.size(); i++)
 		{
+			auto tower = dataTowers.at(i);
 			float phi = tower->phi;
 			float eta = tower->eta;
 			if(phi >= pB[0] && phi <= pB[1])
 				is_matched = (eta > eB[0] && eB[1] < eB[1]) ? true : false;
-		       if(is_matched) break;
-		       setWeight(&TowerParticleWeight, p.first);
+		       if(is_matched){
+			       is_this_real_or_fake.at(i) = true;
+			       std::pair<PHG4Particle*, float> pt_weight {p, 0.};
+			       std::pair<TowerArrayEntry*, float> tw {tower, 0.};
+			       for(auto t:sts)
+				       if(phi >= t.philow && phi <= t.phihigh)
+					       if( eta >= t.etalow && eta <= t.etahigh )
+						       tw.second+=t.ET;
+		       }
+
 		}
  		is_this_a_miss.push_back(is_matched);		
 	}
+	for(int j=0; j<(int)particle_ET.size(); j++)
+	{
+		h_truth_all->Fill(particle_ET);
+		if(is_this_a_miss.at(j)) h_truth_to_tower_match->Fill(particle_ET.at(i));
+		else h_tow_miss->Fill(particle_ET.at(i));
+	}
+	for(int j=0; j<(int)dataTowers.size(); j++)
+	{
+		if(datatowers.at(j)->ET > 0) h_tower_all->Fill(dataTowers.at(j).ET);
 	return;	
 }
 void ShowerTowerMatching::setWeight(std::array<std::pair<PHG4Particle*, float>, 1536>* TowerParticleWeight, PHG4Particle* p)
