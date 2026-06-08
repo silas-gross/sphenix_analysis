@@ -1,6 +1,6 @@
 import psycopg2 as psql
 import sys
-
+from datetime import datetime, 
 def main():
     calo = "both"
     if len(sys.argv) > 1:
