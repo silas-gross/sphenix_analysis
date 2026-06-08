@@ -4,56 +4,6 @@ import psycopg2 as psql
 import sys
 import datetime
 
-def main():
-    calo = "both"
-    start_date=None
-    end_date=None
-    step=12
-    print("Extracting argument")
-    if len(sys.argv) > 1:
-        calo=sys.argv[1]
-        if len(sys.argv) > 2:
-            start_date=sys.argv[2]
-            if len(sys.argv) > 3:
-                end_date=sys.argv[3]
-                if len(sys.argv) > 4:
-                    step=sys.argv[4]
-    if start_date:
-        try:
-            datetime.strptime(start_date, "%Y-%m-%d")
-        except ValueError:
-            print("Error: start_date must be in format YYYY-MM-DD")
-            return
-    
-    if end_date:
-        try:
-            datetime.strptime(end_date, "%Y-%m-%d")
-        except ValueError:
-            print("Error: end_date must be in format YYYY-MM-DD")
-            return
-    #connect to the daq database
-    try:
-        print("testing db connection")
-        connection = psql.connect(host="sphenixdaqdbreplica", database="daq")
-        cursor = connection.cursor()
-    except psql.Error as e:
-        return 
-    emcal_data=[]
-    hcal_data=[]
-
-    if calo in ["emcal", "both"]:
-        print("Collecting EMCAL leakage currents...")
-        emcal_data = query_leakage_currents(cursor, "emcal_mpodlog", start_date, end_date, emcal)
-    
-    if calo in ["hcal", "both"]:
-        print("Collecting HCAL leakage currents...")
-        ohcal_data = query_leakage_currents(cursor, "hcalmpodlog", start_date, end_date, "OHCAL")
-        ihcal_data = query_leakage_currents(cursor, "hcalmpodlog", start_date, end_date, "IHCAL")
-    write_data_to_file(emcal_data, ihcal_data, ohcal_data, calo, "Leakage_Currents_per_12.txt")
-    cursor.close()
-    connection.close()
-    return
-
 def query_leakage_currents(cursor, table_name, start_date, end_date, calo_type):
         # Build the WHERE clause
     where_conditions = [
@@ -66,7 +16,7 @@ def query_leakage_currents(cursor, table_name, start_date, end_date, calo_type):
         if "I" in calo_type:
             where_conditions.append("hcal > 23")
         elif "O" in calo_type:
-            where_condtions.append("hcal<24")
+            where_conditions.append("hcal<24")
         read="time"
 
     # Add date range to WHERE clause if provided
@@ -81,27 +31,124 @@ def query_leakage_currents(cursor, table_name, start_date, end_date, calo_type):
     where_clause = " AND ".join(where_conditions)
     
     # Build query to average every 12 hours
-    query = f"""
-    SELECT 
-        date_trunc('hour', {read}) + (EXTRACT(hour FROM {read})::int / 12) * interval '12 hours' as time_bin,
-        AVG(imeas) as imeas_avg,
-        COUNT(*) as sample_count
-    FROM {table_name}
-    WHERE {where_clause}
-    GROUP BY time_bin, sector
-    ORDER BY time_bin DESC
-    """
-    
+    query = ""
+    if "HCAL" in calo_type:
+        query=f"""
+        SELECT 
+            date_trunc('hour', {read}) + (EXTRACT(hour FROM {read})::int / 12) * interval '12 hours' as time_bin,
+            AVG(imeas) as imeas_avg,
+            COUNT(*) as sample_count
+        FROM {table_name}
+        WHERE {where_clause}
+        GROUP BY time_bin, hcal
+        ORDER BY time_bin ASC
+        """
+    else:
+        query=f"""
+        SELECT 
+            date_trunc('hour', {read}) + (EXTRACT(hour FROM {read})::int / 12) * interval '12 hours' as time_bin,
+            AVG(imeas) as imeas_avg,
+            COUNT(*) as sample_count
+        FROM {table_name}
+        WHERE {where_clause}
+        GROUP BY time_bin, sector
+        ORDER BY time_bin ASC
+        """
+
     try:
         cursor.execute(query)
         data = cursor.fetchall()
         print(f"Retrieved {len(data)} averaged records from {table_name}")
-        return data
+        avg_data=[]
+        for i in range(20):
+            print(data[i])
+        for j in range(10):#range(len(data)-1):
+            if j < 10:
+             #   print(j)
+                print(data[j][0])
+            val = data[j][1]
+            count = 1
+            day = data[j][0].strftime("%x")
+            hour = data[j][0].strftime("%H")
+            for k in range(j+1,50):# len(data)):
+                day_k = data[k][0].strftime("%x")
+                hour_k = data[k][0].strftime("%H")
+                if day == day_k and hour == hour_k:
+                    val+=data[k][1]
+                    count+=1
+              #  print(hour_k)
+                if hour_k > hour or day_k > day:
+                    print(data[k][0])
+                    j=k
+                    break
+            val=val/float(count)
+            avg_data.append([data[j][0],val])
+        return avg_data
     except psql.Error as e:
         print(f"Error querying {table_name}: {e}")
         return []
 
 def write_data_to_file(emcal_data, ihcal_data, ohcal_data, calo, filename):
+    total_data=[] 
+    emcaltime=[emcal_data[x][0] for x in range(len(emcal_data))]
+    ihcaltime=[ihcal_data[x][0] for x in range(len(ihcal_data))]
+    ohcaltime=[ohcal_data[x][0] for x in range(len(ohcal_data))]
+    em_new=[]
+    ih_new=[]
+    oh_new=[]
+    time=[]
+    ohcalstart=0
+    ihcalstart=0
+    if calo in "both":
+        for i in range(len(emcaltime)):
+            ihcal_pass=False
+            ohcal_pass=False
+            
+            for j in range(ihcalstart, len(ihcaltime)):
+                if ihcaltime[j] > emcaltime[i]:
+                    ihcalstart=j
+                    break
+                if ihcaltime[j] == emcaltime[i]:
+                    ihcalstart=j
+                    ihcal_pass=True
+                for k in range(ohcalstart, len(ohcaltime)):
+                    if ohcaltime[k] > ihcaltime[j] and ohcaltime[k] <= emcaltime[i]:
+                        break
+                    if ohcaltime[k] > emcaltime[i]:
+                        ohcalstart=k
+                        break
+                    if ohcaltime[k] == ihcaltime[j] and ohcaltime[k] == emcaltime[i]:
+                        ohcalstart=k
+                        ohcal_pass=True
+                        break
+                if ihcal_pass==True and ohcal_pass==True:
+                    break
+            if ihcal_pass==True and ohcal_pass==True:
+                time.append(emcaltime[i])
+                em_new.append(emcal_data[i][1])
+                ih_new.append(ihcal_data[ihcalstart][1])
+                oh_new.append(ohcal_data[ohcalstart][1])
+                continue
+    elif calo in "hcal":
+        for j in range(len(ihcaltime)):
+            ohcal_pass = False
+            for k in range(ohcalstart, len(ohcaltime)):
+                if ohcaltime[k] > ihcaltime[j]:
+                    ohcalstart=k
+                    break
+                if ohcaltime[k] == ihcaltime[j]:
+                    ohcalstart=k
+                    ohcal_pass=True
+                    break
+            if ohcal_pass==True:
+                time.append(ihcaltime[j])
+                ih_new.append(ihcal_data[j][1])
+                oh_new.append(ohcal_data[ohcalstart][1])
+                continue
+    else:
+        time=emcaltime
+        em_new=[emcal_data[x][1] for x in range(len(emcal_data))]
+
     with open(filename, "w") as file:
 
         header="time"
@@ -109,16 +156,67 @@ def write_data_to_file(emcal_data, ihcal_data, ohcal_data, calo, filename):
             header=header+", emcal"
         if calo in ["hcal", "both"]:
             header=header+", ihcal, ohcal"
-
+        header+="\n"
         file.write(header)
-        for i in range(max(len(emcal_data), len(ohcal_data))):
+        for i in range(len(time)):
             line=""
             if calo in ["emcal", "both"]:
-                line="{emcal_data[i][0]}, {emcal_data[i][1]}"
+                line="{0}, {1}".format(time[i], em_new[i])
                 if calo in ["both"]:
-                    line+=", {ihcal_data[i][1]}, {ohcal_data[i][1]}"
+                    line+=", {0}, {1}".format(ih_new[i], oh_new[i])
             if calo in ["hcal"]:
-                lin="{ihcal_data[i][0]}, {ihcal_data[i][1]}, {ohcal_data[i][1]}"
+                line="{0}, {1}, {2}".format(time[i], ih_new[i], oh_new[i])
+            line+="\n"
             file.write(line)
         file.close()
         return
+
+calo = "both"
+start_date=None
+end_date=None
+step=12
+print("Extracting argument")
+if len(sys.argv) > 1:
+    calo=sys.argv[1]
+    if len(sys.argv) > 2:
+        start_date=sys.argv[2]
+        if len(sys.argv) > 3:
+            end_date=sys.argv[3]
+            if len(sys.argv) > 4:
+                step=sys.argv[4]
+if start_date:
+    try:
+        datetime.datetime.strptime(start_date, "%Y-%m-%d")
+    except ValueError:
+        print("Error: start_date must be in format YYYY-MM-DD")
+
+if end_date:
+    try:
+        datetime.datetime.strptime(end_date, "%Y-%m-%d")
+    except ValueError:
+        print("Error: end_date must be in format YYYY-MM-DD")
+#connect to the daq database
+connection=None
+cursor=None
+try:
+    print("testing db connection")
+    connection = psql.connect(host="sphnxdaqdbreplica", database="daq")
+    cursor = connection.cursor()
+    print("connected")
+    emcal_data=[]
+    ihcal_data=[]
+    ohcal_data=[]
+    if calo in ["emcal", "both"]:
+        print("Collecting EMCAL leakage currents...")
+        emcal_data = query_leakage_currents(cursor, "emcal_mpodlog", start_date, end_date, "EMCAL")
+
+    if calo in ["hcal", "both"]:
+        print("Collecting HCAL leakage currents...")
+        ohcal_data = query_leakage_currents(cursor, "hcalmpodlog", start_date, end_date, "OHCAL")
+        ihcal_data = query_leakage_currents(cursor, "hcalmpodlog", start_date, end_date, "IHCAL")
+    write_data_to_file(emcal_data, ihcal_data, ohcal_data, calo, "Leakage_Currents_per_12.txt")
+    cursor.close()
+    connection.close()
+except psql.Error as e:
+    print(e)
+
