@@ -24,6 +24,9 @@ HerwigQAPlottingConfig* conf;
 TFile* storage;
 std::string tag {};
 Skaydis_colors* style_points;
+TExec* trans;
+TExec* enby;
+TExec* lesbo;
 struct particle_colls
 {
 	TH1F* pt;
@@ -34,6 +37,7 @@ void GetSampleSpectra(
 		std::string Generator="Herwig",
 	       	std::vector<TH1F*>* r04_all = new std::vector<TH1F*> {}, 
 		std::vector<TH1F*>* r04_lead = new std::vector<TH1F*> {},
+		std::vector<TH2F*>* Q2 = new std::vector<TH2F*> {},
 		std::vector<TFile*>* fs	= new std::vector<TFile*> {}
 		)
 {
@@ -45,7 +49,8 @@ void GetSampleSpectra(
 		TDirectory* d_gen	= (TDirectory*) fs->at(i)->GetDirectory(std::format("{}_jets", Generator).c_str());
 		
 		TH1F* h_all 	= (TH1F*)d_gen->Get("h_jet_r04_pt");	
-		TH1F* h_lead 	= (TH1F*)d_gen->Get("h_lead_jet_r04_pt");	
+		TH1F* h_lead 	= (TH1F*)d_gen->Get("h_lead_jet_r04_pt");
+		TH2F* h_Q	= (TH2F*)d_gen->Get("h_Q_leadpT_r04");	
 		if(isHerwig){
 			h_all->SetMarkerStyle(20+i);
 			if(i==4) h_all->SetMarkerStyle(29);
@@ -72,6 +77,7 @@ void GetSampleSpectra(
 		}	
 		r04_all->push_back(h_all);
 		r04_lead->push_back(h_lead);
+		Q2->push_back(h_Q);
 	}
 	return;
 }
@@ -260,17 +266,22 @@ void PlotCombinedSpectrum(std::vector<TFile*>* fs, std::vector<std::string> cutn
 	
 	std::vector<TH1F*>* herwig_pt 	= new std::vector<TH1F*>();
 	std::vector<TH1F*>* herwig_l_pt	= new std::vector<TH1F*>();
+	std::vector<TH2F*>* herwig_Q	= new std::vector<TH2F*>();
 	
 	std::vector<TH1F*>* pythia_pt 	= new std::vector<TH1F*>();
 	std::vector<TH1F*>* pythia_l_pt	= new std::vector<TH1F*>();
+	std::vector<TH2F*>* pythia_Q 	= new std::vector<TH2F*>();
 	
 	HerwigQAPlottingConfig* co = new HerwigQAPlottingConfig();
 	Skaydis_colors* odd_colors = new Skaydis_colors();
-	gStyle->SetPalette(100, odd_colors->Enby_gradient_PT);
+	//gStyle->SetPalette(100, odd_colors->Enby_gradient_PT);
+	trans=new TExec("tr", "gStyle->SetPalette(100, style_points->Trans_gradient_PT);");
+	enby=new TExec("en", "gStyle->SetPalette(100, style_points->Enby_gradient_PT);");
+	lesbo=new TExec("dy", "gStyle->SetPalette(100, style_points->Lesbian_gradient_PT);");
 
 
-	GetSampleSpectra("Herwig", herwig_pt, herwig_l_pt, fs);
-	GetSampleSpectra("Pythia", pythia_pt, pythia_l_pt, fs);
+	GetSampleSpectra("Herwig", herwig_pt, herwig_l_pt, herwig_Q, fs);
+	GetSampleSpectra("Pythia", pythia_pt, pythia_l_pt, pythia_Q, fs);
 	
 	for(int i=0; i<2; i++)
 	{
@@ -297,8 +308,12 @@ void PlotCombinedSpectrum(std::vector<TFile*>* fs, std::vector<std::string> cutn
 	
 	TH1F* ha1=(TH1F*)herwig_pt->at(0)->Clone();
 	TH1F* pa1=(TH1F*)pythia_pt->at(0)->Clone();
+	TH2F* herwigQ = (TH2F*)herwig_Q->at(0)->Clone();
+	TH2F* pythiaQ = (TH2F*)pythia_Q->at(0)->Clone();
 	for(int i = 1; i<(int)herwig_pt->size(); i++) ha1->Add(herwig_pt->at(i));
 	for(int i = 1; i<(int)pythia_pt->size(); i++) pa1->Add(pythia_pt->at(i));
+	for(int i = 1; i<(int)herwig_Q->size(); i++) herwigQ->Add(herwig_Q->at(i));
+	for(int i = 1; i<(int)pythia_Q->size(); i++) pythiaQ->Add(pythia_Q->at(i));
 
 	TH1F* hj1=(TH1F*)herwig_l_pt->at(0)->Clone();
 	TH1F* pj1=(TH1F*)pythia_l_pt->at(0)->Clone();
@@ -332,7 +347,26 @@ void PlotCombinedSpectrum(std::vector<TFile*>* fs, std::vector<std::string> cutn
 	       	for(int j = 0; j < 2; j++)
 			RatioCanvi.at(i)->at(j)->Print("~/Herwig_comb_pt_QA.pdf");
 	All.at(0)->Print("~/Herwig_comb_pt_QA.pdf)");
-
+	TCanvas* cHerwigQ = new TCanvas("cHQ", "cHQ");
+	cHerwigQ->cd();
+	herwigQ->Draw("axis");
+	enby->Draw();
+	herwigQ->Draw("colz");
+	TLegend* l1 = new TLegend(0.7, 0.8, 0.9, 0.9);
+	co->SetLegend(l1);
+	l1->AddEntry("", "Herwig 7.2 Nashville Tune", "");
+       	l1->AddEntry("", "p_{T}^{lead} > 5 GeV", "");	
+	l1->Draw();
+	TCanvas* cPythiaQ = new TCanvas("cPQ", "cPQ");
+	cPythiaQ->cd();
+	pythiaQ->Draw("axis");
+	trans->Draw();
+	pythiaQ->Draw("colz");	
+	TLegend* l2 = new TLegend(0.7, 0.8, 0.9, 0.9);
+	co->SetLegend(l2);
+	l2->AddEntry("", "Pythia 8 Detroit Tune", "");
+       	l2->AddEntry("", "p_{T}^{lead} > 5 GeV", "");	
+	l2->Draw();
 
 	return;
 }
@@ -431,6 +465,7 @@ void PlotEventObs(TH1F* herwig_obs, TH1F* pythia_obs, TCanvas* c1)
 	s->Add(herwig_obs);
 	s->Add(pythia_obs);
 	s->Draw("axis");
+	lesbo->Draw();
 	s->Draw("plc pmc nostack same e1");
 	s->GetXaxis()->SetTitle(var.c_str());
 	s->GetYaxis()->SetTitle(herwig_obs->GetYaxis()->GetTitle());
@@ -440,6 +475,7 @@ void PlotEventObs(TH1F* herwig_obs, TH1F* pythia_obs, TCanvas* c1)
 	l_data->Draw("same");
 	pads->at(0)->cd();
 	ratio->SetMarkerStyle(34);
+	lesbo->Draw();
 	ratio->Draw("pmc plc e1");
 	l_data->AddEntry(ratio, "Herwig / Pythia");
 	c1->cd();
@@ -565,6 +601,7 @@ void PlotEventObs(TH1F* herwig_particle, TH1F* pythia_particle, std::map<std::st
 	if (herwig->GetMaximum() > pythia->GetMaximum() ) herwig_high=true;
 	if (herwig_high) herwig->Draw("axis");
 	else pythia->Draw("axis");
+	enby->Draw();
 	herwig->Draw("pmc plc nostack same e1");
 	pythia->Draw("same pmc plc nostack e1");
 	herwig->GetXaxis()->SetTitle(herwig_particle->GetXaxis()->GetTitle());
@@ -572,6 +609,7 @@ void PlotEventObs(TH1F* herwig_particle, TH1F* pythia_particle, std::map<std::st
 	l_data->Draw();
 	l_header->Draw();
 	pads->at(0)->cd();
+	enby->Draw();
 	ratio->Draw("pmc plc nostack e1");
 	ratio->GetYaxis()->SetRangeUser(0.01, 2.);
 	ratio->GetYaxis()->SetTitle(" Herwig / Pythia" ); 
@@ -633,6 +671,7 @@ void PlotEventObs(TH1I* herwig_particle, TH1I* pythia_particle, std::map<std::st
 	if (herwig->GetMaximum() > pythia->GetMaximum() ) herwig_high=true;
 	if (herwig_high) herwig->Draw("axis");
 	else pythia->Draw("axis");
+	trans->Draw();
 	herwig->Draw("pmc plc nostack same e1");
 	pythia->Draw("same pmc plc nostack e1");
 	herwig->GetXaxis()->SetRangeUser(0, 200);
@@ -662,6 +701,7 @@ void PlotEventObs(TH2F* particle, std::map<std::string, particle_colls*>* pc, TC
 	l_header->SetTextSize(0.03f);
 	l_header->AddEntry("", generator.c_str(), "");
 	l_header->AddEntry("", "Final State #eta - #varphi hit distribution", "");
+	trans->Draw();
 	particle->Draw("colz");
 	l_header->Draw();
 	int i=1;
@@ -695,7 +735,7 @@ void PlotEventPlots(TDirectory* herwig_event, TDirectory* pythia_event, std::vec
 	CollectEventPlots(pythia_event, pythia_particle_level, pythia_particle_correlations, pythia_particle_coll);
 	std::map<std::string, particle_colls*>* ratio_particle_coll = new std::map<std::string, particle_colls*> ();
 	MakeParticleRatios( herwig_particle_coll, pythia_particle_coll, ratio_particle_coll);
-	gStyle->SetPalette(100, style_points->Lesbian_gradient_PT);	
+	//gStyle->SetPalette(100, style_points->Lesbian_gradient_PT);	
 	for(int i=0; i<(int)herwig_particle_level->size(); i++){
 		std::string var = herwig_particle_level->at(i)->GetXaxis()->GetTitle();
 		TCanvas* c1=new TCanvas(std::format("Canv_{}", var).c_str(),std::format("Canv_{}", var).c_str()); 
@@ -724,7 +764,7 @@ void PlotEventPlots(TDirectory* herwig_event, TDirectory* pythia_event, std::vec
 			PlotEventObs(ratio, ratio_particle_coll, cr, "Herwig / Pythia");
 		}
 	}
-	gStyle->SetPalette(100, style_points->Trans_gradient_PT);	
+	//gStyle->SetPalette(100, style_points->Trans_gradient_PT);	
 	TCanvas* c3 = new TCanvas("n", "n");
 	PlotEventObs(herwig_particle_n, pythia_particle_n, herwig_particle_coll, pythia_particle_coll, ratio_particle_coll, c3);
 	Canvi->push_back(c3);
@@ -763,7 +803,7 @@ void PlotPhotonJetObs(std::vector<TH2F*>* herwig_obs, std::vector<TH2F*>* pythia
 	PlotSingleGenPhotonJetObs(ratio_obs, ratio_Canvas, subdivided_ratio, "Herwig / Pythia");
 	return;
 }
-void CollectJets(TDirectory* jets, std::array<std::vector<TH1F*>*, 4>* all_jets, std::array<std::vector<TH1F*>*, 4>* lead_jets, std::vector<TH1I*>* all_jet_n, std::vector<TH1I*>* all_jet_comp, std::vector<TH1I*>* lead_jet_comp)
+void CollectJets(TDirectory* jets, std::array<std::vector<TH1F*>*, 4>* all_jets, std::array<std::vector<TH1F*>*, 4>* lead_jets, std::vector<TH1I*>* all_jet_n, std::vector<TH1I*>* all_jet_comp, std::vector<TH1I*>* lead_jet_comp, std::vector<TH2F*>* h_Q)
 {
 	for(int i=2; i<7; i++)
 	{
@@ -782,6 +822,7 @@ void CollectJets(TDirectory* jets, std::array<std::vector<TH1F*>*, 4>* all_jets,
 		lead_jets->at(2)->push_back((TH1F*)leaddir->Get(std::format("h_lead_jet_r0{}_phi", i).c_str()));
 		lead_jets->at(3)->push_back((TH1F*)leaddir->Get(std::format("h_lead_jet_r0{}_eta", i).c_str()));
 		lead_jet_comp->push_back((TH1I*)leaddir->Get(std::format("h_lead_jet_r0{}_comp",i).c_str()));
+		h_Q->push_back((TH2F*)leaddir->Get(std::format("h_Q_leadpT_r0{}", i).c_str()));
 		r_dir->cd();
 		float n_evts = (float)lead_jets->at(0)->back()->GetEntries();
 		all_jets->at(2)->back()->Scale(1/n_evts);
@@ -921,6 +962,7 @@ void PlotJetObs(std::vector<TH1I*>* herwig_obs, std::vector<TH1I*>* pythia_obs, 
 	for(int i=0; i<(int)herwig_obs->size(); i++)
 	{
 		pads->at(1)->cd();
+		lesbo->Draw();
 		herwig_obs->at(i)->SetMarkerStyle(i+20);
 		herwig_obs->at(i)->SetMarkerSize(2);
 		if(i==5) herwig_obs->at(i)->SetMarkerStyle(33);
@@ -939,6 +981,7 @@ void PlotJetObs(std::vector<TH1I*>* herwig_obs, std::vector<TH1I*>* pythia_obs, 
 	}
 	pads->at(1)->cd();
 	pads->at(1)->SetLogy();
+	lesbo->Draw();
 	l_data->Draw();
 	l_header->Draw();
 	bool herwig_high = false;
@@ -1050,13 +1093,14 @@ void PlotJetPlots(TDirectory* herwig_jets, TDirectory* pythia_jets, std::vector<
 	std::vector<TH1F*>* herwig_lead_phi	= new std::vector<TH1F*> ();
 	std::vector<TH1F*>* herwig_lead_eta	= new std::vector<TH1F*> ();
 	std::vector<TH1I*>* herwig_lead_n_comp	= new std::vector<TH1I*> ();
+	std::vector<TH2F*>* herwig_Q		= new std::vector<TH2F*> ();
 	std::array<std::vector<TH1F*>*, 4>* herwig_lead_jet_array =new std::array<std::vector<TH1F*>*, 4>();
 	herwig_lead_jet_array->at(0)=herwig_lead_pt;
 	herwig_lead_jet_array->at(1)=herwig_lead_e;
 	herwig_lead_jet_array->at(2)=herwig_lead_phi;
 	herwig_lead_jet_array->at(3)=herwig_lead_eta;
-
-	CollectJets(herwig_jets, herwig_jet_array, herwig_lead_jet_array, herwig_n_jets, herwig_n_comp, herwig_lead_n_comp);
+	
+	CollectJets(herwig_jets, herwig_jet_array, herwig_lead_jet_array, herwig_n_jets, herwig_n_comp, herwig_lead_n_comp, herwig_Q);
 	//all Jets
 	std::vector<TH1F*>* pythia_pt		= new std::vector<TH1F*> ();
 	std::vector<TH1F*>* pythia_e		= new std::vector<TH1F*> ();
@@ -1075,12 +1119,13 @@ void PlotJetPlots(TDirectory* herwig_jets, TDirectory* pythia_jets, std::vector<
 	std::vector<TH1F*>* pythia_lead_phi	= new std::vector<TH1F*> ();
 	std::vector<TH1F*>* pythia_lead_eta	= new std::vector<TH1F*> ();
 	std::vector<TH1I*>* pythia_lead_n_comp	= new std::vector<TH1I*> ();
+	std::vector<TH2F*>* pythia_Q		= new std::vector<TH2F*> ();
 	std::array<std::vector<TH1F*>*, 4>* pythia_lead_jet_array =new std::array<std::vector<TH1F*>*, 4>();
 	pythia_lead_jet_array->at(0)=pythia_lead_pt;
 	pythia_lead_jet_array->at(1)=pythia_lead_e;
 	pythia_lead_jet_array->at(2)=pythia_lead_phi;
 	pythia_lead_jet_array->at(3)=pythia_lead_eta;
-	CollectJets(pythia_jets, pythia_jet_array, pythia_lead_jet_array, pythia_n_jets, pythia_n_comp, pythia_lead_n_comp);
+	CollectJets(pythia_jets, pythia_jet_array, pythia_lead_jet_array, pythia_n_jets, pythia_n_comp, pythia_lead_n_comp, pythia_Q);
 	TCanvas* J_pt=new TCanvas("jet_pt", "jet_pt");
 	PlotJetObs(herwig_jet_array->at(0), pythia_jet_array->at(0), J_pt);
 	J_pt->SetLogy();
@@ -1125,11 +1170,13 @@ void PlotJetPlots(TDirectory* herwig_jets, TDirectory* pythia_jets, std::vector<
 	hwj->cd();
 	for(int i=0; i<(int)herwig_pt->size(); i++) herwig_pt->at(i)->Write();
 	for(int i=0; i<(int)herwig_lead_pt->size(); i++) herwig_lead_pt->at(i)->Write();
+	for(int i=0; i<(int)herwig_Q->size(); i++) herwig_Q->at(i)->Write();
 	storage->cd();
 	TDirectory* pj=(TDirectory*)storage->mkdir("Pythia_jets");
 	pj->cd();
 	for(int i=0; i<(int)pythia_pt->size(); i++) pythia_pt->at(i)->Write();
 	for(int i=0; i<(int)pythia_lead_pt->size(); i++) pythia_lead_pt->at(i)->Write();
+	for(int i=0; i<(int)pythia_Q->size(); i++) pythia_Q->at(i)->Write();
 	storage->cd();
 	
 	return;
@@ -1342,7 +1389,9 @@ void DoAllThePlotting(TFile* herwig_file, TFile* pythia_file, std::string trigge
 	storage=new TFile(std::format("{}_scaled_pt.root", trigger_tag).c_str(), "RECREATE");
 	conf =  new HerwigQAPlottingConfig(herwig_xs, pythia_xs);
 	style_points=new Skaydis_colors();
-	gStyle->SetPalette(100, style_points->Trans_gradient_PT);	
+	trans=new TExec("tr", "gStyle->SetPalette(100, style_points->Trans_gradient_PT);");
+	enby=new TExec("en", "gStyle->SetPalette(100, style_points->Enby_gradient_PT);");
+	lesbo=new TExec("dy", "gStyle->SetPalette(100, style_points->Lesbian_gradient_PT);");
 	conf->ExtractType(herwig_file);
 	std::map<std::string, TDirectory*> top_dirs;
 	std::vector<TCanvas*>* Canvi =new std::vector<TCanvas*> ();

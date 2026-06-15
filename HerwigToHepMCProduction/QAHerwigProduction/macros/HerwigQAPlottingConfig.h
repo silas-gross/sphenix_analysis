@@ -33,6 +33,7 @@ class HerwigQAPlottingConfig
 		void ScaleXS(std::vector<TH1I*>*, bool);
 		void ScaleXS(TH1F*, bool);
 		void ScaleXS(TH1I*, bool);
+		void ScaleXS(std::vector<TH2F*>*, bool); 
 		bool isJet(){return jet;}
 		bool isPhoton(){return photon;}
 	private:
