@@ -60,26 +60,25 @@ def query_leakage_currents(cursor, table_name, start_date, end_date, calo_type):
         data = cursor.fetchall()
         print(f"Retrieved {len(data)} averaged records from {table_name}")
         avg_data=[]
-        for i in range(20):
-            print(data[i])
-        for j in range(10):#range(len(data)-1):
-            if j < 10:
-             #   print(j)
-                print(data[j][0])
+        holdvalue=-1
+        for j in range(len(data)-1):
+            if j <= holdvalue:
+                j+=1
+                continue
             val = data[j][1]
             count = 1
             day = data[j][0].strftime("%x")
             hour = data[j][0].strftime("%H")
-            for k in range(j+1,50):# len(data)):
+            for k in range(j+1,len(data)):
+                #print(str(j)+":"+str(k))
                 day_k = data[k][0].strftime("%x")
                 hour_k = data[k][0].strftime("%H")
                 if day == day_k and hour == hour_k:
-                    val+=data[k][1]
-                    count+=1
+                    val+=data[k][1]*data[k][2]
+                    count+=data[k][2]
               #  print(hour_k)
                 if hour_k > hour or day_k > day:
-                    print(data[k][0])
-                    j=k
+                    holdvalue = k 
                     break
             val=val/float(count)
             avg_data.append([data[j][0],val])
@@ -214,7 +213,8 @@ try:
         print("Collecting HCAL leakage currents...")
         ohcal_data = query_leakage_currents(cursor, "hcalmpodlog", start_date, end_date, "OHCAL")
         ihcal_data = query_leakage_currents(cursor, "hcalmpodlog", start_date, end_date, "IHCAL")
-    write_data_to_file(emcal_data, ihcal_data, ohcal_data, calo, "Leakage_Currents_per_12.txt")
+    print("writing to data")
+    write_data_to_file(emcal_data, ihcal_data, ohcal_data, calo, "Leakage_Currents_per_12.csv")
     cursor.close()
     connection.close()
 except psql.Error as e:
