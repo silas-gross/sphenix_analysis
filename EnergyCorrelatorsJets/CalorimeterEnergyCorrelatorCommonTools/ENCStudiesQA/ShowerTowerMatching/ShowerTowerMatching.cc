@@ -260,7 +260,7 @@ void ShowerTowerMatching::matchTheTowers(
 }
 void ShowerTowerMatching::setWeight(std::array<std::pair<PHG4Particle*, float>, 1536>* TowerParticleWeight, PHG4Particle* p)
 {
-	
+	//The weight here should be the portion of the particle energy going into the shower that hits a specific tower, and the contributions from a specific shower to a specific tower	
 }
 void ShowerTowerMatching::matchTheClusters()
 {
