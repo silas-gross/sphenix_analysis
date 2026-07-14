@@ -94,32 +94,45 @@ int PlotLeakageCurrents(const std::string& csv_filename = "Leakage_Currents_per_
 	
 	// Convert timestamps to hours from start
 //	time_t start_time = data.back().timestamp; // Earliest time
-	std::vector<std::string> time_hours;
-	std::vector<double> emcal_imeas;
-	std::vector<double> ihcal_imeas;
-	std::vector<double> ohcal_imeas;
-	
-	for (const auto& point : data)
+	std::map<std::string, std::array<double, 3>> condensed_data {};
+	std::vector<std::string> key_time {}; 
+	int n_add=1;
+	for(auto &pt : data) 
 	{
-		time_hours.push_back(point.timestamp);
-		emcal_imeas.push_back(point.imeas_emcal);
-		ihcal_imeas.push_back(point.imeas_ihcal);
-		ohcal_imeas.push_back(point.imeas_ohcal);
-	}
+		auto time = pt.timestamp;
+		std::array<double, 3> calo_val { pt.imeas_emcal/1000., pt.imeas_ihcal, pt.imeas_ohcal};
+		if(condensed_data.find(time) == condensed_data.end())
+		{
+			n_add=1;
+			key_time.push_back(time);
+			condensed_data[time]=calo_val;
+		}
+		else
+		{
+			condensed_data[time][0]=condensed_data[time][0]*n_add + calo_val[0];
+			condensed_data[time][1]=condensed_data[time][1]*n_add + calo_val[1];
+			condensed_data[time][2]=condensed_data[time][2]*n_add + calo_val[2];
+			n_add++;
+			condensed_data[time][0]=condensed_data[time][0]/n_add;
+			condensed_data[time][1]=condensed_data[time][1]/n_add;
+			condensed_data[time][2]=condensed_data[time][2]/n_add;
+		}
+	}	
 	int div_it= 1;
-	int nbins = time_hours.size() / div_it;
+	int nbins = key_time.size() / div_it;
 	// Create graphs
-	TH1F* g_emcal = new TH1F("hem", "EMCAL Leakage Current; Date; Leakage Current [mA]", nbins, 0, time_hours.size());
-	TH1F* g_ihcal = new TH1F("hih", "IHCAL Leakage Current; Date; Leakage Current [mA]", nbins, 0, time_hours.size());
-	TH1F* g_ohcal = new TH1F("hoh", "OHCAL Leakage Current; Date; Leakage Current [mA]", nbins, 0, time_hours.size());
+	TH1F* g_emcal = new TH1F("hem", "EMCAL Leakage Current; Date; Leakage Current [mA]", nbins, 0, key_time.size());
+	TH1F* g_ihcal = new TH1F("hih", "IHCAL Leakage Current; Date; Leakage Current [mA]", nbins, 0, key_time.size());
+	TH1F* g_ohcal = new TH1F("hoh", "OHCAL Leakage Current; Date; Leakage Current [mA]", nbins, 0, key_time.size());
 	for(int i = 0; i<nbins; i++)
 	{
-		g_emcal->Fill(i+1, emcal_imeas.at(div_it*i));	
-		if(i%50== 0) g_emcal->GetXaxis()->SetBinLabel(i+1, time_hours.at(div_it*i).c_str());
-		g_ihcal->Fill(i+1, ihcal_imeas.at(div_it*i));	
-		if(i%50== 0)g_ihcal->GetXaxis()->SetBinLabel(i+1, time_hours.at(div_it*i).c_str());
-		g_ohcal->Fill(i+1, ohcal_imeas.at(div_it*i));	
-		if(i%50== 0)g_ohcal->GetXaxis()->SetBinLabel(i+1, time_hours.at(div_it*i).c_str());
+		std::string time = key_time.at(div_it*i);
+		g_emcal->Fill(i+1, condensed_data[time][0]);	
+		if(i%10== 0) g_emcal->GetXaxis()->SetBinLabel(i+1, time.c_str());
+		g_ihcal->Fill(i+1, condensed_data[time][1]);	
+		if(i%10== 0)g_ihcal->GetXaxis()->SetBinLabel(i+1, time.c_str());
+		g_ohcal->Fill(i+1, condensed_data[time][2]);	
+		if(i%10== 0)g_ohcal->GetXaxis()->SetBinLabel(i+1, time.c_str());
 	}
 	g_emcal->LabelsDeflate("X");
 	g_ihcal->LabelsDeflate("X");
@@ -157,37 +170,17 @@ int PlotLeakageCurrents(const std::string& csv_filename = "Leakage_Currents_per_
 	c->SetLeftMargin(0.12);
 	c->SetRightMargin(0.05);
 	c->SetTopMargin(0.08);
-	c->SetBottomMargin(0.12);
+	c->SetBottomMargin(0.25);
 	
 	// Draw multi-graph
 //	mg->Draw("alp pmc plc plf");
-	THStack* s=new THStack("s", "s");
-	float hc_max = 4 * g_ohcal->GetMaximum();
-	float scale = g_emcal->GetMaximum() / hc_max;
-	std::cout<<scale<<std::endl;
-	g_ihcal->Scale(scale);
-	g_ohcal->Scale(scale);
-	s->Add(g_emcal);
-	s->Add(g_ihcal);
-	s->Add(g_ohcal);
-	//s->Draw("HIST P PMC PLC PLF");
-	g_emcal->Draw("HIST P");
-	g_ohcal->Draw("HIST P same");
-	g_ihcal->SetLineColor(ihcolor);
-	g_ihcal->SetMarkerColor(ihcolor);
-	g_ihcal->Draw("same HIST P");
-	float xmax = g_emcal->GetNbinsX()+1;
-	float ymax = g_emcal->GetMaximum();
-	TGaxis* axis = new TGaxis(xmax, 0, xmax, ymax, 0, hc_max, 510, "+L");
-	axis->SetLineColor(ihcolor);
-	axis->SetTitle("Leakage Currents [mA]--HCAL Scale");
-	axis->Draw("same");
 	// Style axes
 	TAxis* xaxis = g_emcal->GetXaxis();
-	TAxis* yaxis = g_emcal->GetYaxis();
-	
-	xaxis->SetTitle("Date");
-	yaxis->SetTitle("Leakage Current [mA]--EMCAL");
+	TAxis* yaxis = g_emcal->GetYaxis();	
+	xaxis->SetTitle("");
+	xaxis->SetTimeDisplay(1);
+	xaxis->SetTimeFormat("%Y/%m/%d");
+	yaxis->SetTitle("Leakage Current [mA]");
 //	yaxis->SetLineColor(g_emcal->GetLineColor());
 	
 	xaxis->SetTitleSize(0.045);
@@ -197,15 +190,32 @@ int PlotLeakageCurrents(const std::string& csv_filename = "Leakage_Currents_per_
 	xaxis->SetTitleOffset(1.2);
 	yaxis->SetTitleOffset(1.3);
 	
+	float hc_max = 4 * g_ohcal->GetMaximum();
+	int scale = g_emcal->GetMaximum() / hc_max;
+	std::cout<<scale<<std::endl;
+	g_ihcal->Scale(scale);
+	g_ohcal->Scale(scale);
+	g_emcal->Draw("HIST P");
+	g_ohcal->Draw("HIST P same");
+	g_ihcal->SetLineColor(ihcolor);
+	g_ihcal->SetMarkerColor(ihcolor);
+	g_ihcal->Draw("same HIST P");
+	float xmax = g_emcal->GetNbinsX();
+	float ymax = g_emcal->GetMaximum();
+	TGaxis* axis = new TGaxis(xmax, 0, xmax, ymax, 0, hc_max, 510, "+L");
+	axis->SetLineColor(ihcolor);
+	axis->SetTitle("Leakage Currents [mA]--HCAL Scale");
+//	axis->Draw("same");
+	
 	// Create legend
-	TLegend* leg = new TLegend(0.15, 0.75, 0.32, 0.92);
+	TLegend* leg = new TLegend(0.15, 0.75, 0.32, 0.85);
 	leg->SetFillStyle(0);
 	leg->SetFillColor(0);
 	leg->SetBorderSize(0);
 	leg->SetTextSize(0.04);
 	leg->AddEntry(g_emcal, "EMCAL", "lp");
-	leg->AddEntry(g_ihcal, "IHCAL", "lp");
-	leg->AddEntry(g_ohcal, "OHCAL", "lp");
+	leg->AddEntry(g_ihcal, Form("IHCAL #times %d", scale), "lp");
+	leg->AddEntry(g_ohcal, Form("OHCAL #times %d", scale), "lp");
 	leg->Draw("same");
 	
 	// Add sPHENIX label
@@ -216,7 +226,8 @@ int PlotLeakageCurrents(const std::string& csv_filename = "Leakage_Currents_per_
 	pt->AddText("#it{#bf{sPHENIX}} Internal");
 	pt->Draw("same");
 	
-	c->RedrawAxis();
+//	c->RedrawAxis();
+	c->SetTickx(0);
 	c->SaveAs("LeakageCurrents.pdf");
 	c->SaveAs("LeakageCurrents.png");
 	
