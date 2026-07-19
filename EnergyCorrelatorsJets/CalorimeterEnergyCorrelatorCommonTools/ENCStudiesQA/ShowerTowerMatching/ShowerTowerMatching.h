@@ -19,6 +19,19 @@
 
 
 class PHCompositeNode;
+class cluster
+{
+	public:
+		cluster(){};
+	private:
+};
+class matchQA
+{
+	public:
+		matchQA() {};
+	private:
+	
+};
 class tower
 {
 	public:
@@ -33,12 +46,12 @@ class tower
 			phiCenter = phiC;
 			E 	= e;
 			ET	= E / std::cosh(etaCenter);
-			tower_N = tN;
+			tower_N = tn;
 			isTruth = isT;
 		};
 		tower(
-			std::array<float, 3> etaC { -999., -999., -999.},
-			std::array<float, 3> phiC { -999., -999., -999.},
+			std::array<float, 3> etaC = std::array<float, 3> { -999., -999., -999.},
+			std::array<float, 3> phiC = std::array<float, 3> { -999., -999., -999.},
 			float e=-999., 
 			int tn=-999, 
 			bool isT=false
@@ -53,7 +66,7 @@ class tower
 
 			E 	= e;
 			ET 	= E / std::cosh(etaCenter);
-			tower_N = tN;
+			tower_N = tn;
 			isTruth = isT;
 		};
 		~tower(){};
@@ -84,7 +97,7 @@ class Shower
 			else 
 			{
 				if(tw.etaCenter < etaDown) etaDown = tw.etaCenter;
-				if(tw.etaCenter > etaUp) etaUp = tw.etaCenter
+				if(tw.etaCenter > etaUp) etaUp = tw.etaCenter;
 			}
 			if( tw.philow != -999 && tw.phihigh != -999) 
 			{
@@ -94,7 +107,7 @@ class Shower
 			else 
 			{
 				if(tw.phiCenter < phiDown) phiDown = tw.phiCenter;
-				if(tw.phiCenter > phiUp) phiUp = tw.phiCenter
+				if(tw.phiCenter > phiUp) phiUp = tw.phiCenter;
 			}
 			return;
 		}
@@ -107,7 +120,7 @@ class Shower
 			return geomMatch;
 		}
 
-		std::vector<Tower> getStruck() {	
+		std::vector<tower> getStruck() {	
 			return StruckTowers;
 		};
 		std::array<float, 2> get_etaBounds() { 
@@ -120,12 +133,12 @@ class Shower
 		{
 			for(auto t:s->getStruck())
 			{
-				AddTower(t)
+				AddTower(t);
 			}
 			return;
 		}
 	private:
-		std::vector<Tower> StruckTowers{};
+		std::vector<tower> StruckTowers{};
 		float etaDown	{-999.};
 		float etaUp 	{-999.};
 		float phiDown	{-999.};
@@ -168,7 +181,6 @@ class ShowerTowerMatching : public SubsysReco
 
 	private:
 		void buildTowerBins(int n_bins = 10);
-		void matchTheTower();
 		void KinCuts(PHG4Particle*);
 		void getParticleShower(
 			PHG4Particle*,
@@ -179,9 +191,13 @@ class ShowerTowerMatching : public SubsysReco
 		void buildTruthTowers(
 				std::map<PHG4Particle*, Shower*>, 
 				std::vector<PHG4Particle*> );
-
+		void matchTheTowers(
+			       	std::map<PHG4Particle*, Shower*>
+//		       		std::map<BuildMetaTowers::TowerArrayEntry*, Shower*>
+		);
+				
 		std::vector<tower> shower_having_truth_towers {};
-		std::vector<tower> unshowerd_truth_towers {};
+		std::vector<tower> unshowered_truth_towers {};
 
 		std::vector<float>* tower_bins = new std::vector<float> {};
 
@@ -194,10 +210,26 @@ class ShowerTowerMatching : public SubsysReco
 		TH1F* h_tow_miss_tr {nullptr};
 		TH1F* h_cls_fake_tr {nullptr};
 		TH1F* h_cls_miss_tr {nullptr};
-	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* dataTowers {nullptr};
-	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* truthTowers {nullptr}; 
-	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* dataClusters {nullptr};  
-	std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* truthParticles {nullptr}
+		std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* dataTowers {nullptr};
+		std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* truthTowers {nullptr}; 
+		std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* dataClusters {nullptr};  
+		std::array<BuildMetaTowers::TowerArrayEntry*, 1536>* truthParticles {nullptr};
+		
+		//weights
+		TTree* weights {nullptr};
+		std::array<std::map<PHG4Particle*, float>, 1536> TowerParticleWeight {}; //Tower number n has particles p, with weight of w
+		std::vector<std::map<BuildMetaTowers::TowerArrayEntry*, float>> ParticleTowerWeight {}; //particle p goes into towers a, b, c, d this is really just the shower 
+		std::vector<std::map<PHG4Particle*, float>, 1536> ClusterParticleWeight {}; Cluster n has particles p, with weight of w
+		std::vector<std::map<ClusterArrayEntry*, float>> ParticleClusterWeight {}; //particle p goes into clusters a, b, c, d this is really just the shower
+
+		//matching
+		TTree* match {nullptr};
+		std::vector<bool> is_this_real_or_fake_to_tower{};
+		std::vector<bool> is_this_a_miss_to_tower {};
+		std::vector<bool> is_this_real_or_fake_to_cluster {};
+		std::vector<bool> is_this_a_miss_to_cluster {};
+
+
 };
 
 #endif // SHOWERTOWERMATCHING_H
