@@ -392,7 +392,7 @@ class BuildMetaTowers
 			for(auto tp: truth_particles)
 			{
 				auto pt = convertPhParticle(tp);
-				int index = calcuateIndex(pt);
+				int index = calculateIndex(*pt);
 				if(particle_index->size() != truth_particles.size()) particle_index->push_back(index);
 				else particle_index->at(i) = index;
 				addMetaTower(*pt);
@@ -407,10 +407,10 @@ class BuildMetaTowers
 			)
 		{
 
-			float e 	= truth_particle->e();
-			float px	= truth_particle->px();
-			float py	= truth_particle->py();
-			float pz	= truth_particle->pz();
+			float e 	= truth_particle->get_e();
+			float px	= truth_particle->get_px();
+			float py	= truth_particle->get_py();
+			float pz	= truth_particle->get_pz();
 			double p	= std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2));
 			double phi 	= std::atan2(px, py);
 			double eta	= std::atanh(pz/p);
