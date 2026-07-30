@@ -149,8 +149,8 @@ int ShowerTowerMatching::process_event(PHCompositeNode*  topNode)
 			&unmatched_towers, 
 			truth_zvtx );
 	
-	matchTheTowers(particles_to_match, matched_towers);
-	matchTheClusters(particles_to_match, matched_towers);
+	matchTheTowers(particles_to_match/*, matched_towers*/);
+	matchTheClusters(particles_to_match/*, matched_towers*/);
 	weights->Fill();
 	match->Fill();
 	return Fun4All::EVENT_OK;
@@ -225,7 +225,7 @@ void ShowerTowerMatching::buildTopoTowers(
 	return;
 }
 void ShowerTowerMatching::matchTheTowers(
-		std::map<PHG4Particle*, Shower*> particles,
+		std::map<PHG4Particle*, Shower*> particles
 		//std::map<BuildMetaTowers::TowerArrayEntry*, Shower*> truth_towers
 		)
 {
@@ -266,7 +266,7 @@ void ShowerTowerMatching::matchTheTowers(
 
 		}
 		ParticleTowerWeight.push_back(towerweights);
- 		is_this_a_miss.push_back(is_matched);		
+ 		is_this_a_miss_to_tower.push_back(is_matched);		
 	}
 	for(auto t:TowerParticleWeight){
 		float totalE=0.;
@@ -277,17 +277,75 @@ void ShowerTowerMatching::matchTheTowers(
 	for(int j=0; j<(int)particle_ET.size(); j++)
 	{
 		h_truth_all->Fill(particle_ET);
-		if(is_this_a_miss.at(j)) h_truth_to_tower_match->Fill(particle_ET.at(i));
+		if(is_this_a_miss_to_tower.at(j)) h_truth_to_tower_match->Fill(particle_ET.at(i));
 		else h_tow_miss->Fill(particle_ET.at(i));
 	}
 	for(int j=0; j<(int)dataTowers.size(); j++)
 	{
-		if(datatowers.at(j)->ET > 0) h_tower_all->Fill(dataTowers.at(j).ET);
+		if(dataTowers.at(j)->ET > 0) h_tower_all->Fill(dataTowers.at(j).ET);
 	}
 	return;	
 }	
-void ShowerTowerMatching::matchTheClusters()
+void ShowerTowerMatching::matchTheClusters(
+		std::map<PHG4Particle*, Shower*> particles
+)
 {
+	std::vector<float> particle_ET; 
+	
+	for(auto i:is_this_real_or_fake) i = false;
+	for(auto p:particles)
+	{
+		//loop over all the particles and find all the towers that are in the showers
+		bool is_matched = false;
+		std::array<float, 2> eB = p.second->get_etaBounds();
+		std::array<float, 2> pB = p.second->get_phiBounds();
+		std::vector<tower> sts = p.second->getStruck();
+		float pz {p.first->get_pz()};
+		float e	 {p.first->get_e()};
+		float eta { std::atanh(pz / e)}; 
+		float eT = e / std::cosh(eta);
+		particle_ET.push_back(eT);
+		std::map<BuildMetaTowers::TowerArrayEntry*, float> towerweights {};
+		for(int i=0; i<(int)dataClusters.size(); i++)
+		{
+			auto tower = dataClusters.at(i);
+			float phi = tower->phi;
+			float eta = tower->eta;
+			if(phi >= pB[0] && phi <= pB[1])
+				is_matched = (eta > eB[0] && eB[1] < eB[1]) ? true : false;
+		       if(is_matched){
+			       is_this_real_or_fake.at(i) = true;
+			       float tw = 0.;
+			       for(auto t:sts)
+				       if(phi >= t.philow && phi <= t.phihigh)
+					       if( eta >= t.etalow && eta <= t.etahigh )
+						       tw+=t.ET; //the tower weight is made of all "shower towers" in a physical tower
+			     ClusterParticleWeight.at(i)[p]=eT; //add in the particle weight going to that tower 
+			     clusterweights[tower]=tw/eT;
+		       }
+
+		}
+		ParticleClusterWeight.push_back(clusterweights);
+ 		is_this_a_miss_to_cluster.push_back(is_matched);		
+	}
+	for(auto t:ClusterParticleWeight){
+		float totalE=0.;
+		for(auto p:t) totalE+=p.second;
+		if(totalE <= 0) continue;
+		for(auto p:t) p.second=p.second/totalE;
+	}
+	for(int j=0; j<(int)particle_ET.size(); j++)
+	{
+		h_truth_all->Fill(particle_ET);
+		if(is_this_a_miss_to_cluster.at(j)) h_truth_to_cluster_match->Fill(particle_ET.at(i));
+		else h_clust_miss->Fill(particle_ET.at(i));
+	}
+	for(int j=0; j<(int)dataClusters.size(); j++)
+	{
+		if(dataClusters.at(j)->ET > 0) h_cluster_all->Fill(dataClusters.at(j).ET);
+	}
+	return;	
+
 }
 bool ShowerTowerMatching::KinCuts(PHG4Particle* p)
 {

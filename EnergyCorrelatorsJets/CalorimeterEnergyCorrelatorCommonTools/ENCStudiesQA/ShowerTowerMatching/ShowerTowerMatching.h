@@ -195,6 +195,10 @@ class ShowerTowerMatching : public SubsysReco
 			       	std::map<PHG4Particle*, Shower*>
 //		       		std::map<BuildMetaTowers::TowerArrayEntry*, Shower*>
 		);
+		void matchTheClusters(
+			       	std::map<PHG4Particle*, Shower*>
+//		       		std::map<BuildMetaTowers::TowerArrayEntry*, Shower*>
+		);
 				
 		std::vector<tower> shower_having_truth_towers {};
 		std::vector<tower> unshowered_truth_towers {};
@@ -219,7 +223,7 @@ class ShowerTowerMatching : public SubsysReco
 		TTree* weights {nullptr};
 		std::array<std::map<PHG4Particle*, float>, 1536> TowerParticleWeight {}; //Tower number n has particles p, with weight of w
 		std::vector<std::map<BuildMetaTowers::TowerArrayEntry*, float>> ParticleTowerWeight {}; //particle p goes into towers a, b, c, d this is really just the shower 
-		std::vector<std::map<PHG4Particle*, float>, 1536> ClusterParticleWeight {}; Cluster n has particles p, with weight of w
+		std::vector<std::map<PHG4Particle*, float>, 1536> ClusterParticleWeight {}; //Cluster n has particles p, with weight of w
 		std::vector<std::map<ClusterArrayEntry*, float>> ParticleClusterWeight {}; //particle p goes into clusters a, b, c, d this is really just the shower
 
 		//matching
