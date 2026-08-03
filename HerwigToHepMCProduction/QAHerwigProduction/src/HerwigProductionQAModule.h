@@ -84,7 +84,7 @@ class HerwigProductionQAModule : public SubsysReco
 	//run fastJet for herwig with r=0.2-0.6
 	void findJets(std::vector<HepMC::GenParticle*>, std::vector<std::vector<Jet*>*>*);
 	//returns lead jet set
-	std::vector<std::array<float, 4>> runAnalysisJets(std::vector<std::vector<Jet*>*>);
+	std::vector<std::array<float, 4>> runAnalysisJets(std::vector<std::vector<Jet*>*>, float);
 	//technically can just do photons
 	int runAnalysisPhotonJets(std::vector<std::vector<Jet*>*>, std::vector<HepMC::GenParticle*>);
 	//bulk properties
@@ -115,6 +115,7 @@ class HerwigProductionQAModule : public SubsysReco
 	std::vector<TH1F*> h_lead_jets_e {};
 	std::vector<TH1I*> h_lead_jets_n_comp {};
 
+	std::vector<TH2F*> h_Q_pt {};
 	//photon specific QA plots 
 	TH1F* h_all_photons_pt;	
 	TH1F* h_all_photons_eta;	

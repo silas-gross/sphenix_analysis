@@ -122,7 +122,8 @@ int HerwigProductionQAModule::Init(PHCompositeNode *topNode)
 			h_all_jets_phi.push_back(h_all_jet_phi);
 			h_all_jets_e.push_back(h_all_jet_e);
 			h_all_jets_n_comp.push_back(h_all_jet_n_comp);
-
+			
+			
 			//leading jets
 			TH1F* h_lead_jet_pt=new TH1F(Form("h_lead_jet_r0%d_pt", i ), 
 					Form(" R=0.%d jets; p_{T}^{lead jet}[GeV]; N_{evts}", i),
@@ -150,6 +151,12 @@ int HerwigProductionQAModule::Init(PHCompositeNode *topNode)
 					Form(" R=0.%d jets; N_{jet}; N_{event}", i),
 					50, 0, 50);
 			h_n_jets.push_back(h_n_jet);
+			TH2F* h_Q = new TH2F(Form("h_Q_leadpT_r0%d", i), 
+					Form(" R=0.%d jets; Q^{2}; p^{lead}_{T}[GeV]; N_{evts}", i),
+					200, -0.5, 199.5, 
+					100, -0.5, 99.5
+					);
+			h_Q_pt.push_back(h_Q);
 		}
 	}
 	if(photon)
@@ -344,6 +351,7 @@ int HerwigProductionQAModule::process_herwig_event(PHCompositeNode* topNode){
 	std::vector<HepMC::GenParticle*> photons {};
 	std::vector<HepMC::GenParticle*> event_particles {};
 //	std::array<float,3> vertex {};
+	float Q2=0.;
 	PHHepMCGenEventMap* phg=findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
 	if(!phg){ 
 		return 1; //catch empty event pmap
@@ -359,6 +367,7 @@ int HerwigProductionQAModule::process_herwig_event(PHCompositeNode* topNode){
 				if(!ev) continue;
 				else{
 					auto vtx = ev->signal_process_vertex();
+					Q2=ev->event_scale();
 					if(!vtx) continue;
 /*					else{ //fill in info from the generator vertex
 						auto vtx_pos = vtx->position();
@@ -390,7 +399,7 @@ int HerwigProductionQAModule::process_herwig_event(PHCompositeNode* topNode){
 	}
 	findJets(event_particles, &identified_jets);
 	if(photon) 		runAnalysisPhotonJets(identified_jets, photons);
-	else if (jet) 		runAnalysisJets(identified_jets);
+	else if (jet) 		runAnalysisJets(identified_jets, Q2);
 	if( photon || jet ) 	runAnalysisEvent(event_particles);	
 	return Fun4AllReturnCodes::EVENT_OK;
 
@@ -458,6 +467,7 @@ int HerwigProductionQAModule::process_pythia_event(PHCompositeNode* topNode){
 	std::vector<std::vector<Jet*>*>	 jets;
 	std::vector<HepMC::GenParticle*> photons;
 	std::vector<HepMC::GenParticle*> event_particles;
+	float Q2=0.;
 	auto hepmc_gen_event= findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
 	if(!hepmc_gen_event) return Fun4AllReturnCodes::EVENT_OK; 
 	else if(hepmc_gen_event)
@@ -471,6 +481,7 @@ int HerwigProductionQAModule::process_pythia_event(PHCompositeNode* topNode){
 				if( !ev ) continue;
 				else if( ev )
 				{
+					Q2=ev->event_scale();
 					for(HepMC::GenEvent::particle_const_iterator iter=ev->particles_begin(); iter != ev->particles_end(); ++iter) 
 					{
 						auto particle=(*iter);
@@ -515,13 +526,13 @@ int HerwigProductionQAModule::process_pythia_event(PHCompositeNode* topNode){
 		}
 	}
 //	if(photon) 		runAnalysisPhotonJets(jets, photons);
-	/*else*/ if (jet)		runAnalysisJets(jets);
+	/*else*/ if (jet)		runAnalysisJets(jets, Q2);
 	if( photon || jet ) 	runAnalysisEvent(event_particles);	
 	std::cout<<__LINE__<<std::endl;
 	return Fun4AllReturnCodes::EVENT_OK;
 }
 
-std::vector<std::array<float, 4>> HerwigProductionQAModule::runAnalysisJets(std::vector<std::vector<Jet*>*> jets_of_all_sizes)
+std::vector<std::array<float, 4>> HerwigProductionQAModule::runAnalysisJets(std::vector<std::vector<Jet*>*> jets_of_all_sizes, float Q2)
 {
 	//run analysis of jets 
 	int i=0;
@@ -555,6 +566,7 @@ std::vector<std::array<float, 4>> HerwigProductionQAModule::runAnalysisJets(std:
 		h_lead_jets_eta.at(i)->	Fill(lead_eta);
 		h_lead_jets_phi.at(i)->	Fill(lead_phi);
 		h_lead_jets_e.at(i)->	Fill(lead_e);
+		h_Q_pt.at(i)->Fill(Q2, lead_pt);
 		h_lead_jets_n_comp.at(i)->Fill(lead_comp);
 		std::array<float, 4> lead_jet {lead_pt, lead_eta, lead_phi, lead_e};
 		lead_jet_of_all_sizes.push_back(lead_jet);
@@ -567,7 +579,7 @@ std::vector<std::array<float, 4>> HerwigProductionQAModule::runAnalysisJets(std:
 int HerwigProductionQAModule::runAnalysisPhotonJets(std::vector<std::vector<Jet*>*> jets_of_all_sizes, std::vector<HepMC::GenParticle*> photons)
 {
 	//run the analysis of the photons + jets
-	auto lead_jet_of_all_sizes=runAnalysisJets(jets_of_all_sizes);
+	auto lead_jet_of_all_sizes=runAnalysisJets(jets_of_all_sizes, 1.);
 	float lead_pt	= 0.;
 	float lead_eta	= 0.;
 	float lead_phi 	= 0.;
@@ -772,6 +784,7 @@ void HerwigProductionQAModule::Print(const std::string &what) const
 			h_lead_jets_phi.at(i)->Write();
 			h_lead_jets_e.at(i)->Write();
 			h_lead_jets_n_comp.at(i)->Write();
+			h_Q_pt.at(i)->Write();
 	
 		}
 	}
