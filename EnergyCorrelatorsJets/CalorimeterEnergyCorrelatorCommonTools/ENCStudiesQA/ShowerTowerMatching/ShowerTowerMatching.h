@@ -4,6 +4,27 @@
 #define SHOWERTOWERMATCHING_H
 //fun4all basic stuff
 #include <fun4all/SubsysReco.h>
+#include <fun4all/Fun4AllBase.h>
+#include <fun4all/Fun4AllReturnCodes.h>
+
+//phool
+#include <phool/PHCompositeNode.h>
+#include <phool/getClass.h>
+
+//vertex stuff
+#include <globalvertex/GlobalVertex.h>
+#include <globalvertex/GlobalVertexMap.h>
+
+//G4 objects
+
+#include <g4main/PHG4Particle.h>
+#include <g4main/PHG4Hit.h>
+#include <g4main/PHG4TruthInfoContainer.h>
+
+
+#include <phhepmc/PHHepMCGenEvent.h>  
+#include <phhepmc/PHHepMCGenEventMap.h>
+#include <HepMC/GenEvent.h>
 
 #include "BuildMetaTowers.h"
 //root 
@@ -223,8 +244,8 @@ class ShowerTowerMatching : public SubsysReco
 		TTree* weights {nullptr};
 		std::array<std::map<PHG4Particle*, float>, 1536> TowerParticleWeight {}; //Tower number n has particles p, with weight of w
 		std::vector<std::map<BuildMetaTowers::TowerArrayEntry*, float>> ParticleTowerWeight {}; //particle p goes into towers a, b, c, d this is really just the shower 
-		std::vector<std::map<PHG4Particle*, float>, 1536> ClusterParticleWeight {}; //Cluster n has particles p, with weight of w
-		std::vector<std::map<ClusterArrayEntry*, float>> ParticleClusterWeight {}; //particle p goes into clusters a, b, c, d this is really just the shower
+		std::vector<std::map<PHG4Particle*, float>> ClusterParticleWeight {}; //Cluster n has particles p, with weight of w
+		std::vector<std::map<BuildMetaTowers::TowerArrayEntry*, float>> ParticleClusterWeight {}; //particle p goes into clusters a, b, c, d this is really just the shower
 
 		//matching
 		TTree* match {nullptr};

@@ -17,7 +17,7 @@ void ShowerTowerMatching::buildTowerBins(int n_bins/*=100*/)
 	float last_realbin = 50; //use a 50 GeV upper bin 
 	float lastbin = 1e+02; //catchall for above 50 GeV
 	tower_bins->push_back(1e-06); //1 keV bottom bin
-	tower_bins->push_back(firstbin); //100 MeV is the start of the actual bins
+	tower_bins->push_back(first_bin); //100 MeV is the start of the actual bins
 	float width = (std::log10(last_realbin) - std::log10(first_bin) )/((float)n_bins-2.);
 	for(int i=1; i<n_bins; i++)
 	{
@@ -38,25 +38,25 @@ int ShowerTowerMatching::Init(PHCompositeNode* topNode)
 			tower_bins->size(), tower_bins->data());
 	h_tow_miss = new TH1F("tow_miss",
 			"Miss truth particle showers to Meta Towers; E_{T}^{particle} [GeV]; Miss rate",
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	h_cls_fake = new TH1F("cls_fake", 
 			"Fakes on Topo Clusterss from truth particle showers; E_{T}^{cls} [GeV]; Fake rate", 
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	h_cls_miss = new TH1F("cls_miss",
 			"Miss truth particle showers to Topo Clusterss; E_{T}^{particle} [GeV]; Miss rate",
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	h_tow_fake_tr 	= new TH1F("tow_fake_tr", 
 			"Fakes on Meta Towers from truth tower showers; E_{T}^{tow} [GeV]; Fake rate", 
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	h_tow_miss_tr 	= new TH1F("tow_miss_tr",
 			"Miss truth tower showers to Meta Towers; E_{T}^{tower} [GeV]; Miss rate",
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	h_cls_fake_tr 	= new TH1F("cls_fake", 
 			"Fakes on Topo Clusters from truth tower showers; E_{T}^{cls} [GeV]; Fake rate", 
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	h_cls_miss_tr 	= new TH1F("cls_miss",
 			"Miss truth tower showers to Topo Clusters; E_{T}^{tower} [GeV]; Miss rate",
-			tower_bins->data());
+			tower_bins->size(), tower_bins->data());
 	//TTree to hold the weights
 	weights->Branch("TowerParticleWeight", &TowerParticleWeight);
 	weights->Branch("ParticleTowerWeight", &ParticleTowerWeight);
