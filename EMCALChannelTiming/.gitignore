@@ -1,0 +1,16 @@
+*/*.out
+*/*.job
+*/*.log
+*/*.hepmc
+*/*.txt
+*/*.tex
+*.root
+*/*Evt*
+*/condor_file_dir/*
+*/condor_file_dir
+*/build/*
+*/*/condor_file_dir/*
+*/*/condor_file_dir
+*/*/build/*
+*/*/*_output/*
+*/*/*_output
