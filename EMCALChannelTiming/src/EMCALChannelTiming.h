@@ -10,6 +10,29 @@
 
 class PHCompositeNode;
 
+class tower
+{
+	tower(
+		float ph, 
+		float et, 
+		float e, 
+		float T, 
+		int16_t ei)
+	{
+		phi = ph;
+		eta = et;
+		E   = e;
+		t   = T;
+		Ei  = ei;
+	}
+	~tower(){};
+	float phi {-999};
+	float eta {-999};
+	float e	  {-999};
+	float t   {-999};
+	int16_t ei{-999};
+};
+
 class EMCALChannelTiming : public SubsysReco
 {
  public:
@@ -52,6 +75,23 @@ class EMCALChannelTiming : public SubsysReco
  // void Print(const std::string &what = "ALL") const override;
 
  private:
+  float SubdivideDetector( std::vector<tower*>*, std::vector<tower*>*, PHCompositeNode*);
+  void AnaHelper( std::vector<tower*>, std::vector<TH1F*>, std::vector<TH2F*>);
+  std::string emcal_tower {""};
+  std::string emcalgeom {""};
+
+  enum 1DOUTPUTHISTS
+  {
+	 DELTAT, 
+	 E,
+	 EBART,
+  };
+  enum 2DOUTPUTHISTS
+  {
+	  EtoT,
+	  EtaPhi,
+  }
+
 };
 
 #endif // EMCALCHANNELTIMING_H
