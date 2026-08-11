@@ -46,7 +46,7 @@ class EMCALChannelTiming : public SubsysReco
       register them to Fun4AllServer (so they can be output to file
       using Fun4AllServer::dumpHistos() method).
    */
-//  int Init(PHCompositeNode *topNode) override;
+  int Init(PHCompositeNode *topNode) override;
 
   /** Called for first event when run number is known.
       Typically this is where you may want to fetch data from
@@ -91,6 +91,29 @@ class EMCALChannelTiming : public SubsysReco
 	  EtoT,
 	  EtaPhi,
   }
+  std::vector<float> energy_bins {}; //log bins for energy
+  
+  //histograms across all towers
+  //1D
+  std::vector<TH1F*>* AllTowers1D=new std::vector<TH1F*> {};
+  std::vector<TH1F*>* highTowers1D=new std::vector<TH1F*> {};
+  std::vector<TH1F*>* lowTowers1D=new std::vector<TH1F*> {};
+
+  //2D
+  std::vector<TH2F*>* AllTowers2D=new std::vector<TH2F*> {};
+  std::vector<TH2F*>* highTowers2D=new std::vector<TH2F*> {};
+  std::vector<TH2F*>* lowTowers2D=new std::vector<TH2F*> {};
+
+  //histograms for individual towers 
+  //1D
+  std::vector< std::vector<TH1F*>*>* AllTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
+  std::vector< std::vector<TH1F*>*>* highTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
+  std::vector< std::vector<TH1F*>*>* lowTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
+
+  //2D
+  std::vector< std::vector<TH2F*>*>* AllTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
+  std::vector< std::vector<TH2F*>*>* highTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
+  std::vector< std::vector<TH2F*>*>* lowTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
 
 };
 

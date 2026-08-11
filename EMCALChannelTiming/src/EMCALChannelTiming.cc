@@ -4,16 +4,133 @@ EMCALChannelTiming::EMCALChannelTiming(const std::string &name):
 SubsysReco(name)
 {
 	//constructor
+	int nbins = 1000; //maybe put this in the initial values???
+	float Eu = 15.;
+	float El = 1e-3;	
+	float log_binsize = (std::log(Eu) - std::log(El))/((float)nbins-1); //bins go linear in log(E)
+	for(int i=0; i=nbins; i++)
+	{
+		float bin_log = std::log(El) + i*log_binsize;
+		energy_bins.push_back(bin_log);
+	}
+	energy_bins.push_back(std::log(Eu)); 
 }
-EMCALChcannelTiming::process_event(PHCompositeNode* topNode)
+int EMCALChannelTiming::Init(PHCompositeNode *topNode)
+{
+	int ntowers=1536*16;
+	AddBins( 
+		allTowers1D, allTowers2D, 
+		highTowers1D, highTowers2D,
+		lowTowers1D, lowTowers2D
+	       );
+	for(int i=0; i<ntowers; i++)
+	{
+		AddBins( 
+			allTowers1D_t->at(i), allTowers2D_t->at(i), 
+			highTowers1D_t->at(i), highTowers2D_t->at(i),
+			lowTowers1D_t->at(i), lowTowers2D_t->at(i), i
+	       	);
+	}
+	return Fun4AllReturnCodes::EVENT_OK;
+
+
+}
+void EMCALChannelTiming::AddBins(
+		std::vector<TH1F*>* all1DHists, 
+		std::vector<TH2F*>* all2DHists,
+		std::vector<TH1F*>* high1DHists, 
+		std::vector<TH2F*>* high2DHists,
+		std::vector<TH1F*>* low1DHists, 
+		std::vector<TH2F*>* low2DHists,
+		std::string ntower 
+		)
+
+{
+	//per tower energy variation
+	std::string ntowerus	= (ntower=="") ? "" : "_" + ntower;
+	ntower			= (ntower=="") ? "" : " " + ntower;
+	TH1F* DeltaT = new TH1F(
+			std::format("Delta_T{}", ntowerus).c_str(), 
+			std::format("#Delta T tower{}; #Delta T [ns]", ntower).c_str(), 
+			100, -20, 20);
+	TH1F* DeltaT_high = new TH1F(
+			std::format("Delta_T_high{}", ntowerus).c_str(), 
+			std::format("#Delta T tower{}; #Delta T [ns]", ntower).c_str(), 
+			100, -20, 20);
+	TH1F* DeltaT_low = new TH1F(
+			std::format("Delta_T_low{}", ntowerus).c_str(), 
+			std::format("#Delta T tower{}; #Delta T [ns]", ntower).c_str(), 
+			100, -20, 20);
+
+	//Energy Hists
+	TH1F* Energy = new TH1F(
+			
+			"Tow_E", "EMCAL Tower Energy; log(E) [GeV]; N_{tow}", 
+			nbins, energy_bins.data()); 
+	//1 MeV -15 GeV, to keep comparable between low and high energy towers 
+	TH1F* Energy_high = new TH1F(
+			"Tow_E_high", "EMCAL Tower Energy; log(E) [GeV]; N_{tow}", 
+			nbins, energy_bins.data()); 
+	//1 MeV -15 GeV, to keep comparable between low and high energy towers 
+	TH1F* Energy_low = new TH1F(
+			"Tow_E_low", "EMCAL Tower Energy; log(E) [GeV]; N_{tow}", 
+			nbins, energy_bins.data()); 
+	//1 MeV -15 GeV, to keep comparable between low and high energy towers 
+	
+	//Energy v Time 
+	TH1F* EBarT = new TH1F(
+			"E_bar_T", "E versus < #Delta T >; log(E) [GeV]; < #Delta T> [ns]",
+			nbins, energy_bins.data());
+	TH1F* EBarT_high = new TH1F(
+			"E_bar_T_high", "E versus < #Delta T >; log(E) [GeV]; < #Delta T> [ns]",
+			nbins, energy_bins.data());
+	TH1F* EBarT_low = new TH1F(
+			"E_bar_T_low", "E versus < #Delta T >; log(E) [GeV]; < #Delta T> [ns]",
+			nbins, energy_bins.data());
+
+	//add to the vectors 
+	all1DHists->push_back(DeltaT);
+	high1DHists->push_back(DeltaT_high);
+	low1DHists->push_back(DeltaT_low);
+	
+	all1DHists->push_back(Energy);
+	high1DHists->push_back(Energy_high);
+	low1DHists->push_back(Energy_low);
+
+	all1DHists->push_back(EBarT);
+	high1DHists->push_back(EBarT_high);
+	low1DHists->push_back(EBarT_low);
+
+
+}
+
+int EMCALChannelTiming::getIndex(float phi, float eta)
+{
+	int index = 0;
+	int neta = 4 * 24;
+	int nphi = 4 * 64;
+	float binphi = 2*M_PI/(float)nphi;
+	float bineta = -2.2 /(float)neta;
+	int iphi = phi * binphi;
+	int ieta = eta * bineta;
+	index = neta * iphi + ieta;
+       return index;
+}       
+
+int EMCALChannelTiming::process_event(PHCompositeNode* topNode)
 {
 	//Need to get all towers from the emcal
 	//Get the towers, subdivide and send them to a helper function 
-	
+	std::vector<tower*>* lowE  = new std::vector<tower*>{};
+	std::vector<tower*>* highE = new std::vector<tower*>{};
+	std::vector<tower*>* allE  = new std::vector<tower*>{};
+	SubdivideDetector(lowE, highE, allE, topNode);
+
 }
 float EMCALChannelTiming::SubdivideDetector(
 		std::vector<tower*>* lowerEtowers, 
 		std::vector<tower*>*  higherEtowers, 
+		std::vector<tower*>* allTowers,
 		PHCompositeNode* topNode
 		)
 {
@@ -43,7 +160,8 @@ float EMCALChannelTiming::SubdivideDetector(
 		if(Ei > 30 and E < 5000) continue;
 		tower* twA = new tower(phi, eta, E, Ei, t);
 		if( Ei <= 30 ) lowerEtowers->push_back(twA);
-		if( E >= 5000 ) higherEtowers->pushback(twA);
+		else if( E >= 5000 ) higherEtowers->pushback(twA);
+		allTowers->push_back(twA);
 	}
 	avg_time = avg_time/((float) emcaltowers->size());
 	return avg_time; 
