@@ -4,20 +4,38 @@
 #define EMCALCHANNELTIMING_H
 
 #include <fun4all/SubsysReco.h>
+#include <fun4all/Fun4AllBase.h>
 #include <fun4all/Fun4AllReturnCodes.h>
 
+#include <calobase/TowerInfov3.h>
+#include <calobase/TowerInfoContainerv3.h>
+#include <calobase/RawTowerGeomContainer.h>
+#include <calobase/RawTowerGeomContainer_Cylinderv1.h>
+
+#include <TFile.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TTree.h>
+#include <TDirectory.h> 
+
 #include <string>
+#include <map>
+#include <vector>
+#include <math.h>
+#include <utility>
+#include <format>
 
 class PHCompositeNode;
 
 class tower
 {
 	tower(
-		float ph, 
-		float et, 
-		float e, 
-		float T, 
-		int16_t ei)
+		float ph = -999., 
+		float et = -999., 
+		float e  = -999., 
+		float T  = -999., 
+		int ei   = -999.
+	)
 	{
 		phi = ph;
 		eta = et;
@@ -28,9 +46,9 @@ class tower
 	~tower(){};
 	float phi {-999};
 	float eta {-999};
-	float e	  {-999};
+	float E	  {-999};
 	float t   {-999};
-	int16_t ei{-999};
+	int Ei    {-999};
 };
 
 class EMCALChannelTiming : public SubsysReco
@@ -72,25 +90,31 @@ class EMCALChannelTiming : public SubsysReco
   /// Reset
 //  int Reset(PHCompositeNode * /*topNode*/) override;
 
- // void Print(const std::string &what = "ALL") const override;
+ void Print(const std::string &what = "ALL") const override;
 
  private:
-  float SubdivideDetector( std::vector<tower*>*, std::vector<tower*>*, PHCompositeNode*);
-  void AnaHelper( std::vector<tower*>, std::vector<TH1F*>, std::vector<TH2F*>);
-  std::string emcal_tower {""};
-  std::string emcalgeom {""};
+  float SubdivideDetector( std::vector<tower*>*, std::vector<tower*>*, std::vector<tower*>*, PHCompositeNode*);
+  void AnaHelper( std::vector<tower*>, std::vector<TH1F*>, std::vector<TH2F*>, float);
+  int getIndex(float, float);
+  void AddBins(std::vector<TH1F*>*, std::vector<TH2F*>*,
+		  std::vector<TH1F*>*, std::vector<TH2F*>*,
+		  std::vector<TH1F*>*, std::vector<TH2F*>*,
+		  std::string ntower="");
+  std::string emcal_tower {"TOWERINFO_CALIB_CEMC"};
+  std::string emcalgeom {"TOWERGEOM_CEMC"};
 
-  enum 1DOUTPUTHISTS
+  enum a1DOUTPUTHISTS
   {
 	 DELTAT, 
 	 E,
 	 EBART,
   };
-  enum 2DOUTPUTHISTS
+  enum a2DOUTPUTHISTS
   {
 	  EtoT,
 	  EtaPhi,
-  }
+  };
+
   std::vector<float> energy_bins {}; //log bins for energy
   
   //histograms across all towers
@@ -115,6 +139,7 @@ class EMCALChannelTiming : public SubsysReco
   std::vector< std::vector<TH2F*>*>* highTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
   std::vector< std::vector<TH2F*>*>* lowTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
 
+  std::vector<tower*>* allE = new std::vector<tower*> {}; 
 };
 
 #endif // EMCALCHANNELTIMING_H

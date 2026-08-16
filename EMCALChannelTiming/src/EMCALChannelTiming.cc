@@ -14,6 +14,14 @@ SubsysReco(name)
 		energy_bins.push_back(bin_log);
 	}
 	energy_bins.push_back(std::log(Eu)); 
+	towerTree = new TTree("tT", "tT");
+	for(int i = 0; i < 15*1536; i++)
+	{
+		tower* tw=new tower();
+		allE->push_back(tw);
+		towerTree->AddBranch(std::format("tower_{}", i).c_str(), &tw);
+	}
+	
 }
 int EMCALChannelTiming::Init(PHCompositeNode *topNode)
 {
@@ -42,7 +50,7 @@ void EMCALChannelTiming::AddBins(
 		std::vector<TH2F*>* high2DHists,
 		std::vector<TH1F*>* low1DHists, 
 		std::vector<TH2F*>* low2DHists,
-		std::string ntower 
+		std::string ntower/*=""*/ 
 		)
 
 {
@@ -123,9 +131,17 @@ int EMCALChannelTiming::process_event(PHCompositeNode* topNode)
 	//Get the towers, subdivide and send them to a helper function 
 	std::vector<tower*>* lowE  = new std::vector<tower*>{};
 	std::vector<tower*>* highE = new std::vector<tower*>{};
-	std::vector<tower*>* allE  = new std::vector<tower*>{};
-	SubdivideDetector(lowE, highE, allE, topNode);
-
+	float avgtime = SubdivideDetector(lowE, highE, allE, topNode);
+	AnaHelper(allE, AllTowers1D, AllTowers2D, avgtime);
+	AnaHelper(highE, highTowers1D, highTowers2D, avgtime);
+	AnaHelper(lowE, lowTowers1D, lowTowers2D, avgtime);
+	for(int n=0; n<(int) allE->size(); n++)
+	{
+		int index = getIndex(allE->at(n)->phi, allE->at(n)->eta);
+		AnaHelper(allE->at(n), AllTowers1D_t->at(index), AllTowers2D->at(index), avgtime);
+	}
+	T->Fill();	
+	return Fun4AllReturnCodes::EVENT_OK;
 }
 float EMCALChannelTiming::SubdivideDetector(
 		std::vector<tower*>* lowerEtowers, 
@@ -176,7 +192,7 @@ void EMCALChannelTiming::AnaHelper(
 	std::map<int, std::pair<int, float>> tavg {};
 	for(
 		int i = 0; 
-		i< (int)1Doutput->at(1DOUTPUTHISTS::E)->getNbins(); 
+		i< (int)1Doutput->at(a1DOUTPUTPUTHISTS::E)->getNbins(); 
 		i++
 	)
 	{
@@ -185,18 +201,71 @@ void EMCALChannelTiming::AnaHelper(
 
 	for(auto tow: subsettowers)
 	{
-		1Doutput->at(1DOUTPUTHISTS::DELTAT)
+		1Doutput->at(a1DOUTPUTPUTHISTS::DELTAT)
 			->Fill(tow->t - TAvg);
-		1Doutput->at(1DOUTPUTHISTS::E)->
+		1Doutput->at(a1DOUTPUTPUTHISTS::E)->
 			Fill(E);
-		int binN = 1Doutput->at(1DOUTPUTHISTS::E)->findBin(E)
+		int binN = 1Doutput->at(a1DOUTPUTPUTHISTS::E)->findBin(E)
 		tavg[binN].first++;
 		tavg[binN].second+=tow->t - TAvg;
 	}
 	for(auto m:tavg)
 	{
 		m.second.second= m.second.second/(float)m.second.first;
-		float Ec= 1Doutput->at(1DOUTPUTHISTS::E)->getBinCenter(m.first);
-		1Doutput->at(1DOUTPUTHISTS::EBART)->Fill(Ec, m.second.second);
+		float Ec= 1Doutput->at(a1DOUTPUTPUTHISTS::E)->getBinCenter(m.first);
+		1Doutput->at(a1DOUTPUTPUTHISTS::EBART)->Fill(Ec, m.second.second);
 	}
+	return;
 }
+void EMCALChannelTiming::AnaHelper(
+		tower* tow,
+		std::vector<TH1F*>* 1Doutput,
+		std::vector<TH2F*>* 2Doutput, 
+		float TAvg
+		)
+{
+	std::map<int, std::pair<int, float>> tavg {};
+
+	1Doutput->at(a1DOUTPUTPUTHISTS::DELTAT)
+		->Fill(tow->t - TAvg);
+	1Doutput->at(a1DOUTPUTPUTHISTS::E)->
+		Fill(E);
+	int binN = 1Doutput->at(a1DOUTPUTPUTHISTS::E)->findBin(E)
+	1Doutput->at(a1DOUTPUTPUTHISTS::EBART)->Fill(E, tow->t - TAvg);
+	
+}
+
+void EMCALChannelTiming::Print(const std::string &what)
+{
+	TFile* f = new TFile(output_file_name, "RECREATE");
+	f->cd();
+	T->Write();
+	TDirectory* td = new TDirectory("EMCAL_TOWS");
+	td->cd();
+	for (int i = 0; i<(int)AllTowers1D_t->size(); i++);
+	{
+		TDirectory* td_T=new TDirectory(std::format("Tower_{}", i).c_str());
+		td_T->cd();
+		AllTowers1D_t->at(i)->Write();
+		highTowers1D_t->at(i)->Write();
+		lowTowers1D_t->at(i)->Write();
+
+		AllTowers2D_t->at(i)->Write();
+		highTowers2D_t->at(i)->Write();
+		lowTowers2D_t->at(i)->Write();
+
+		td->cd();
+	}
+	f->cd();
+	AllTowers1D->Write();
+	highTowers1D->Write();
+	lowTowers1D->Write();
+
+	AllTowers2D->Write();
+	highTowers2D->Write();
+	lowTowers2D->Write();
+
+	f->Write();
+	f->Close();
+}
+
