@@ -1,0 +1,139 @@
+make  all-am
+make[1]: Entering directory '/gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EMCALChannelTiming/src/build'
+/bin/sh ./libtool  --tag=CXX   --mode=compile /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/bin/g++ -DPACKAGE_NAME=\"emcalchanneltiming\" -DPACKAGE_TARNAME=\"emcalchanneltiming\" -DPACKAGE_VERSION=\"1.00\" -DPACKAGE_STRING=\"emcalchanneltiming\ 1.00\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"emcalchanneltiming\" -DVERSION=\"1.00\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -I. -I..  -I/sphenix/user/sgross/install_dir/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.565/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include   -g -O2 -std=c++20 -Wall -Wextra -Wshadow -Werror -MT EMCALChannelTiming.lo -MD -MP -MF .deps/EMCALChannelTiming.Tpo -c -o EMCALChannelTiming.lo ../EMCALChannelTiming.cc
+libtool: compile:  /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/gcc/14.2.0-2f0a0/x86_64-el9/bin/g++ -DPACKAGE_NAME=\"emcalchanneltiming\" -DPACKAGE_TARNAME=\"emcalchanneltiming\" -DPACKAGE_VERSION=\"1.00\" "-DPACKAGE_STRING=\"emcalchanneltiming 1.00\"" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"emcalchanneltiming\" -DVERSION=\"1.00\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -I. -I.. -I/sphenix/user/sgross/install_dir/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/release/release_ana/ana.565/include -isystem/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include -g -O2 -std=c++20 -Wall -Wextra -Wshadow -Werror -MT EMCALChannelTiming.lo -MD -MP -MF .deps/EMCALChannelTiming.Tpo -c ../EMCALChannelTiming.cc  -fPIC -DPIC -o .libs/EMCALChannelTiming.o
+../EMCALChannelTiming.cc: In member function 'void EMCALChannelTiming::AddBins(std::vector<TH1F*>*, std::vector<TH2F*>*, std::vector<TH1F*>*, std::vector<TH2F*>*, std::vector<TH1F*>*, std::vector<TH2F*>*, std::string)':
+../EMCALChannelTiming.cc:120:66: error: no matching function for call to 'TH2F::TH2F(const char [11], const char [66], int&, float*, int, double, double)'
+  120 |                         nbins, energy_bins.data(), 100, -20., 20.);
+      |                                                                  ^
+In file included from ../EMCALChannelTiming.h:22,
+                 from ../EMCALChannelTiming.cc:1:
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:322:4: note: candidate: 'TH2F::TH2F(const TH2F&)'
+  322 |    TH2F(const TH2F &h2f);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:322:4: note:   candidate expects 1 argument, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:321:4: note: candidate: 'TH2F::TH2F(const TMatrixFBase&)'
+  321 |    TH2F(const TMatrixFBase &m);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:321:4: note:   candidate expects 1 argument, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:319:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Float_t*, Int_t, const Float_t*)'
+  319 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Float_t  *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:319:4: note:   candidate expects 6 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:317:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Double_t*, Int_t, const Double_t*)'
+  317 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:317:4: note:   candidate expects 6 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:315:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, Double_t, Double_t, Int_t, const Double_t*)'
+  315 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:315:66: note:   no known conversion for argument 4 from 'float*' to 'Double_t' {aka 'double'}
+  315 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |                                                         ~~~~~~~~~^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:313:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Double_t*, Int_t, Double_t, Double_t)'
+  313 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:313:73: note:   no known conversion for argument 4 from 'float*' to 'const Double_t*' {aka 'const double*'}
+  313 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |                                                         ~~~~~~~~~~~~~~~~^~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:311:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, Double_t, Double_t, Int_t, Double_t, Double_t)'
+  311 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:311:4: note:   candidate expects 8 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:310:4: note: candidate: 'TH2F::TH2F()'
+  310 |    TH2F();
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:310:4: note:   candidate expects 0 arguments, 7 provided
+../EMCALChannelTiming.cc:123:66: error: no matching function for call to 'TH2F::TH2F(const char [12], const char [66], int&, float*, int, double, double)'
+  123 |                         nbins, energy_bins.data(), 100, -20., 20.);
+      |                                                                  ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:322:4: note: candidate: 'TH2F::TH2F(const TH2F&)'
+  322 |    TH2F(const TH2F &h2f);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:322:4: note:   candidate expects 1 argument, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:321:4: note: candidate: 'TH2F::TH2F(const TMatrixFBase&)'
+  321 |    TH2F(const TMatrixFBase &m);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:321:4: note:   candidate expects 1 argument, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:319:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Float_t*, Int_t, const Float_t*)'
+  319 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Float_t  *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:319:4: note:   candidate expects 6 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:317:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Double_t*, Int_t, const Double_t*)'
+  317 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:317:4: note:   candidate expects 6 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:315:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, Double_t, Double_t, Int_t, const Double_t*)'
+  315 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:315:66: note:   no known conversion for argument 4 from 'float*' to 'Double_t' {aka 'double'}
+  315 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |                                                         ~~~~~~~~~^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:313:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Double_t*, Int_t, Double_t, Double_t)'
+  313 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:313:73: note:   no known conversion for argument 4 from 'float*' to 'const Double_t*' {aka 'const double*'}
+  313 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |                                                         ~~~~~~~~~~~~~~~~^~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:311:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, Double_t, Double_t, Int_t, Double_t, Double_t)'
+  311 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:311:4: note:   candidate expects 8 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:310:4: note: candidate: 'TH2F::TH2F()'
+  310 |    TH2F();
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:310:4: note:   candidate expects 0 arguments, 7 provided
+../EMCALChannelTiming.cc:126:66: error: no matching function for call to 'TH2F::TH2F(const char [11], const char [66], int&, float*, int, double, double)'
+  126 |                         nbins, energy_bins.data(), 100, -20., 20.);
+      |                                                                  ^
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:322:4: note: candidate: 'TH2F::TH2F(const TH2F&)'
+  322 |    TH2F(const TH2F &h2f);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:322:4: note:   candidate expects 1 argument, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:321:4: note: candidate: 'TH2F::TH2F(const TMatrixFBase&)'
+  321 |    TH2F(const TMatrixFBase &m);
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:321:4: note:   candidate expects 1 argument, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:319:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Float_t*, Int_t, const Float_t*)'
+  319 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Float_t  *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:319:4: note:   candidate expects 6 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:317:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Double_t*, Int_t, const Double_t*)'
+  317 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:317:4: note:   candidate expects 6 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:315:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, Double_t, Double_t, Int_t, const Double_t*)'
+  315 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:315:66: note:   no known conversion for argument 4 from 'float*' to 'Double_t' {aka 'double'}
+  315 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |                                                         ~~~~~~~~~^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:313:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, const Double_t*, Int_t, Double_t, Double_t)'
+  313 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:313:73: note:   no known conversion for argument 4 from 'float*' to 'const Double_t*' {aka 'const double*'}
+  313 |    TH2F(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
+      |                                                         ~~~~~~~~~~~~~~~~^~~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:311:4: note: candidate: 'TH2F::TH2F(const char*, const char*, Int_t, Double_t, Double_t, Int_t, Double_t, Double_t)'
+  311 |    TH2F(const char *name,const char *title,Int_t nbinsx,Double_t xlow,Double_t xup
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:311:4: note:   candidate expects 8 arguments, 7 provided
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:310:4: note: candidate: 'TH2F::TH2F()'
+  310 |    TH2F();
+      |    ^~~~
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/include/TH2.h:310:4: note:   candidate expects 0 arguments, 7 provided
+../EMCALChannelTiming.cc:133:25: error: expected primary-expression before ')' token
+  133 |                         );
+      |                         ^
+../EMCALChannelTiming.cc: In member function 'virtual void EMCALChannelTiming::Print(const std::string&) const':
+../EMCALChannelTiming.cc:283:119: error: expected ')' before ';' token
+  283 |                 TDirectory* td_T=new TDirectory(std::format("Tower_{}", i).c_str(), std::format("Tower_{}", i).c_str();
+      |                                                ~                                                                      ^
+      |                                                                                                                       )
+../EMCALChannelTiming.cc:274:51: error: unused parameter 'what' [-Werror=unused-parameter]
+  274 | void EMCALChannelTiming::Print(const std::string &what) const
+      |                                ~~~~~~~~~~~~~~~~~~~^~~~
+cc1plus: all warnings being treated as errors
+make[1]: *** [Makefile:501: EMCALChannelTiming.lo] Error 1
+make[1]: Leaving directory '/gpfs/mnt/gpfs02/sphenix/user/sgross/sphenix_analysis/EMCALChannelTiming/src/build'
+make: *** [Makefile:382: all] Error 2

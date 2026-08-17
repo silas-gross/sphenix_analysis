@@ -278,11 +278,11 @@ void EMCALChannelTiming::Print(const std::string &what) const
 	towerTree->Write();
 	TDirectory* td = new TDirectory("EMCAL_TOWS", "EMCAL_TOWS");
 	td->cd();
-	for (int i = 0; i<(int)AllTowers1D_t->size(); i++);
+	for (int i = 0; i<(int)AllTowers1D_t->size(); i++)
 	{
 		TDirectory* td_T=new TDirectory(std::format("Tower_{}", i).c_str(), std::format("Tower_{}", i).c_str();
 		td_T->cd();
-		for(int j=0; j<(int)AllTowers1D_t->at(i)->size(); j++{
+		for(int j=0; j<(int)AllTowers1D_t->at(i)->size(); j++){
 			AllTowers1D_t->at(i)->at(j)->Write();
 			highTowers1D_t->at(i)->at(j)->Write();
 			lowTowers1D_t->at(i)->at(j)->Write();
