@@ -7,6 +7,11 @@
 #include <fun4all/Fun4AllBase.h>
 #include <fun4all/Fun4AllReturnCodes.h>
 
+//phool 
+#include <phool/PHCompositeNode.h>
+#include <phool/getClass.h>
+#include <ffaobjects/EventHeader.h>
+
 #include <calobase/TowerInfov3.h>
 #include <calobase/TowerInfoContainerv3.h>
 #include <calobase/RawTowerGeomContainer.h>
@@ -29,6 +34,7 @@ class PHCompositeNode;
 
 class tower
 {
+ public:
 	tower(
 		float ph = -999., 
 		float et = -999., 
@@ -55,7 +61,7 @@ class EMCALChannelTiming : public SubsysReco
 {
  public:
 
-  EMCALChannelTiming(const std::string &name = "EMCALChannelTiming");
+  EMCALChannelTiming(int seegm = 0, const std::string &name = "EMCALChannelTiming");
 
   ~EMCALChannelTiming() override;
 
@@ -94,15 +100,16 @@ class EMCALChannelTiming : public SubsysReco
 
  private:
   float SubdivideDetector( std::vector<tower*>*, std::vector<tower*>*, std::vector<tower*>*, PHCompositeNode*);
-  void AnaHelper( std::vector<tower*>, std::vector<TH1F*>, std::vector<TH2F*>, float);
+  void AnaHelper( std::vector<tower*>, std::vector<TH1F*>*, std::vector<TH2F*>*, float);
+  void AnaHelper( tower*, std::vector<TH1F*>*, std::vector<TH2F*>*, float);
   int getIndex(float, float);
   void AddBins(std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::string ntower="");
   std::string emcal_tower {"TOWERINFO_CALIB_CEMC"};
-  std::string emcalgeom {"TOWERGEOM_CEMC"};
-
+  std::string emcal_geom {"TOWERGEOM_CEMC"};
+  std::string output_file_name="A.root";
   enum a1DOUTPUTHISTS
   {
 	 DELTAT, 
@@ -114,7 +121,7 @@ class EMCALChannelTiming : public SubsysReco
 	  EtoT,
 	  EtaPhi,
   };
-
+  int seg {0};
   std::vector<float> energy_bins {}; //log bins for energy
   
   //histograms across all towers
@@ -140,6 +147,7 @@ class EMCALChannelTiming : public SubsysReco
   std::vector< std::vector<TH2F*>*>* lowTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
 
   std::vector<tower*>* allE = new std::vector<tower*> {}; 
+  TTree* towerTree {nullptr};
 };
 
 #endif // EMCALCHANNELTIMING_H
