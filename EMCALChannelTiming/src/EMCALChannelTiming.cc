@@ -120,10 +120,10 @@ void EMCALChannelTiming::AddBins(
 			nbins, energy_bins.data(), 100, -20., 20.);      
 	TH2F* EThigh 	= new TH2F(
 		       "E_to_T_high", "Energy #Delta T correlation; log(E) [GeV]; #Delta T [ns]; N_{tow}",
-			100, -20, 20, nbins, energy_bins.data());      
+			nbins, energy_bins.data(), 100, -20., 20.);      
 	TH2F* ETlow 	= new TH2F(
 		       "E_to_T_low", "Energy #Delta T correlation; log(E) [GeV]; #Delta T [ns]; N_{tow}",
-			100, -20, 20, nbins, energy_bins.data());      
+			nbins, energy_bins.data(), 100, -20., 20.);      
 	
 	TH2F* EP_all 	= new TH2F(
 		       "EtaPhiT_all", ";#eta; #varphi; < #Delta T >",
