@@ -227,7 +227,7 @@ void EMCALChannelTiming::AnaHelper(
 	std::map<int, std::pair<int, float>> tavg {};
 	for(
 		int i = 0; 
-		i< (int)a1Doutput->at(a1DOUTPUTHISTS::E)->getNbinsX(); 
+		i< (int)a1Doutput->at(a1DOUTPUTHISTS::E)->GetNbinsX(); 
 		i++
 	)
 	{
@@ -240,7 +240,7 @@ void EMCALChannelTiming::AnaHelper(
 			->Fill(tow->t - TAvg);
 		a1Doutput->at(a1DOUTPUTHISTS::E)->
 			Fill(E);
-		int binN = a1Doutput->at(a1DOUTPUTHISTS::E)->FindBin(E)
+		int binN = a1Doutput->at(a1DOUTPUTHISTS::E)->FindBin(E);
 		tavg[binN].first++;
 		tavg[binN].second+=tow->t - TAvg;
 		a2Doutput->at(a2DOUTPUTHISTS::EtoT)->Fill(E, tow->t - TAvg);
@@ -275,7 +275,7 @@ void EMCALChannelTiming::Print(const std::string &what) const
 {
 	TFile* f = new TFile(output_file_name.c_str(), "RECREATE");
 	f->cd();
-	T->Write();
+	towerTree->Write();
 	TDirectory* td = new TDirectory("EMCAL_TOWS", "EMCAL_TOWS");
 	td->cd();
 	for (int i = 0; i<(int)AllTowers1D_t->size(); i++);
