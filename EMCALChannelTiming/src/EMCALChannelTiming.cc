@@ -274,6 +274,7 @@ void EMCALChannelTiming::AnaHelper(
 
 void EMCALChannelTiming::Print(const std::string &what) const
 {
+	std::cout<<what<<std::endl;
 	TFile* f = new TFile(output_file_name.c_str(), "RECREATE");
 	f->cd();
 	towerTree->Write();
