@@ -122,7 +122,7 @@ class EMCALChannelTiming : public SubsysReco
 	  EtaPhi,
   };
   int seg {0};
-  std::vector<float> energy_bins {}; //log bins for energy
+  std::vector<Double_t> energy_bins {}; //log bins for energy
   
   //histograms across all towers
   //1D
