@@ -9,7 +9,7 @@ SubsysReco(name)
 	float El = 1e-3;	
 	seg=seegm;
 	float log_binsize = (std::log(Eu) - std::log(El))/((float)nbins-1); //bins go linear in log(E)
-	for(int i=0; i==nbins; i++)
+	for(int i=0; i < nbins; i++)
 	{
 		float bin_log = std::log(El) + i*log_binsize;
 		energy_bins.push_back(bin_log);
@@ -130,9 +130,10 @@ void EMCALChannelTiming::AddBins(
 			96, -1.1, 1.1, 256, 0, 2*M_PI);      
 	TH2F* EP_high 	= new TH2F(
 		       "EtaPhiT_high", ";#eta; #varphi; < #Delta T >",
-			);      
+			96, -1.1, 1.1, 256, 0, 2*M_PI		
+	);      
 	TH2F* EP_low 	= new TH2F(
-		       "EtaPhiT_all", ";#eta; #varphi; < #Delta T >",
+		       "EtaPhiT_low", ";#eta; #varphi; < #Delta T >",
 			96, -1.1, 1.1, 256, 0, 2*M_PI);      
 	all2DHists->push_back(ETall);
 	high2DHists->push_back(EThigh);
