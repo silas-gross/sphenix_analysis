@@ -63,7 +63,7 @@ class EMCALChannelTiming : public SubsysReco
 
   EMCALChannelTiming(int seegm = 0, const std::string &name = "EMCALChannelTiming");
 
-  ~EMCALChannelTiming() override;
+  ~EMCALChannelTiming(){};
 
   /** Called during initialization.
       Typically this is where you can book histograms, and e.g.
