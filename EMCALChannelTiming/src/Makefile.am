@@ -22,7 +22,8 @@ libEMCALChannelTiming_la_SOURCES = \
 libEMCALChannelTiming_la_LIBADD = \
   -lphool \
   -lSubsysReco \
-  -lfun4all 
+  -lfun4all \
+  -lcalo_io 
 
 BUILT_SOURCES = testexternals.cc
 
