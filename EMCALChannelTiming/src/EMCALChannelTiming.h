@@ -12,8 +12,8 @@
 #include <phool/getClass.h>
 #include <ffaobjects/EventHeader.h>
 
-#include <calobase/TowerInfov3.h>
-#include <calobase/TowerInfoContainerv3.h>
+#include <calobase/TowerInfov4.h>
+#include <calobase/TowerInfoContainerv4.h>
 #include <calobase/RawTowerGeomContainer.h>
 #include <calobase/RawTowerGeomContainer_Cylinderv1.h>
 
@@ -61,7 +61,7 @@ class EMCALChannelTiming : public SubsysReco
 {
  public:
 
-  EMCALChannelTiming(int seegm = 0, const std::string &name = "EMCALChannelTiming");
+  EMCALChannelTiming(int seegm = 0, int runm=0,  const std::string &name = "EMCALChannelTiming");
 
   ~EMCALChannelTiming(){};
 
@@ -70,7 +70,7 @@ class EMCALChannelTiming : public SubsysReco
       register them to Fun4AllServer (so they can be output to file
       using Fun4AllServer::dumpHistos() method).
    */
-  int Init(PHCompositeNode *topNode) override;
+  int Init( [[maybe_unused]] PHCompositeNode *topNode) override;
 
   /** Called for first event when run number is known.
       Typically this is where you may want to fetch data from
@@ -91,12 +91,12 @@ class EMCALChannelTiming : public SubsysReco
 //  int EndRun(const int runnumber) override;
 
   /// Called at the end of all processing.
-//  int End(PHCompositeNode *topNode) override;
+  int End( [[maybe_unused]] PHCompositeNode* topNode) override;
 
   /// Reset
 //  int Reset(PHCompositeNode * /*topNode*/) override;
 
- void Print(const std::string &what = "ALL") const override;
+// void Print(const std::string &what = "ALL") const override;
 
  private:
   float SubdivideDetector( std::vector<tower*>*, std::vector<tower*>*, std::vector<tower*>*, PHCompositeNode*);
@@ -107,9 +107,9 @@ class EMCALChannelTiming : public SubsysReco
 		  std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::string ntower="");
-  std::string emcal_tower {"TOWERINFO_CALIB_CEMC"};
+  std::string emcal_tower {"TOWERS_CEMC"};
   std::string emcal_geom {"TOWERGEOM_CEMC"};
-  std::string output_file_name="A.root";
+  std::string output_file_name {"A.root"};
   enum a1DOUTPUTHISTS
   {
 	 DELTAT, 
@@ -122,6 +122,7 @@ class EMCALChannelTiming : public SubsysReco
 	  EtaPhi,
   };
   int seg {0};
+  int run {0};
   std::vector<Double_t> energy_bins {}; //log bins for energy
   
   //histograms across all towers
