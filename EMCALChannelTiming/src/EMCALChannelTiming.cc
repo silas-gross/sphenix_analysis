@@ -17,7 +17,9 @@ SubsysReco(name)
 	}
 	energy_bins.push_back(std::log(Eu)); 
 	towerTree = new TTree("tT", "tT");
-	for(int i = 0; i < 16*1536; i++)
+	int ntowers = 16*1536;
+	allE->reserve(ntowers);
+	for(int i = 0; i < ntowers; i++)
 	{
 	//	if(i%8 != 0 ) continue;
 		tower* tw=new tower();
@@ -39,7 +41,7 @@ SubsysReco(name)
 		lowTowers1D_t->push_back(lt);
 		lowTowers2D_t->push_back(lT);
 */
-		towerTree->Branch(std::format("tower_{}", i).c_str(), &allE->at(i));
+		towerTree->Branch(std::format("tower_{}", i).c_str(), &(allE->at(i)));
 	}
 		
 	
@@ -220,7 +222,7 @@ float EMCALChannelTiming::SubdivideDetector(
 	emcalgeom->set_calorimeter_id(RawTowerDefs::CEMC);
 	for(int n=0; n<(int)emcaltowers->size(); n++)
 	{
-		if( n % 8 != 0) continue;
+	//	if( n % 8 != 0) continue;
 		auto key   = emcaltowers->encode_key(n);
 		int phibin = emcaltowers->getTowerPhiBin(key);
 		int etabin = emcaltowers->getTowerEtaBin(key);
@@ -244,7 +246,7 @@ float EMCALChannelTiming::SubdivideDetector(
 		if ( e <= 0.03 ) lowerEtowers->push_back(twA);
 		if ( e >= 3 ) higherEtowers->push_back(twA);
 		
-		allTowers->push_back(twA);
+		allTowers->at(n)=twA;
 	}
 
 	avg_time = avg_time/((float) emcaltowers->size());
