@@ -19,6 +19,7 @@ SubsysReco(name)
 	towerTree = new TTree("tT", "tT");
 	for(int i = 0; i < 16*1536; i++)
 	{
+		if(i%8 != 0 ) continue;
 		tower* tw=new tower();
 		allE->push_back(tw);
 		
@@ -53,7 +54,7 @@ int EMCALChannelTiming::Init( [[maybe_unused]] PHCompositeNode *topNode)
 	       );
 	for(int i=0; i<(int)AllTowers1D_t->size()/*ntowers*/; i++)
 	{
-		if(i % 16 != 0) continue;
+		if(i % 8 != 0) continue;
 		AddBins( 
 			AllTowers1D_t->at(i), AllTowers2D_t->at(i), 
 			highTowers1D_t->at(i), highTowers2D_t->at(i),
@@ -215,7 +216,7 @@ float EMCALChannelTiming::SubdivideDetector(
 	emcalgeom->set_calorimeter_id(RawTowerDefs::CEMC);
 	for(int n=0; n<(int)emcaltowers->size(); n++)
 	{
-		if( n % 16 != 0) continue;
+		if( n % 8 != 0) continue;
 		auto key   = emcaltowers->encode_key(n);
 		int phibin = emcaltowers->getTowerPhiBin(key);
 		int etabin = emcaltowers->getTowerEtaBin(key);
@@ -237,7 +238,7 @@ float EMCALChannelTiming::SubdivideDetector(
 		tower* twA = new tower(phi, eta, e, Ei, t);
 		
 		if ( e <= 0.03 ) lowerEtowers->push_back(twA);
-		if ( e >= 5 ) higherEtowers->push_back(twA);
+		if ( e >= 3 ) higherEtowers->push_back(twA);
 		
 		allTowers->push_back(twA);
 	}
