@@ -19,11 +19,11 @@ SubsysReco(name)
 	towerTree = new TTree("tT", "tT");
 	for(int i = 0; i < 16*1536; i++)
 	{
-		if(i%8 != 0 ) continue;
+	//	if(i%8 != 0 ) continue;
 		tower* tw=new tower();
 		allE->push_back(tw);
 		
-		std::vector<TH1F*>* at = new std::vector<TH1F*>{};
+	/*	std::vector<TH1F*>* at = new std::vector<TH1F*>{};
 		std::vector<TH1F*>* ht = new std::vector<TH1F*>{};
 		std::vector<TH1F*>* lt = new std::vector<TH1F*>{};
 		std::vector<TH2F*>* aT = new std::vector<TH2F*>{};
@@ -38,7 +38,7 @@ SubsysReco(name)
 
 		lowTowers1D_t->push_back(lt);
 		lowTowers2D_t->push_back(lT);
-
+*/
 		towerTree->Branch(std::format("tower_{}", i).c_str(), &tw);
 	}
 		
@@ -52,7 +52,7 @@ int EMCALChannelTiming::Init( [[maybe_unused]] PHCompositeNode *topNode)
 		highTowers1D, highTowers2D,
 		lowTowers1D, lowTowers2D
 	       );
-	for(int i=0; i<(int)AllTowers1D_t->size()/*ntowers*/; i++)
+/*	for(int i=0; i<(int)AllTowers1D_t->size()ntowers; i++)
 	{
 		if(i % 8 != 0) continue;
 		AddBins( 
@@ -61,7 +61,7 @@ int EMCALChannelTiming::Init( [[maybe_unused]] PHCompositeNode *topNode)
 			lowTowers1D_t->at(i), lowTowers2D_t->at(i), std::to_string(i)
 	       	);
 		std::cout<<"Tower : " <<i <<std::endl;
-	}
+	}*/
 	//auto evt = findNode::getClass<EventHeader>(topNode, "EventHeader");
 	//evt->get_RunNumber();
 	output_file_name=std::format("EMCAL_timing_run-{}_segment-{}.root", run, seg); 
@@ -87,15 +87,15 @@ void EMCALChannelTiming::AddBins(
 	TH1F* DeltaT = new TH1F(
 			std::format("Delta_T{}", ntowerus).c_str(), 
 			std::format("#Delta T tower{}; #Delta T [ns]", ntower).c_str(), 
-			100, -20, 20);
+			1000, -20, 20);
 	TH1F* DeltaT_high = new TH1F(
 			std::format("Delta_T_high{}", ntowerus).c_str(), 
 			std::format("#Delta T tower{}; #Delta T [ns]", ntower).c_str(), 
-			100, -20, 20);
+			1000, -20, 20);
 	TH1F* DeltaT_low = new TH1F(
 			std::format("Delta_T_low{}", ntowerus).c_str(), 
 			std::format("#Delta T tower{}; #Delta T [ns]", ntower).c_str(), 
-			100, -20, 20);
+			1000, -20, 20);
 
 	//Energy Hists
 	TH1F* Energy = new TH1F(
@@ -182,6 +182,7 @@ int EMCALChannelTiming::process_event(PHCompositeNode* topNode)
 {
 	//Need to get all towers from the emcal
 	//Get the towers, subdivide and send them to a helper function 
+	std::cout<<"Event number " <<nevt<<std::endl;
 	std::vector<tower*>* lowE  = new std::vector<tower*>{};
 	std::vector<tower*>* highE = new std::vector<tower*>{};
 	float avgtime = SubdivideDetector(lowE, highE, allE, topNode);
@@ -189,7 +190,7 @@ int EMCALChannelTiming::process_event(PHCompositeNode* topNode)
 	AnaHelper(*allE, AllTowers1D, AllTowers2D, avgtime);
 	AnaHelper(*highE, highTowers1D, highTowers2D, avgtime);
 	AnaHelper(*lowE, lowTowers1D, lowTowers2D, avgtime);
-	for(int n=0; n<(int) allE->size(); n++)
+	/*for(int n=0; n<(int) allE->size(); n++)
 	{
 		int index = getIndex(allE->at(n)->phi, allE->at(n)->eta);
 		if(index >= (int)AllTowers1D_t->size()) break;
@@ -198,8 +199,11 @@ int EMCALChannelTiming::process_event(PHCompositeNode* topNode)
 			AnaHelper(allE->at(n), AllTowers1D_t->at(index), AllTowers2D_t->at(index), avgtime);
 		}
 		catch(std::exception& e){ continue;}
-	}
-//	towerTree->Fill();	
+	}*/
+	delete lowE;
+	delete highE;
+	towerTree->Fill();	
+	nevt++;
 	return Fun4AllReturnCodes::EVENT_OK;
 }
 float EMCALChannelTiming::SubdivideDetector(
@@ -305,7 +309,7 @@ int EMCALChannelTiming::End([[maybe_unused]] PHCompositeNode* topNode)
 {
 	TFile* f = new TFile(output_file_name.c_str(), "RECREATE");
 	f->cd();
-//	towerTree->Write();
+	towerTree->Write();
 	/*TDirectory* td = new TDirectory("EMCAL_TOWS", "EMCAL_TOWS");
 	td->cd();
 	for (int i = 0; i<(int)AllTowers1D_t->size(); i++)

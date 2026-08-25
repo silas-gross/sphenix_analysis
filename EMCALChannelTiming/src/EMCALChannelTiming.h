@@ -121,8 +121,9 @@ class EMCALChannelTiming : public SubsysReco
 	  EtoT,
 	  EtaPhi,
   };
-  int seg {0};
-  int run {0};
+  int seg	{0};
+  int run  	{0};
+  int nevt 	{0};
   std::vector<Double_t> energy_bins {}; //log bins for energy
   
   //histograms across all towers
@@ -138,7 +139,7 @@ class EMCALChannelTiming : public SubsysReco
 
   //histograms for individual towers 
   //1D
-  std::vector< std::vector<TH1F*>*>* AllTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
+/*  std::vector< std::vector<TH1F*>*>* AllTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
   std::vector< std::vector<TH1F*>*>* highTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
   std::vector< std::vector<TH1F*>*>* lowTowers1D_t=new std::vector< std::vector<TH1F*>*> {};
 
@@ -146,7 +147,7 @@ class EMCALChannelTiming : public SubsysReco
   std::vector< std::vector<TH2F*>*>* AllTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
   std::vector< std::vector<TH2F*>*>* highTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
   std::vector< std::vector<TH2F*>*>* lowTowers2D_t=new std::vector< std::vector<TH2F*>*> {};
-
+*/
   std::vector<tower*>* allE = new std::vector<tower*> {}; 
   TTree* towerTree {nullptr};
 };
