@@ -39,7 +39,7 @@ SubsysReco(name)
 		lowTowers1D_t->push_back(lt);
 		lowTowers2D_t->push_back(lT);
 */
-		towerTree->Branch(std::format("tower_{}", i).c_str(), &tw);
+		towerTree->Branch(std::format("tower_{}", i).c_str(), &allE->at(i));
 	}
 		
 	
