@@ -40,16 +40,11 @@
 
 
 class PHCompositeNode;
-class cluster
-{
-	public:
-		cluster(){};
-	private:
-};
 class matchQA
 {
 	public:
 		matchQA() {};
+		~matchQA() {}
 	private:
 	
 };
@@ -166,13 +161,21 @@ class Shower
 		float phiUp 	{-999.};
 
 };
+class cluster: private Shower, public tower
+{
+	//Just a combo object actually
+//	public:
+//		cluster(float E, float ){};
+//		~cluster(){};
+//	private:
+};
 class ShowerTowerMatching : public SubsysReco
 {
 	public:
 
 		ShowerTowerMatching(const std::string &name = "ShowerTowerMatching");
 
-		~ShowerTowerMatching() override;
+		~ShowerTowerMatching(){};
 
 		/** Called during initialization.
 		Typically this is where you can book histograms, and e.g.
