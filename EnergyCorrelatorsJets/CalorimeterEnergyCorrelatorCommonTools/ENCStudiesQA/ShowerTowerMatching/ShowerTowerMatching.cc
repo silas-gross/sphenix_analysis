@@ -64,7 +64,7 @@ int ShowerTowerMatching::Init(PHCompositeNode* topNode)
 	weights->Branch("ParticleClusterWeight", &ParticleClusterWeight);
 	
 	//TTree to hold matching
-	match->Branch("TruthParticles", &TruthParticles);
+	match->Branch("TruthParticles", &truthParticles);
 	match->Branch("TruthClusters", &TruthClusters);
 	match->Branch("Towers", &Towers);
 	match->Branch("Clusters", &Clusters);
