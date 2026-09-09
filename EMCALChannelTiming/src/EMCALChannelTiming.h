@@ -107,7 +107,7 @@ class EMCALChannelTiming : public SubsysReco
 		  std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::vector<TH1F*>*, std::vector<TH2F*>*,
 		  std::string ntower="");
-  std::string emcal_tower {"TOWERS_CEMC"};
+  std::string emcal_tower {"TOWERINFO_CALIB_CEMC"};
   std::string emcal_geom {"TOWERGEOM_CEMC"};
   std::string output_file_name {"A.root"};
   enum a1DOUTPUTHISTS
