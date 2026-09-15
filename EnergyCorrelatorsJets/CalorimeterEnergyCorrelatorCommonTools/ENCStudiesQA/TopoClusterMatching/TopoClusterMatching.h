@@ -13,7 +13,7 @@ class TopoClusterMatching : public SubsysReco
 {
  public:
 
-  TopoClusterMatching( [[maybe_unused]] const std::string &name = "TopoClusterMatching");
+  TopoClusterMatching(float mpT=0.0, [[maybe_unused]] const std::string &name = "TopoClusterMatching");
 
   ~TopoClusterMatching() override;
 
@@ -58,7 +58,16 @@ class TopoClusterMatching : public SubsysReco
 	void getBins			(float);
 	bool runDijetCut		(PHCompositeNode*);
 	std::pair<int, int> findBucket	(float, float);
+	
+	std::vector<float> clusterPTBin {};
+	std::vector<float> lead_bucket {};
+	std::vector<std::vector<float>> sub_bucket {};	
 
+	DijetEventCuts* event_cut {nullptr};
+	TH1F* h_ClusterPairET {nullptr};
+	TH1F* h_TruthPairET {nullptr};
+	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairET_Div{};  
+	std::array< std::array<TH1F*, 10>, 10> h_TruthPairET_Div{};  
 };
 
 #endif // TOPOCLUSTERMATCHING_H
