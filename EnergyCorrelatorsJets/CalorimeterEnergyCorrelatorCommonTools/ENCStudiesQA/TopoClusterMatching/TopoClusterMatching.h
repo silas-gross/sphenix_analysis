@@ -88,10 +88,18 @@ class TopoClusterMatching : public SubsysReco
   	int n_evt	{0};
 	int n_good	{0};
 	float minpt	{0.};
+	float Q2	{-999.};
+	float erat	{0.5};
+	float dRmax	{0.2};
 
-	void getBins			(float);
-	bool runDijetCut		(PHCompositeNode*);
+	std::pair<int, int> jet_bin_index {0,0};
+	void getBins	(float);
+	bool runDijetCut(PHCompositeNode*);
+	bool isAMatch	(CandidateObj*, CandidateObj*);
+	float getR 	(CandidateObj*, CandidateObj*);	
+
 	std::pair<int, int> findBucket	(float, float);
+	
 	
 	std::vector<float> clusterPTBin {};
 	std::vector<float> lead_bucket {};
@@ -102,6 +110,10 @@ class TopoClusterMatching : public SubsysReco
 	TH1F* h_TruthPairET {nullptr};
 	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairET_Div{};  
 	std::array< std::array<TH1F*, 10>, 10> h_TruthPairET_Div{};  
+	TH1F* h_ClusterPairETAll {nullptr};
+	TH1F* h_TruthPairETAll {nullptr};
+	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairETAll_Div{};  
+	std::array< std::array<TH1F*, 10>, 10> h_TruthPairETAll_Div{};  
 };
 
 #endif // TOPOCLUSTERMATCHING_H
