@@ -26,6 +26,24 @@ TopoClusterMatching::TopoClusterMatching(float mpT, const std::string name)
 	}
 					
 	event_cut = new DijetEventCuts(); //require a leading jet of 12 GeV sublead 7 GeV, keep it in |eta|<0.7, set dPhi > 3 pi/4
+	
+}
+void TopoCluterMatching::findMatchingCluster(std::vector<ClusterObj*> cls, TruthObj* trpt ) 
+{
+	for(int i = 0; i<(int)cls.size(); i++)
+	{
+		ClusterObj cl = cls[i];
+		bool goodpos = cl->isIndR(trpt);
+		bool goodE = cl->isE(trpt);
+		if(goodE && goodpos)
+		{
+			trpt->SetMatch(i);
+			break;
+		}
+		else continue;
+	}
+	return;
+
 }
 void TopoClusterMatching::getBins(float minpt)
 {
@@ -87,6 +105,56 @@ std::pair<int, int> TopoClusterMatching::findBucket(float lpt, float slpt)
 		if ( slpt < sublead_buckets.at(i)) s_i = i-1;
 	return std::make_pair(l_i, s_i);
 }
+void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode) 
+{
+	auto truthMap = getClass::findNode<PHG4TruthInfoContainer*>(topNode, "G4TruthInfo");
+	std::vector<TruthObj*> valid_truth {};
+	if(!truthinfo) return;
+	for(
+		auto iter = truthinfo->GetSPHENIXPrimaryParticleRange().first; 
+		iter != truthinfo->GetSPHENIXPrimaryParticleRange().second; 
+		++iter
+	   )
+	{
+		if(!iter) continue;
+		PHG4Particle* p = iter->second;
+		if(!p) continue;
+		bool goodKin = isGoodKin(p);
+		if(goodKin){
+			TruthObj* pt = new TruthObj(p);
+			valid_truth.push_back(pt);
+			continue;
+		}
+		else continue;
+	}
+	std::vector<ClusterObj*> valid_topo {};
+	auto clusters = findNode::getClass<
+
+}
+bool TopoClusterMatching::KinCuts(PHG4Particle* p)
+{
+	bool kingood {false};
+	if(!p) return kingood;
+	float px {p->get_px()};
+	float py {p->get_py()};
+	float pz {p->get_pz()};
+	float e	 {p->get_e()};
+	float eta { std::atanh(pz / e)}; 
+	bool isEM {false};
+	if( std::abs(eta) <= -1.1)
+	{
+		int pid = std::abs(p->get_pid());
+		if( pid == 11 || pid == 13 || pid == 22) 
+			isEM = true;
+		else if( pid < 11 || pid > 16 ) 
+			isEM = false;
+		else return kingood;
+		float threhold = isEM ? 0.2 : 0.5;
+		if(e > threshold) kingood = true;
+	}
+	return kingood;
+}
+	 
 int TopoClusterMatching::process_event(PHCompositeNode* topNode)
 {
 	if(verbose > 1) std::cout<<"event number: " <<n_evt<<std::endl;
@@ -96,6 +164,8 @@ int TopoClusterMatching::process_event(PHCompositeNode* topNode)
 	if(!isDijet) return Fun4AllReturnCodes::EVENT_OK;
 
 	std::pair<int, int> jet_bin_index	= findBucket(event_cut->getLeadPt(), event_cut->getSubleadPt());
-	
+
+	MatchAllTruthToClusters(topNode);	
 	return Fun4AllReturnCodes::EVENT_OK;
 }
+
