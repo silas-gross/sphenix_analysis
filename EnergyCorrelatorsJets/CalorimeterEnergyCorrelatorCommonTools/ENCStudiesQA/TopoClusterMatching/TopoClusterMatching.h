@@ -13,7 +13,7 @@ class TopoClusterMatching : public SubsysReco
 {
  public:
 
-  TopoClusterMatching(const std::string &name = "TopoClusterMatching");
+  TopoClusterMatching(float mpT=0.0, [[maybe_unused]] const std::string &name = "TopoClusterMatching");
 
   ~TopoClusterMatching() override;
 
@@ -22,14 +22,14 @@ class TopoClusterMatching : public SubsysReco
       register them to Fun4AllServer (so they can be output to file
       using Fun4AllServer::dumpHistos() method).
    */
-  int Init(PHCompositeNode *topNode) override;
+//  int Init(PHCompositeNode *topNode) override;
 
   /** Called for first event when run number is known.
       Typically this is where you may want to fetch data from
       database, because you know the run number. A place
       to book histograms which have to know the run number.
    */
-  int InitRun(PHCompositeNode *topNode) override;
+  //int InitRun(PHCompositeNode *topNode) override;
 
   /** Called for each event.
       This is where you do the real work.
@@ -37,20 +37,37 @@ class TopoClusterMatching : public SubsysReco
   int process_event(PHCompositeNode *topNode) override;
 
   /// Clean up internals after each event.
-  int ResetEvent(PHCompositeNode *topNode) override;
+ // int ResetEvent(PHCompositeNode *topNode) override;
 
   /// Called at the end of each run.
-  int EndRun(const int runnumber) override;
+ // int EndRun(const int runnumber) override;
 
   /// Called at the end of all processing.
-  int End(PHCompositeNode *topNode) override;
+  int End([[maybe_unused]] PHCompositeNode *topNode) override;
 
   /// Reset
   int Reset(PHCompositeNode * /*topNode*/) override;
 
-  void Print(const std::string &what = "ALL") const override;
+  //void Print(const std::string &what = "ALL") const override;
 
  private:
+  	int n_evt	{0};
+	int n_good	{0};
+	float minpt	{0.};
+
+	void getBins			(float);
+	bool runDijetCut		(PHCompositeNode*);
+	std::pair<int, int> findBucket	(float, float);
+	
+	std::vector<float> clusterPTBin {};
+	std::vector<float> lead_bucket {};
+	std::vector<std::vector<float>> sub_bucket {};	
+
+	DijetEventCuts* event_cut {nullptr};
+	TH1F* h_ClusterPairET {nullptr};
+	TH1F* h_TruthPairET {nullptr};
+	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairET_Div{};  
+	std::array< std::array<TH1F*, 10>, 10> h_TruthPairET_Div{};  
 };
 
 #endif // TOPOCLUSTERMATCHING_H
