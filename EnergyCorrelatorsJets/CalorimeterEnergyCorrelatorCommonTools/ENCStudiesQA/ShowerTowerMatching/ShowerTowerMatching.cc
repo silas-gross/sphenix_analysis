@@ -366,7 +366,7 @@ bool ShowerTowerMatching::KinCuts(PHG4Particle* p)
 			isEM = false;
 		else return kingood;
 		float threhold = isEM ? 0.2 : 0.5;
-		if(e > threshold) isEM = true;
+		if(e > threshold) kingood = true;
 	}
 	return kingood;
 }
