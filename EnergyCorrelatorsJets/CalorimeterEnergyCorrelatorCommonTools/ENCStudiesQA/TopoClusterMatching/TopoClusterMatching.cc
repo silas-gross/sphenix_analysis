@@ -28,11 +28,11 @@ TopoClusterMatching::TopoClusterMatching(float mpT, const std::string name)
 	event_cut = new DijetEventCuts(); //require a leading jet of 12 GeV sublead 7 GeV, keep it in |eta|<0.7, set dPhi > 3 pi/4
 	
 }
-void TopoCluterMatching::findMatchingCluster(std::vector<ClusterObj*> cls, TruthObj* trpt ) 
+void TopoCluterMatching::findMatchingCluster(std::vector<CandidateObj*> cls, CandidateObj* trpt ) 
 {
 	for(int i = 0; i<(int)cls.size(); i++)
 	{
-		ClusterObj cl = cls[i];
+		CandidateObj cl = cls[i];
 		bool goodpos = cl->isIndR(trpt);
 		bool goodE = cl->isE(trpt);
 		if(goodE && goodpos)
@@ -105,10 +105,20 @@ std::pair<int, int> TopoClusterMatching::findBucket(float lpt, float slpt)
 		if ( slpt < sublead_buckets.at(i)) s_i = i-1;
 	return std::make_pair(l_i, s_i);
 }
+bool TopoClusterMatching::isAMatch(CandidateObj* t, CandidateObj* c)
+{
+	bool matched = false;
+	float erat = t->E / c->E;
+	float dR = getR(t, c);
+	if(erat > eratmin && dR < dRmax) matched = true;
+	t->isMatch = matched;
+	c->isMatch = matched;
+	return matched;
+}
 void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode) 
 {
 	auto truthMap = getClass::findNode<PHG4TruthInfoContainer*>(topNode, "G4TruthInfo");
-	std::vector<TruthObj*> valid_truth {};
+	std::vector<CandidateObj*> valid_truth {};
 	if(!truthinfo) return;
 	for(
 		auto iter = truthinfo->GetSPHENIXPrimaryParticleRange().first; 
@@ -121,14 +131,43 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 		if(!p) continue;
 		bool goodKin = isGoodKin(p);
 		if(goodKin){
-			TruthObj* pt = new TruthObj(p);
+			CandidateObj* pt = new CandidateObj(p);
 			valid_truth.push_back(pt);
 			continue;
 		}
 		else continue;
 	}
-	std::vector<ClusterObj*> valid_topo {};
-	auto clusters = findNode::getClass<
+	std::vector<CandidateObj*> valid_topo {};
+	auto clusters = findNode::getClass<RawClusterContainer>(topNode, "TOPOCLUSTER_ALLCALO");
+	if(!clusters)return;
+	for(
+		auto iter=clusters->getClusters().begin;
+		iter !=clusters->getClusters().end;
+		++iter
+	   )
+	{
+		if(!iter) continue;
+		bool goodKin = isGoodKin(*iter);
+		if(goodKin)
+		{
+			CandidateObj* cl = new CandidateObj(*iter);
+			valid_topo.push_back(pt);
+			continue;
+		}
+		else continue;
+	}
+	for(auto t:valid_truth)
+		for(auto c:valid_topo)
+		{
+			bool matched = isAMatch(t, c);
+			if(isAMatch)
+			{
+				//do the stuff to matched particles here 
+				break;
+			}
+			else continue;
+		}
+	return;
 
 }
 bool TopoClusterMatching::KinCuts(PHG4Particle* p)

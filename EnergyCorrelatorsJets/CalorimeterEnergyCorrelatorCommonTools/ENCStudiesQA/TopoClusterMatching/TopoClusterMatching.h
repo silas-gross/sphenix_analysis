@@ -9,6 +9,40 @@
 
 class PHCompositeNode;
 
+class CandidateObj
+{
+ public:
+	CandidateObj(PHG4Particle* truth) 
+	{
+		//puts a truth particle in this stripped down form
+		E = truth->get_e();
+		float px = truth->get_px();
+		float py = truth->get_py();
+		float pz = truth->get_pz();
+		pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
+		phi = std::atan2(py, px);
+		eta = std::atanh(pz / E);
+		Et = E / std::sinh(eta);
+	}
+	CandidateObj(RawCluster* cl)
+	{
+		//puts a cluster in this stripped down form 
+		E = cl->get_energy();
+		phi = cl->get_phi();
+		eta = cl->get_eta();
+		Et = E / std::sinh(eta);
+		pt = Et;
+	}
+	~CandidateObj(){};
+	float E {-999.};
+	float Et {-999};
+	float pt {-999.};
+	float phi {-999.};
+	float eta {-999.};
+	bool isMatch {false};
+
+}
+
 class TopoClusterMatching : public SubsysReco
 {
  public:
