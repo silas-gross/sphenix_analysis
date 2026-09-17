@@ -118,6 +118,41 @@ alse;
 		}
 		float getLeadPhi(){ return leadphi;}
 		float getLeadEta(){ return leadeta;}
+		float getLeadPt(){ return m_lpt;}
+		float getSubleadPt(){ return m_slpt;}
+		bool  getIsDijet(){ return m_isdijet;}
+		void dumpStatus(){
+			if(passesCut){
+				std::cout<<"A dijet event was found in the expected parameters. \n"
+						<<"The Lead jet is at phi = " 
+						<<leadphi <<" eta = " <<leadeta 
+						<<" with p_T = " <<m_lpt <<" GeV \n"
+						<<"The Sublead jet is at phi = " <<leadphi+m_deltaphi 
+						<<" eta = " <<m_etasl 
+						<<" with p_T = " <<m_slpt <<" GeV \n" <<std::endl;
+				}
+			else{
+				std::cout<<"Failed to find a dijet event. Outputing all crosschecked variables \n"
+				<<"\n passesCut: " <<passesCut
+				<<"\n m_isdijet: " <<m_isdijet
+				<<"\n m_nJets: " <<m_nJets
+				<<"\n leadingpt: " <<leading_pt_cut
+				<<"\n subleadingpt: " <<subleading_pt_cut 
+				<<"\n etaedge: " <<etaedge
+				<<"\n deltaphi: " <<deltaphi
+				<<"\n m_zvtx: " <<m_zvtx
+				<<"\n m_lpt: " <<m_lpt
+				<<"\n m_slpt: " <<m_slpt
+				<<"\n m_etal: " <<m_etal
+				<<"\n m_etasl: " <<m_etasl
+				<<"\n m_ile: " <<m_ile
+				<<"\n m_isle: " <<m_isle
+				<<"\n m_deltaphi: " <<m_deltaphi
+				<<"\n leadphi: " <<leadphi
+				<<"\n leadeta: " <<leadeta
+				<<"\n m_hasnege: " <<m_hasnege <<std::endl;
+			}
+		}
 		void getDijets(JetContainer* event_jets, std::vector<std::array<float, 3>>* dijet_sets)
 		{
 			std::vector<std::pair<Jet*, Jet*>> dijet_pairs;
@@ -152,7 +187,6 @@ alse;
 		float subleadingpt=0.; 
 		float etaedge=0.;
 		float deltaphi=0.;
-		float maxOHCAL=0.;
 		bool isdijet=false;
 		bool negativeEnergy=false;
 
@@ -164,8 +198,6 @@ alse;
 		float m_etal=0.;
 		float m_etasl=0.;
 
-		float m_deltaphi=0.;
-		float m_ohcalrat=0.;
 		float leadphi=0.;
 		float leadeta=0.;
 

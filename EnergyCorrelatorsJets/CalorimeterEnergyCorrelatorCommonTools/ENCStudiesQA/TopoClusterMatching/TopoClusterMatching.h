@@ -4,8 +4,62 @@
 #define TOPOCLUSTERMATCHING_H
 
 #include <fun4all/SubsysReco.h>
+#include <fun4all/Fun4AllBase.h>
+#include <fun4all/Fun4AllReturnCodes.h>
+
+#include <phool/PHCompositeNode.h>
+#include <phool/getClass.h>
+
+//vertex stuff
+#include <globalvertex/GlobalVertex.h>
+#include <globalvertex/GlobalVertexMap.h>
+
+//G4 objects
+
+#include <g4main/PHG4Particle.h>
+#include <g4main/PHG4Hit.h>
+#include <g4main/PHG4TruthInfoContainer.h>
+
+
+#include <phhepmc/PHHepMCGenEvent.h>  
+#include <phhepmc/PHHepMCGenEventMap.h>
+#include <HepMC/GenEvent.h>
+
+//jetbase objects 
+
+#include <jetbase/JetContainer.h>
+#include <jetbase/JetContainerv1.h>
+#include <jetbase/Jetv1.h>
+
+//calo tower and cluster stuff 
+//Calo towers 
+#include <calobase/TowerInfoContainer.h>
+#include <calobase/TowerInfoContainerv1.h>
+#include <calobase/TowerInfoContainerv2.h>
+#include <calobase/TowerInfov2.h>
+#include <calobase/TowerInfov1.h>
+#include <calobase/TowerInfo.h>
+#include <calobase/RawTowerDefs.h>
+#include <calobase/RawCluster.h>
+#include <calobase/RawClusterUtility.h>
+#include <calobase/RawTowerContainer.h>
+#include <calobase/RawClusterContainer.h>
+#include <calobase/RawTowerGeomContainer.h>
+#include <calobase/RawTowerGeomContainer_Cylinderv1.h>
+
+#include "DijetEventCuts.h"
 
 #include <string>
+#include <math.h>
+#include <vector>
+#include <utility>
+#include <format>
+#include <array>
+
+//root
+#include <TH1.h>
+#include <TH2.h>
+#include <TFile.h>
 
 class PHCompositeNode;
 
@@ -97,7 +151,8 @@ class TopoClusterMatching : public SubsysReco
 	bool runDijetCut(PHCompositeNode*);
 	bool isAMatch	(CandidateObj*, CandidateObj*);
 	float getR 	(CandidateObj*, CandidateObj*);	
-
+	
+	void MatchAllTruthToClusters	(PHCompositeNode*);
 	std::pair<int, int> findBucket	(float, float);
 	
 	

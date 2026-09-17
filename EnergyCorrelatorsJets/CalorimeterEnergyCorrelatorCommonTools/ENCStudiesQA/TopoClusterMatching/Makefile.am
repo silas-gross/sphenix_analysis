@@ -11,7 +11,8 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib64
 
 pkginclude_HEADERS = \
-  TopoClusterMatching.h
+  TopoClusterMatching.h \
+  DijetEventCuts.h 
 
 lib_LTLIBRARIES = \
   libTopoClusterMatching.la
@@ -21,6 +22,10 @@ libTopoClusterMatching_la_SOURCES = \
 
 libTopoClusterMatching_la_LIBADD = \
   -lphool \
+  -lfun4all \
+  -lcalo_io \
+  -lg4jets \
+  -lphhepmc \
   -lSubsysReco
 
 BUILT_SOURCES = testexternals.cc

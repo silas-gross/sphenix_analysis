@@ -272,7 +272,7 @@ bool TopoClusterMatching::KinCuts(RawCluster* p)
 	 
 int TopoClusterMatching::process_event(PHCompositeNode* topNode)
 {
-	if(verbose > 1) std::cout<<"event number: " <<n_evt<<std::endl;
+	if(Verbosity > 1) std::cout<<"event number: " <<n_evt<<std::endl;
 	n_evt++;
 
 	bool isDijet = runDijetCut(topNode);	
@@ -280,7 +280,7 @@ int TopoClusterMatching::process_event(PHCompositeNode* topNode)
 
 	jet_bin_index	= findBucket(event_cut->getLeadPt(), event_cut->getSubleadPt());
 	Q2 = 0.5* ( std::pow(event_cut->getLeadPt(), 2) + std::pow(event_cut->getLeadPt(), 2));
-	MatchAllTruthToClusters(topNode, jet_bin_index);	
+	MatchAllTruthToClusters(topNode);	
 	return Fun4AllReturnCodes::EVENT_OK;
 }
 
