@@ -83,8 +83,10 @@ class CandidateObj
 		//puts a cluster in this stripped down form 
 		E = cl->get_energy();
 		phi = cl->get_phi();
-		eta = cl->get_eta();
-		Et = E / std::sinh(eta);
+		float r = cl->get_r();
+		float z = cl->get_z();
+		eta = std::asinh(z/r);
+		Et = E / std::cosh(eta);
 		pt = Et;
 	}
 	~CandidateObj(){};
@@ -101,9 +103,9 @@ class TopoClusterMatching : public SubsysReco
 {
  public:
 
-  TopoClusterMatching(const float mpT=0.0, const std::string &name = "TopoClusterMatching") override;
+  TopoClusterMatching(const float mpT=0.0, const std::string &name = "TopoClusterMatching");
 
-  ~TopoClusterMatching() override;
+  ~TopoClusterMatching(){};
 
   /** Called during initialization.
       Typically this is where you can book histograms, and e.g.
@@ -152,7 +154,10 @@ class TopoClusterMatching : public SubsysReco
 	bool runDijetCut(PHCompositeNode*);
 	bool isAMatch	(CandidateObj*, CandidateObj*);
 	float getR 	(CandidateObj*, CandidateObj*);	
-	
+	void getEEC(std::vector<CandidateObj*>, bool );
+
+	bool KinCuts(PHG4Particle* );
+	bool KinCuts(RawCluster* );	
 	void MatchAllTruthToClusters	(PHCompositeNode*);
 	std::pair<int, int> findBucket	(float, float);
 	
@@ -162,14 +167,21 @@ class TopoClusterMatching : public SubsysReco
 	std::vector<std::vector<float>> sub_bucket {};	
 
 	DijetEventCuts* event_cut {nullptr};
+	
 	TH1F* h_ClusterPairET {nullptr};
 	TH1F* h_TruthPairET {nullptr};
+	
 	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairET_Div{};  
 	std::array< std::array<TH1F*, 10>, 10> h_TruthPairET_Div{};  
+	
 	TH1F* h_ClusterPairETAll {nullptr};
 	TH1F* h_TruthPairETAll {nullptr};
+	
 	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairETAll_Div{};  
 	std::array< std::array<TH1F*, 10>, 10> h_TruthPairETAll_Div{};  
+	
+	TH1F* h_MatchedTruth {nullptr};
+	TH1F* h_RealCluster {nullptr};
 };
 
 #endif // TOPOCLUSTERMATCHING_H
