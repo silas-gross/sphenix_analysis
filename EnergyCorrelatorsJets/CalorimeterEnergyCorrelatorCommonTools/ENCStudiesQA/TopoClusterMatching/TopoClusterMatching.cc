@@ -1,15 +1,16 @@
 #include "TopoClusterMatching.h"
 
-TopoClusterMatching::TopoClusterMatching(float mpT, [[maybe_unused]] const std::string name)
+TopoClusterMatching::TopoClusterMatching(const float mpT, const std::string name):
+	SubsysReco(name),
+	minpt (mpT)
 {
-	minpt=mpt;
 	getBins();
 	h_ClusterPairEtAll=new TH1F(
 			"h_ClusterPairEtAll", "Cluster Pair E_{T}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}",
-			clusterPtBin.size(), clusterPtBin.data());
+			clusterPTBin.size(), clusterPTBin.data());
 	h_TruthPairEtAll=new TH1F(
 			"h_TruthPairEtAll", "Truth Pair E_{T}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}",
-			clusterPtBin.size(), clusterPtBin.data());
+			clusterPTBin.size(), clusterPTBin.data());
 	for(int i=0; i<(int)sub_bucket.size()-1; i++)
 	{
 		for(int j=0; j<(int)sub_bucket.at(i).size()-1; j++)
@@ -17,19 +18,19 @@ TopoClusterMatching::TopoClusterMatching(float mpT, [[maybe_unused]] const std::
 			h_ClusterPairAllEt_Div[i][j]=new TH1F(
 					std::format("h_ClPairETAll_{}_{}", lead_bucket[i], sub_bucket[i][j]).c_str();
 					Form("Cluster Pair E_{T}, %d< p_{T, lead}^{jet} < %d, %d< p_{T, sub}^{jet}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}", lead_bucket[i], lead_bucket[i+1], sub_bucket[i][j], sub_bucket[i][j]).c_str(),
-					clusterPtBin.size(), clusterPtBin.data());
+					clusterPTBin.size(), clusterPTBin.data());
 			h_TruthPairEtAll_Div[i][j]=new TH1F(
 					std::format("h_TrPairETAll_{}_{}", lead_bucket[i], sub_bucket[i][j]).c_str();
 					Form("Truth Pair E_{T}, %d< p_{T, lead}^{jet} < %d, %d< p_{T, sub}^{jet}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}", lead_bucket[i], lead_bucket[i+1], sub_bucket[i][j], sub_bucket[i][j]).c_str(),
-					clusterPtBin.size(), clusterPtBin.data());
+					clusterPTBin.size(), clusterPTBin.data());
 		}
 	}
 	h_ClusterPairEt=new TH1F(
 			"h_ClusterPairEt", "Cluster Pair E_{T}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}",
-			clusterPtBin.size(), clusterPtBin.data());
+			clusterPTBin.size(), clusterPTBin.data());
 	h_TruthPairEt=new TH1F(
 			"h_TruthPairEt", "Truth Pair E_{T}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}",
-			clusterPtBin.size(), clusterPtBin.data());
+			clusterPTBin.size(), clusterPTBin.data());
 	for(int i=0; i<(int)sub_bucket.size()-1; i++)
 	{
 		for(int j=0; j<(int)sub_bucket.at(i).size()-1; j++)
@@ -37,34 +38,16 @@ TopoClusterMatching::TopoClusterMatching(float mpT, [[maybe_unused]] const std::
 			h_ClusterPairEt_Div[i][j]=new TH1F(
 					std::format("h_ClPairET_{}_{}", lead_bucket[i], sub_bucket[i][j]).c_str();
 					Form("Cluster Pair E_{T}, %d< p_{T, lead}^{jet} < %d, %d< p_{T, sub}^{jet}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}", lead_bucket[i], lead_bucket[i+1], sub_bucket[i][j], sub_bucket[i][j]).c_str(),
-					clusterPtBin.size(), clusterPtBin.data());
+					clusterPTBin.size(), clusterPTBin.data());
 			h_TruthPairEt_Div[i][j]=new TH1F(
 					std::format("h_TrPairET_{}_{}", lead_bucket[i], sub_bucket[i][j]).c_str();
 					Form("Truth Pair E_{T}, %d< p_{T, lead}^{jet} < %d, %d< p_{T, sub}^{jet}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}", lead_bucket[i], lead_bucket[i+1], sub_bucket[i][j], sub_bucket[i][j]).c_str(),
-					clusterPtBin.size(), clusterPtBin.data());
+					clusterPTBin.size(), clusterPTBin.data());
 		}
 	}
 					
 	event_cut = new DijetEventCuts(); //require a leading jet of 12 GeV sublead 7 GeV, keep it in |eta|<0.7, set dPhi > 3 pi/4
 	
-}
-
-void TopoClusterMatching::findMatchingCluster(std::vector<CandidateObj*> cls, CandidateObj* trpt ) 
-{
-	for(int i = 0; i<(int)cls.size(); i++)
-	{
-		CandidateObj* cl = cls[i];
-		bool goodpos = cl->isIndR(trpt);
-		bool goodE = cl->isE(trpt);
-		if(goodE && goodpos)
-		{
-			trpt->SetMatch(i);
-			break;
-		}
-		else continue;
-	}
-	return;
-
 }
 
 void TopoClusterMatching::getBins()
@@ -76,15 +59,15 @@ void TopoClusterMatching::getBins()
        	float binwidth 	= std::log(max) - std::log(min);	
 	binwidth	= binwidth/(float)nbins; //linear spacing in log
 	clusterPTBin.push_back(1e-8);
-	cluterPTBin.push_back(min);
+	clusterPTBin.push_back(min);
 	for(int i=0; i<nbins; i++)
 	{
 		float logbinlow	= std::log(clusterPTBin[i]);
 		logbinlow 	= logbinlow + binwidth;
 		
-		clusterPtBin.push_back(std::pow(10, logbinlow));
+		clusterPTBin.push_back(std::pow(10, logbinlow));
 	}
-	clusterPtBin.push_back(1.);
+	clusterPTBin.push_back(1.);
 
 	//create the buckets for which subleading and leading jets we have 
 	int nbuckets 	= 10; 

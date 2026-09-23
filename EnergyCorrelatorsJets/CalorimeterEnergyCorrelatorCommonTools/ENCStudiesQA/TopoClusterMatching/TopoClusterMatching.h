@@ -101,7 +101,7 @@ class TopoClusterMatching : public SubsysReco
 {
  public:
 
-  TopoClusterMatching(float mpT=0.0, [[maybe_unused]] const std::string &name = "TopoClusterMatching");
+  TopoClusterMatching(const float mpT=0.0, const std::string &name = "TopoClusterMatching") override;
 
   ~TopoClusterMatching() override;
 
@@ -145,14 +145,14 @@ class TopoClusterMatching : public SubsysReco
 	float Q2	{-999.};
 	float eratmin	{0.5};
 	float dRmax	{0.2};
-
+	
+	std::string jet_node_name {"Truth_AntikT_r04"};
 	std::pair<int, int> jet_bin_index {0,0};
 	void getBins	();
 	bool runDijetCut(PHCompositeNode*);
 	bool isAMatch	(CandidateObj*, CandidateObj*);
 	float getR 	(CandidateObj*, CandidateObj*);	
 	
-	void findMatchingCluster(std::vecotor<CandidateObj*>, CandidateObj*);
 	void MatchAllTruthToClusters	(PHCompositeNode*);
 	std::pair<int, int> findBucket	(float, float);
 	

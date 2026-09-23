@@ -23,7 +23,7 @@ class JetContainer;
 class DijetEventCuts{
 	//maybe this gets some histos added for easier QA-ing of cut safety
 	public:
-		DijetEventCuts(float lpt=12., float slpt=7., float det=0.7, float dph=2.94 bool dj=true, bool ne=false, std::string radius="r04" ): 
+		DijetEventCuts(float lpt=12., float slpt=7., float det=0.7, float dph=2.94, bool dj=true, bool ne=false, std::string radius="r04" ): 
 				leadingpt(lpt), 
 				subleadingpt(slpt), 
 				etaedge(det), //keep full jet in calo
@@ -84,7 +84,6 @@ class DijetEventCuts{
 			if(abs(leadeta) > etaedge ) good=false; //getting rid of events that have the leading jet outside of acceptance region
 			for(auto j: *eventjets){
 				float phi=j->get_phi();
-				int index=0;
 
 				if(abs(phi-leadphi) > deltaphi && abs(phi-leadphi) <= PI+0.2){
 				       	subleadjet=j;
