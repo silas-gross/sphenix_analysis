@@ -95,7 +95,7 @@ class CandidateObj
 	float eta {-999.};
 	bool isMatch {false};
 
-}
+};
 
 class TopoClusterMatching : public SubsysReco
 {
@@ -143,19 +143,20 @@ class TopoClusterMatching : public SubsysReco
 	int n_good	{0};
 	float minpt	{0.};
 	float Q2	{-999.};
-	float erat	{0.5};
+	float eratmin	{0.5};
 	float dRmax	{0.2};
 
 	std::pair<int, int> jet_bin_index {0,0};
-	void getBins	(float);
+	void getBins	();
 	bool runDijetCut(PHCompositeNode*);
 	bool isAMatch	(CandidateObj*, CandidateObj*);
 	float getR 	(CandidateObj*, CandidateObj*);	
 	
+	void findMatchingCluster(std::vecotor<CandidateObj*>, CandidateObj*);
 	void MatchAllTruthToClusters	(PHCompositeNode*);
 	std::pair<int, int> findBucket	(float, float);
 	
-	
+		
 	std::vector<float> clusterPTBin {};
 	std::vector<float> lead_bucket {};
 	std::vector<std::vector<float>> sub_bucket {};	

@@ -23,7 +23,7 @@ class JetContainer;
 class DijetEventCuts{
 	//maybe this gets some histos added for easier QA-ing of cut safety
 	public:
-		DijetEventCuts(float lpt=12., float slpt=7., float det=0.7, float dph=2.94,float maxpct=0.9, bool dj=true, bool ne=false, std::string radius="r04" ): 
+		DijetEventCuts(float lpt=12., float slpt=7., float det=0.7, float dph=2.94 bool dj=true, bool ne=false, std::string radius="r04" ): 
 				leadingpt(lpt), 
 				subleadingpt(slpt), 
 				etaedge(det), //keep full jet in calo
@@ -105,7 +105,6 @@ class DijetEventCuts{
 
 			}
 			
-alse;
 			}
 			//if(subleadjetpt < subleadingpt || !haspartner) good=false;
 			passesCut=good;
@@ -136,8 +135,8 @@ alse;
 				<<"\n passesCut: " <<passesCut
 				<<"\n m_isdijet: " <<m_isdijet
 				<<"\n m_nJets: " <<m_nJets
-				<<"\n leadingpt: " <<leading_pt_cut
-				<<"\n subleadingpt: " <<subleading_pt_cut 
+				//<<"\n leadingpt: " <<leading_pt_cut
+			//	<<"\n subleadingpt: " <<subleading_pt_cut 
 				<<"\n etaedge: " <<etaedge
 				<<"\n deltaphi: " <<deltaphi
 				<<"\n m_zvtx: " <<m_zvtx
@@ -145,8 +144,6 @@ alse;
 				<<"\n m_slpt: " <<m_slpt
 				<<"\n m_etal: " <<m_etal
 				<<"\n m_etasl: " <<m_etasl
-				<<"\n m_ile: " <<m_ile
-				<<"\n m_isle: " <<m_isle
 				<<"\n m_deltaphi: " <<m_deltaphi
 				<<"\n leadphi: " <<leadphi
 				<<"\n leadeta: " <<leadeta
@@ -197,12 +194,14 @@ alse;
 		float m_slpt=0.;
 		float m_etal=0.;
 		float m_etasl=0.;
+		float m_deltaphi=0.;
 
 		float leadphi=0.;
 		float leadeta=0.;
-
+		
 		bool m_isdijet=false;
 		bool m_hasnege=false;
+		
 };
 
 #endif

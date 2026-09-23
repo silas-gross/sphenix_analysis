@@ -1,9 +1,9 @@
 #include "TopoClusterMatching.h"
 
-TopoClusterMatching::TopoClusterMatching(float mpT, const std::string name)
+TopoClusterMatching::TopoClusterMatching(float mpT, [[maybe_unused]] const std::string name)
 {
-	minpT=mpt;
-	getBins(mpt);
+	minpt=mpt;
+	getBins();
 	h_ClusterPairEtAll=new TH1F(
 			"h_ClusterPairEtAll", "Cluster Pair E_{T}; E_{T, i} #times E_{T,j} / < E_{T, dijet} >^{2}; N_{pair}",
 			clusterPtBin.size(), clusterPtBin.data());
@@ -49,11 +49,11 @@ TopoClusterMatching::TopoClusterMatching(float mpT, const std::string name)
 	
 }
 
-void TopoCluterMatching::findMatchingCluster(std::vector<CandidateObj*> cls, CandidateObj* trpt ) 
+void TopoClusterMatching::findMatchingCluster(std::vector<CandidateObj*> cls, CandidateObj* trpt ) 
 {
 	for(int i = 0; i<(int)cls.size(); i++)
 	{
-		CandidateObj cl = cls[i];
+		CandidateObj* cl = cls[i];
 		bool goodpos = cl->isIndR(trpt);
 		bool goodE = cl->isE(trpt);
 		if(goodE && goodpos)
@@ -67,7 +67,7 @@ void TopoCluterMatching::findMatchingCluster(std::vector<CandidateObj*> cls, Can
 
 }
 
-void TopoClusterMatching::getBins(float minpt)
+void TopoClusterMatching::getBins()
 {
 	//building the logarithmic bins 
 	int nbins 	= 100;
@@ -75,11 +75,11 @@ void TopoClusterMatching::getBins(float minpt)
 	float max 	= 0.5;
        	float binwidth 	= std::log(max) - std::log(min);	
 	binwidth	= binwidth/(float)nbins; //linear spacing in log
-	clusterPtBin.push_back(1e-8);
-	cluterPtBin.push_back(min);
+	clusterPTBin.push_back(1e-8);
+	cluterPTBin.push_back(min);
 	for(int i=0; i<nbins; i++)
 	{
-		float logbinlow	= std::log(clusterPtBin[i]);
+		float logbinlow	= std::log(clusterPTBin[i]);
 		logbinlow 	= logbinlow + binwidth;
 		
 		clusterPtBin.push_back(std::pow(10, logbinlow));
@@ -132,10 +132,10 @@ std::pair<int, int> TopoClusterMatching::findBucket(float lpt, float slpt)
 	int l_i = 0; 
 	int s_i	= 0;
  
-	for(int i = 0; i<(int)lead_buckets.size(); i++)
-		if ( lpt < lead_buckes.at(i)) l_i = i-1;
-	for(int i = 0; i<(int)sublead_buckets.at(l_i).size(); i++)
-		if ( slpt < sublead_buckets.at(i)) s_i = i-1;
+	for(int i = 0; i<(int)lead_bucket.size(); i++)
+		if ( lpt < lead_bucket.at(i)) l_i = i-1;
+	for(int i = 0; i<(int)sub_bucket.at(l_i).size(); i++)
+		if ( slpt < sub_bucket.at(i)) s_i = i-1;
 	return std::make_pair(l_i, s_i);
 }
 bool TopoClusterMatching::isAMatch(CandidateObj* t, CandidateObj* c)
@@ -150,7 +150,7 @@ bool TopoClusterMatching::isAMatch(CandidateObj* t, CandidateObj* c)
 }
 void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode) 
 {
-	auto truthMap = getClass::findNode<PHG4TruthInfoContainer*>(topNode, "G4TruthInfo");
+	auto truthinfo = findNode::getClass<PHG4TruthInfoContainer*>(topNode, "G4TruthInfo");
 	std::vector<CandidateObj*> valid_truth {};
 	if(!truthinfo) return;
 	for(
@@ -162,7 +162,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 		if(!iter) continue;
 		PHG4Particle* p = iter->second;
 		if(!p) continue;
-		bool goodKin = isGoodKin(p);
+		bool goodKin = KinCuts(p);
 		if(goodKin){
 			CandidateObj* pt = new CandidateObj(p);
 			valid_truth.push_back(pt);
@@ -180,7 +180,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 	   )
 	{
 		if(!iter) continue;
-		bool goodKin = isGoodKin(*iter);
+		bool goodKin = KinGood(*iter);
 		if(goodKin)
 		{
 			CandidateObj* cl = new CandidateObj(*iter);
@@ -193,7 +193,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 		for(auto c:valid_topo)
 		{
 			bool matched = isAMatch(t, c);
-			if(isAMatch)
+			if(matched)
 			{
 				h_MatchedTruth->Fill(t->pt);
 			      	h_RealCluster->Fill(c->pt);	
