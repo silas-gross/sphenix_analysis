@@ -139,16 +139,16 @@ bool TopoClusterMatching::isAMatch(CandidateObj* t, CandidateObj* c)
 }
 void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode) 
 {
-	auto truthinfo = findNode::getClass<PHG4TruthInfoContainer*>(topNode, "G4TruthInfo");
+	auto truthinfo = findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
 	std::vector<CandidateObj*> valid_truth {};
 	if(!truthinfo) return;
 	for(
-		auto iter = truthinfo->GetSPHENIXPrimaryParticleRange()->first; 
-		iter != truthinfo->GetSPHENIXPrimaryParticleRange()->second; 
+		auto iter = truthinfo->GetSPHENIXPrimaryParticleRange().first; 
+		iter != truthinfo->GetSPHENIXPrimaryParticleRange().second; 
 		++iter
 	   )
 	{
-		if(!iter) continue;
+//		if(!iter) continue;
 		PHG4Particle* p = iter->second;
 		if(!p) continue;
 		bool goodKin = KinCuts(p);
@@ -163,15 +163,15 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 	auto clusters = findNode::getClass<RawClusterContainer>(topNode, "TOPOCLUSTER_ALLCALO");
 	if(!clusters)return;
 	for(
-		auto iter:clusters->getClusterMap();
+		auto iter:clusters->getClustersMap()
 	   )
 	{
-		if(!iter) continue;
-		bool goodKin = KinCuts(*iter);
+//		if(!iter) continue;
+		bool goodKin = KinCuts(iter.second);
 		if(goodKin)
 		{
-			CandidateObj* cl = new CandidateObj(*iter);
-			valid_topo.push_back(c1);
+			CandidateObj* cl = new CandidateObj(iter.second);
+			valid_topo.push_back(cl);
 			continue;
 		}
 		else continue;

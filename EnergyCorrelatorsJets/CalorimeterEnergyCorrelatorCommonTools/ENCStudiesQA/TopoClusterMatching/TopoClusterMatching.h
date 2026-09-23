@@ -133,10 +133,10 @@ class TopoClusterMatching : public SubsysReco
  // int EndRun(const int runnumber) override;
 
   /// Called at the end of all processing.
-  int End([[maybe_unused]] PHCompositeNode *topNode) override;
+//  int End([[maybe_unused]] PHCompositeNode *topNode) override;
 
   /// Reset
-  int Reset(PHCompositeNode * /*topNode*/) override;
+//  int Reset(PHCompositeNode * /*topNode*/) override;
 
   //void Print(const std::string &what = "ALL") const override;
 
