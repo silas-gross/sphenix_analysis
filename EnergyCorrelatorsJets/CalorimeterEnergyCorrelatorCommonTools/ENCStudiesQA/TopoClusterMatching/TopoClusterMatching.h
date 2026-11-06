@@ -103,7 +103,7 @@ class TopoClusterMatching : public SubsysReco
 {
  public:
 
-  TopoClusterMatching(const float mpT=0.0, const std::string &name = "TopoClusterMatching");
+  TopoClusterMatching(const float mpT=0.0, const std::string &fn = "text.root", const std::string &name = "TopoClusterMatching");
 
   ~TopoClusterMatching(){};
 
@@ -133,7 +133,7 @@ class TopoClusterMatching : public SubsysReco
  // int EndRun(const int runnumber) override;
 
   /// Called at the end of all processing.
-//  int End([[maybe_unused]] PHCompositeNode *topNode) override;
+ int End([[maybe_unused]] PHCompositeNode *topNode) override;
 
   /// Reset
 //  int Reset(PHCompositeNode * /*topNode*/) override;
@@ -145,10 +145,11 @@ class TopoClusterMatching : public SubsysReco
 	int n_good	{0};
 	float minpt	{0.};
 	float Q2	{-999.};
-	float eratmin	{0.5};
-	float dRmax	{0.2};
+	float eratmin	{0.9};
+	float dRmax	{0.1};
 	
-	std::string jet_node_name {"Truth_AntikT_r04"};
+	std::string jet_node_name {"AntiKt_Truth_r04"};
+	std::string fname {"text.root"};
 	std::pair<int, int> jet_bin_index {0,0};
 	void getBins	();
 	bool runDijetCut(PHCompositeNode*);
@@ -182,6 +183,14 @@ class TopoClusterMatching : public SubsysReco
 	
 	TH1F* h_MatchedTruth {nullptr};
 	TH1F* h_RealCluster {nullptr};
+	TH1F* h_AllCluster {nullptr};
+
+	TH1F* h_TruthToCluster {nullptr};
+	TH2F* h_TruthToClusterPt {nullptr};
+	
+	TH1F* h_ClusterN {nullptr};
+	TH1F* h_ClusterAll {nullptr};
+	TH1F* h_ClusterPCT {nullptr};
 };
 
 #endif // TOPOCLUSTERMATCHING_H
