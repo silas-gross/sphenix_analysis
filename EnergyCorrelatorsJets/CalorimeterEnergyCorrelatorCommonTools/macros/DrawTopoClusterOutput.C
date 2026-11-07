@@ -18,7 +18,7 @@
 
 #include "Special_colors.h"
 
-std::array<TColor*, 8> sp_cls {};
+std::array<Int_t, 8> sp_cls {};
 
 void ConfigureTLegend(TLegend* l, bool header=false)
 {
@@ -32,49 +32,57 @@ void ConfigureTLegend(TLegend* l, bool header=false)
 
 		time_t timestamp;
 		time(&timestamp);
-		l->AddEntry("", ctime(&timestamp).c_str(), "");
+		l->AddEntry("", ctime(&timestamp), "");
 	}
 	return;
 }
 
-void MakeColorSet()
+void MakeColorSet(Skaydis_colors* st)
 {
-	sp_cls[0]=new TColor(
+	sp_cls[0]=TColor::GetColor(
 			st->lesbian_Flag->at(0).at(0), 
 			st->lesbian_Flag->at(0).at(1),
 			st->lesbian_Flag->at(0).at(2)
 		);
-	sp_cls[1]=new TColor(
+	sp_cls[1]=TColor::GetColor(
 			st->lesbian_Flag->at(2).at(0), 
 			st->lesbian_Flag->at(2).at(1),
 			st->lesbian_Flag->at(2).at(2)
 		);
-	sp_cls[2]=new TColor(
+	sp_cls[2]=TColor::GetColor(
 			st->lesbian_Flag->at(3).at(0), 
 			st->lesbian_Flag->at(3).at(1),
 			st->lesbian_Flag->at(3).at(2)
 		);
-	sp_cls[3]=new TColor(
+	sp_cls[3]=TColor::GetColor(
 			st->lesbian_Flag->at(5).at(0), 
 			st->lesbian_Flag->at(5).at(1),
 			st->lesbian_Flag->at(5).at(2)
 		);
-	sp_cls[4]=new TColor(
+	sp_cls[4]=TColor::GetFreeColorIndex();	
+	new TColor(
+			sp_cls[4],
 			st->enby_Flag->at(0).at(0), 
 			st->enby_Flag->at(0).at(1),
 			st->enby_Flag->at(0).at(2)
 		);
-	sp_cls[5]=new TColor(
+	sp_cls[5]=TColor::GetFreeColorIndex();
+	new TColor(
+			sp_cls[5],
 			st->enby_Flag->at(1).at(0), 
 			st->enby_Flag->at(1).at(1),
 			st->enby_Flag->at(1).at(2)
 		);
-	sp_cls[6]=new TColor(
+	sp_cls[6]=TColor::GetFreeColorIndex();
+	new TColor(
+			sp_cls[6],
 			st->trans_Flag->at(0).at(0), 
 			st->trans_Flag->at(0).at(1),
 			st->trans_Flag->at(0).at(2)
 		);
-	sp_cls[7]=new TColor(
+	sp_cls[7]=TColor::GetFreeColorIndex();
+	new TColor(
+			sp_cls[7],
 			st->trans_Flag->at(1).at(0), 
 			st->trans_Flag->at(1).at(1),
 			st->trans_Flag->at(1).at(2)
@@ -93,18 +101,18 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	Real->SetLineColor(sp_cls[0]);
 	All->SetLineColor(sp_cls[6]);
 	Real->SetMarkerColor(sp_cls[0]);
-	All>SetMarkerColor(sp_cls[6]);
+	All->SetMarkerColor(sp_cls[6]);
 	
-	AllClusters->Draw();
-	RealClusters->Draw("same");
+	All->Draw();
+	Real->Draw("same");
 
 	p2->SetLogx();
 	p2->SetLogy();
 
 	p1->cd();
 	
-	TH1F* ratio 	= (TH1F*) RealClusters->Clone();
-	ratio->Divide(AllClusters);
+	TH1F* ratio 	= (TH1F*) Real->Clone();
+	ratio->Divide(All);
 	ratio->SetLineColor(sp_cls[2]);
 	ratio->SetMarkerColor(sp_cls[2]);
 	ratio->Draw();
@@ -137,8 +145,8 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	
 	l->AddEntry("", Form("%s E_{T}", lb.c_str()), "");
 	l->Draw();
-	l1->AddEntry(RealClusters, Form("'Real' %s (Matched to at least one %s)", lb.c_str(), second_label.c_str()));
-	l1->AddEntry(AllClusters, Form("All %s (passing Kinematic cuts", lb.c_str()));
+	l1->AddEntry(Real, Form("'Real' %s (Matched to at least one %s)", lb.c_str(), second_label.c_str()));
+	l1->AddEntry(All, Form("All %s (passing Kinematic cuts", lb.c_str()));
 	l1->AddEntry(ratio, Form("Real / All %s", lb.c_str()));
 	l1->Draw();
 	
@@ -155,8 +163,8 @@ void CompareSingles(TFile* raw_results)
 	TH1F* AllClusters 	= (TH1F*) raw_results->Get("h_AllCluster");
 	TH1F* MatchTruth 	= (TH1F*) raw_results->Get("h_MatchedTruth");
 	TH1F* AllTruth 		= (TH1F*) raw_results->Get("h_AllTruth");
-	MatchToAllSingle(RealClusters, AllClusters, "Clusters");
-	MatchToAllSingle(MatchTruth, AllTruth, "Truth");
+	MatchToAll(RealClusters, AllClusters, "Clusters");
+	MatchToAll(MatchTruth, AllTruth, "Truth");
 	return;
 }
 
@@ -164,10 +172,10 @@ void ComparePairs(TFile* raw_results)
 {
 	TH1F* RealClusterPairs	= (TH1F*) raw_results->Get("h_ClusterPairET");
 	TH1F* AllClusterPairs	= (TH1F*) raw_results->Get("h_ClusterPairETAll");
-	TH1F* TruthPairs	= (TH1F*) raw_results->Get("h_TruthPairET");
+	TH1F* MatchTruthPairs	= (TH1F*) raw_results->Get("h_TruthPairET");
 	TH1F* AllTruthPairs	= (TH1F*) raw_results->Get("h_TruthPairETAll");
-	MatchToAllSingle(RealClustersPairs, AllClustersPairs, "Cluster_pair");
-	MatchToAllSingle(MatchTruthPairs, AllTruthPairs, "Truth_pair");
+	MatchToAll(RealClusterPairs, AllClusterPairs, "Cluster_pair");
+	MatchToAll(MatchTruthPairs, AllTruthPairs, "Truth_pair");
 	return;	
 }
 void DrawResults(TFile* raw_results)
@@ -175,9 +183,9 @@ void DrawResults(TFile* raw_results)
 	SetsPhenixStyle();
 	Skaydis_colors* st = new Skaydis_colors();
 	gStyle->SetPalette(100, st->Lesbian_log_gradient_PT);
-	MakeColorSet();
+	MakeColorSet(st);
 	CompareSingles(raw_results);
 	ComparePairs(raw_results);
 	return;
 }
-#endif;
+#endif
