@@ -60,6 +60,7 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TFile.h>
+#include <TDirectory.h>
 
 class PHCompositeNode;
 
@@ -172,14 +173,20 @@ class TopoClusterMatching : public SubsysReco
 	TH1F* h_ClusterPairET {nullptr};
 	TH1F* h_TruthPairET {nullptr};
 	
-	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairET_Div{};  
-	std::array< std::array<TH1F*, 10>, 10> h_TruthPairET_Div{};  
+	std::array< std::array<TH1F*, 5>, 10> h_ClusterPairET_Div{};  
+	std::array< std::array<TH1F*, 5>, 10> h_TruthPairET_Div{};  
+	
+	std::array< std::array<TH1F*, 5>, 10> h_ClusterET_Div{};  
+	std::array< std::array<TH1F*, 5>, 10> h_TruthET_Div{};  
 	
 	TH1F* h_ClusterPairETAll {nullptr};
 	TH1F* h_TruthPairETAll {nullptr};
 	
-	std::array< std::array<TH1F*, 10>, 10> h_ClusterPairETAll_Div{};  
-	std::array< std::array<TH1F*, 10>, 10> h_TruthPairETAll_Div{};  
+	std::array< std::array<TH1F*,5>, 10> h_ClusterPairETAll_Div{};  
+	std::array< std::array<TH1F*, 5>, 10> h_TruthPairETAll_Div{};  
+	
+	std::array< std::array<TH1F*, 5>, 10> h_ClusterETAll_Div{};  
+	std::array< std::array<TH1F*, 5>, 10> h_TruthETAll_Div{};  
 	
 	TH1F* h_MatchedTruth {nullptr};
 	TH1F* h_RealCluster {nullptr};
