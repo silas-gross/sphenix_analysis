@@ -4,8 +4,8 @@ export USER="$(id -u -n)"
 export LOGNAME=${USER}
 export HOME=/sphenix/u/${LOGNAME}/macros/detectors/sPHENIX/
 
-executable="RunEtaShiftStudy.sh"
-ex_tag="EtaShift"
+executable="RunTopoClusterMatching.sh"
+ex_tag="TopoMatch"
 nfiles=0
 optione=""
 outDir=""
@@ -37,7 +37,7 @@ make_truth_condor_jobs()
 		condor_file="$(pwd)/condor_file_dir/condor_"$triggertype"_seg_"$i".job"
 		condor_out_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".out"
 		condor_err_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".err"
-		condor_log_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".log"
+		condor_log_file="/tmp/Skaydi_condor_"$triggertype"_seg_"$i".log"
 		global=`sed "${j}q;d" MC/${triggertype}_data/global_density_${filedensity}.list`
 		truth=`sed "${j}q;d" MC/${triggertype}_data/truth_density_${filedensity}.list`
 		jet=`sed "${j}q;d" MC/${triggertype}_data/jet_density_${filedensity}.list`
@@ -46,6 +46,7 @@ make_truth_condor_jobs()
 		options="${options} ${calo} ${global} ${jet} ${truth}"
 		if [ "$vebose_mode" = true ]; then
 			echo "Producing condor job file " $condor_file
+			echo $options
 		fi
 		IFS=$'\n' read -d '' -r -a blanklines < $condor_testfile
 		echo "${blanklines[0]}" > $condor_file 
@@ -62,6 +63,7 @@ make_truth_condor_jobs()
 		echo "${blanklines[11]}" >> $condor_file
 		echo "${blanklines[12]}" >> $condor_file
 		echo "${blanklines[13]}" >> $condor_file
+		options=""
 	done
 
 }
@@ -79,7 +81,7 @@ make_condor_jobs()
 		condor_file="$(pwd)/condor_file_dir/condor_"$triggertype"_seg_"$i".job"
 		condor_out_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".out"
 		condor_err_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".err"
-		condor_log_file=$(pwd)"/condor_file_dir/condor_"$triggertype"_seg_"$i".log"
+		condor_log_file="/tmp/Skaydi_condor_"$triggertype"_seg_"$i".log"
 		global=`sed "${j}q;d" real_data/${run_data}/global_density_${filedensity}.list`
 		truth="none" 
 		jet=`sed "${j}q;d" real_data/${run_data}/jet_density_${filedensity}.list`
@@ -88,6 +90,7 @@ make_condor_jobs()
 		options="${options} ${calo} ${global} ${jet} ${truth} ${MYINSTALL}"
 		if [ "$vebose_mode" = true ]; then
 			echo "Producing condor job file " $condor_file
+			echo $options
 		fi
 		IFS=$'\n' read -d '' -r -a blanklines < $condor_testfile
 		echo "${blanklines[0]}" > $condor_file 
@@ -104,6 +107,7 @@ make_condor_jobs()
 		echo "${blanklines[11]}" >> $condor_file
 		echo "${blanklines[12]}" >> $condor_file
 		echo "${blanklines[13]}" >> $condor_file
+		options=""
 	done
 
 }
@@ -112,6 +116,8 @@ choose_executable()
 	#choose the executable 
 	if [[ "${ex_tag}" = *"EtaShift"* ]]; then 
 		executable="RunEtaShiftStudy.sh"
+	elif [[ "${ex_tag}" = *"TopoMatch"* ]]; then
+		executable="RunTopoClusterMatching.sh"
 	fi
 }
 select_options()

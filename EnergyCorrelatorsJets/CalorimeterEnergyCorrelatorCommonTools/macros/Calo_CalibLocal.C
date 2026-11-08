@@ -63,7 +63,7 @@ void Process_Calo_Calib()
   CaloTowerDefs::BuilderType buildertype = CaloTowerDefs::kPRDFTowerv4;
 
   // build ZDC towers
-  CaloTowerBuilder *caZDC = new CaloTowerBuilder("ZDCBUILDER");
+/*  CaloTowerBuilder *caZDC = new CaloTowerBuilder("ZDCBUILDER");
   caZDC->set_detector_type(CaloTowerDefs::ZDC);
   caZDC->set_builder_type(buildertype);
   if ((runnumber > RunnumberRange::RUN2PP_FIRST && runnumber < RunnumberRange::RUN2PP_LAST) || (runnumber > RunnumberRange::RUN3PP_FIRST && runnumber < RunnumberRange::RUN3PP_LAST))
@@ -75,10 +75,10 @@ void Process_Calo_Calib()
     caZDC->set_processing_type(CaloWaveformProcessing::FUNCFIT);
     caZDC->set_funcfit_type(2);
   }
-  caZDC->set_nsamples(16);
+  //caZDC->set_nsamples(16);
   caZDC->set_offlineflag();
   se->registerSubsystem(caZDC);
-
+*/
   //////////////////////////////
   // set statuses on raw towers
   std::cout << "status setters" << std::endl;

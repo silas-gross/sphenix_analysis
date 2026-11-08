@@ -1,0 +1,18 @@
+#! /bin/bash
+
+thisDir=${1:-""}
+caloFile=${2:-""}
+globalFile=${3:-""}
+jetFile=${4:-""}
+truthFile=${5:-""}
+outDir=${6:-""}
+installdir=${7:-$MYINSTALL}
+
+echo $installdir
+source /opt/sphenix/core/bin/sphenix_setup.sh -n
+source /opt/sphenix/core/bin/setup_local.sh $installdir
+
+n_files=`wc -l < ${caloFile}`
+#/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/utils/bin/valgrind  --track-origins=yes --log-file=${thisDir}/data_valdrind-out_1.txt 
+/cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/root-6.32.06/bin/root -b -q ${thisDir}/RunTopoClusterMatching.C\(\"$caloFile\",\"$globalFile\",\"$jetFile\",\"$truthFile\",$n_files\)
+

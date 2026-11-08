@@ -3,7 +3,7 @@ Executable 	= /gpfs/mnt/gpfs02
 Arguments       = 
 Output  	= /gpfs/mnt/gpfs02
 Error 		= /gpfs/mnt/gpfs02
-Log  		= /gpfs/mnt/gpfs02
+Log  		= 
 Initialdir  	= 
 PeriodicHold 	= (NumJobStarts>=1 && JobStatus == 1)
 accounting_group = group_sphenix.user

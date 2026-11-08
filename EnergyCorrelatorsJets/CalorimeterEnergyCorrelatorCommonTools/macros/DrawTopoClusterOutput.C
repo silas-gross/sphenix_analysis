@@ -25,6 +25,7 @@ void ConfigureTLegend(TLegend* l, bool header=false)
 	l->SetFillColor(0);
 	l->SetFillStyle(0);
 	l->SetBorderSize(0);
+	l->SetTextSize(0.035f);
 	if(header)
 	{
 		l->AddEntry("", "#bf{#it{sPHENIX}} Internal", "");
@@ -98,13 +99,15 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	TPad* p2	= new TPad("p2", "p2", 0, 0.35, 1,1);
 	p2->cd();
 
-	Real->SetLineColor(sp_cls[0]);
+	Real->SetLineColor(sp_cls[5]);
 	All->SetLineColor(sp_cls[6]);
-	Real->SetMarkerColor(sp_cls[0]);
+	Real->SetMarkerColor(sp_cls[5]);
 	All->SetMarkerColor(sp_cls[6]);
 	
-	All->Draw();
-	Real->Draw("same");
+	All->Draw("e1");
+	All->GetYaxis()->SetRangeUser(Real->GetMean()*0.5, All->GetMaximum()*1.2);
+	Real->Draw("e1 same");
+
 
 	p2->SetLogx();
 	p2->SetLogy();
@@ -115,8 +118,10 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	ratio->Divide(All);
 	ratio->SetLineColor(sp_cls[2]);
 	ratio->SetMarkerColor(sp_cls[2]);
-	ratio->Draw();
+	ratio->Draw("e1");
 	ratio->SetYTitle("Real / All ");
+	p1->SetLogx();
+	p1->SetLogy();
 
 	c1->cd();
 	p1->Draw();
@@ -124,8 +129,8 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 
 	p2->cd();
 	
-	TLegend* l 	= new TLegend(0.8, 0.8, 1, 1);
-	TLegend* l1	= new TLegend(0.8, 0.4, 1, 0.6);
+	TLegend* l 	= new TLegend(0.2, 0.7, 0.35, 0.9);
+	TLegend* l1	= new TLegend(0.2, 0.5, 0.35, 0.7);
 	ConfigureTLegend(l, true);
 	ConfigureTLegend(l1);
 	std::string lb {label};	
