@@ -193,4 +193,8 @@ void DrawResults(TFile* raw_results)
 	ComparePairs(raw_results);
 	return;
 }
+void DrawResultsWithBins(TFile* raw_results)
+{
+	//same basic idea but do it over everything in the list of keys
+}
 #endif
