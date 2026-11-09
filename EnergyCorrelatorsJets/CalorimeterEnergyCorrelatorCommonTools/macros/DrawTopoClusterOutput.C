@@ -8,6 +8,7 @@
 #include <TLegend.h>
 #include <TPad.h>
 #include <TKey.h>
+#include <TSystem.h>
 
 #include <string>
 #include <vector>
@@ -22,6 +23,9 @@
 #include "Special_colors.h"
 
 std::array<Int_t, 8> sp_cls {};
+Int_t x {0}, y {0};
+UInt_t w = 0;
+UInt_t h = 0;
 
 void ConfigureTLegend(TLegend* l, bool header=false)
 {
@@ -97,7 +101,7 @@ void MakeColorSet(Skaydis_colors* st)
 void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 {
 	if(!Real || !All) return;
-	TCanvas* c1 	= new TCanvas();
+	TCanvas* c1 	= new TCanvas(label.c_str(), label.c_str(), x, y, 0.9*w, 0.9*h);
 	c1->cd();
 	TPad* p1	= new TPad("p1", "p1", 0, 0, 1, 0.33);
 	TPad* p2	= new TPad("p2", "p2", 0, 0.35, 1,1);
@@ -109,7 +113,7 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	All->SetMarkerColor(sp_cls[6]);
 	
 	All->Draw("e1");
-	All->GetYaxis()->SetRangeUser(Real->GetMean()*0.5, All->GetMaximum()*1.2);
+	All->GetYaxis()->SetRangeUser(Real->GetMean()*0.5, All->GetMaximum()*1.25);
 	Real->Draw("e1 same");
 
 	p2->SetLogx();
@@ -156,6 +160,9 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	l1->AddEntry(Real, Form("'Real' %s (Matched to at least one %s)", lb.c_str(), second_label.c_str()));
 	l1->AddEntry(All, Form("All %s (passing Kinematic cuts", lb.c_str()));
 	l1->AddEntry(ratio, Form("Real / All %s", lb.c_str()));
+	l1->AddEntry("", "", "");
+	float integral_rat = (float) Real->Integral() / (float) All->Integral();
+	l1->AddEntry("", std::format("#int Real / #int All = {:.3f}", integral_rat).c_str(), "");
 	l1->Draw();
 	
 	c1->cd();
@@ -218,12 +225,13 @@ static void AddLegendToPad(TPad* pad, const std::vector<std::pair<std::string, i
 // Each sub-bin is shown in a distinct color; matched histograms use solid
 // lines, all-object histograms use dashed lines, and the lower row shows
 // matched/all ratios.
-void CompareLeadBin(TFile* raw_results, int lead_bin)
+void CompareLeadBin(TFile* raw_results)
 {
 	if(!raw_results) return;
 	TDirectory* dir = raw_results->GetDirectory(Form("jet_dep/lead_bin_%d", lead_bin));
 	if(!dir) return;
-
+	//I need to rethink the way this is structured and just do it as 4 pages of a grid
+	/*
 	struct HistogramPair
 	{
 		TH1F* matched {nullptr};
@@ -263,110 +271,19 @@ void CompareLeadBin(TFile* raw_results, int lead_bin)
 
 	const std::array<const char*, 4> category_names {
 		"Cluster E_{T}", "Cluster-pair E_{T}", "Truth E_{T}", "Truth-pair E_{T}"
-	};
-	TCanvas* canvas = new TCanvas(Form("lead_bin_canvas_%d", lead_bin),
-			Form("Lead jet bin %d", lead_bin), 1800, 900);
-	canvas->Divide(4, 2);
+	};*/
+	TCanvas* truth_canvas = new TCanvas("Truth_Singles", "Truth Singles", 0, 0, 0.9*w, 0.9*h);
+	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, 0.9*w, 0.9*h);
+	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, 0.9*w, 0.9*h);
+	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, 0.9*w, 0.9*h);
 
-	for(std::size_t category = 0; category < histograms.size(); ++category)
-	{
-		TPad* spectra_pad = static_cast<TPad*>(canvas->cd(category + 1));
-		spectra_pad->SetLogx();
-		spectra_pad->SetLogy();
-	//	spectra_pad->SetGrid();
-		bool first_spectrum = true;
-		double max_content = 0.;
-		std::size_t sub_bin_index = 0;
-		std::vector<std::pair<std::string, int>> legend_entries;
-		for(const auto& [sub_bin, pair] : histograms[category])
-		{
-			const int color = sp_cls[sub_bin_index % sp_cls.size()];
-			legend_entries.emplace_back(GetSubBinLabel(sub_bin), color);
-			if(pair.matched)
-			{
-				pair.matched->SetLineColor(color);
-				pair.matched->SetLineStyle(1);
-				pair.matched->SetMinimum(0.5);
-				pair.matched->SetStats(false);
-				max_content = std::max(max_content, pair.matched->GetMaximum());
-				pair.matched->Draw(first_spectrum ? "hist" : "hist same");
-				first_spectrum = false;
-			}
-			if(pair.all)
-			{
-				pair.all->SetLineColor(color);
-				pair.all->SetLineStyle(2);
-				pair.all->SetMinimum(0.5);
-				pair.all->SetStats(false);
-				max_content = std::max(max_content, pair.all->GetMaximum());
-				pair.all->Draw(first_spectrum ? "hist" : "hist same");
-				first_spectrum = false;
-			}
-			++sub_bin_index;
-		}
-		if(!first_spectrum)
-		{
-			for(const auto& [sub_bin, pair] : histograms[category])
-			{
-				if(pair.matched) pair.matched->SetMaximum(max_content * 1.2);
-				else if(pair.all) pair.all->SetMaximum(max_content * 1.2);
-				break;
-			}
-			spectra_pad->Modified();
-			AddLegendToPad(spectra_pad, legend_entries, "sub-bin");
-		}
-		else
-		{
-			spectra_pad->cd();
-			TH1F* empty = new TH1F(Form("empty_lead_%d_category_%zu", lead_bin, category),
-						category_names[category], 1, 0, 1);
-			empty->SetDirectory(nullptr);
-			empty->SetStats(false);
-			empty->Draw();
-		}
+	truth_canvas->Divide(5, 10);
+	cluster_canvas->Divide(5, 10);
+	truth_pair_canvas->Divide(5, 10);
+	cluster_pair_canvas->Divide(5, 10);
+	
 
-		TPad* ratio_pad = static_cast<TPad*>(canvas->cd(category + 5));
-		ratio_pad->SetLogx();
-	//	ratio_pad->SetGrid();
-		ratio_pad->SetBottomMargin(0.15);
-		bool first_ratio = true;
-		sub_bin_index = 0;
-		std::vector<std::pair<std::string, int>> ratio_entries;
-		for(const auto& [sub_bin, pair] : histograms[category])
-		{
-			if(pair.matched && pair.all)
-			{
-				TH1F* ratio = static_cast<TH1F*>(pair.matched->Clone(
-						Form("lead_%d_category_%zu_ratio_%s", lead_bin, category, sub_bin.c_str())));
-				ratio->SetDirectory(nullptr);
-				ratio->Divide(pair.all);
-				ratio->SetLineColor(sp_cls[sub_bin_index % sp_cls.size()]);
-				ratio->SetLineStyle(1);
-				ratio->SetStats(false);
-				ratio->SetTitle(Form("%s; %s; Matched / All", category_names[category], ratio->GetXaxis()->GetTitle()));
-				ratio->SetMinimum(0.);
-				ratio->Draw(first_ratio ? "hist" : "hist same");
-				ratio_entries.emplace_back(GetSubBinLabel(sub_bin), sp_cls[sub_bin_index % sp_cls.size()]);
-				first_ratio = false;
-			}
-			++sub_bin_index;
-		}
-		if(first_ratio)
-		{
-			ratio_pad->cd();
-			TH1F* empty = new TH1F(Form("empty_ratio_lead_%d_category_%zu", lead_bin, category),
-						Form("%s; E_{T}; Matched / All", category_names[category]), 1, 0, 1);
-			empty->SetDirectory(nullptr);
-			empty->SetStats(false);
-			empty->Draw();
-		}
-		else
-		{
-			AddLegendToPad(ratio_pad, ratio_entries, "sub-bin");
-		}
-	}
-
-	canvas->Print(Form("~/lead_bin_%d_ET_funct.pdf", lead_bin));
+	return;
 }
 
 void DrawResults(TFile* raw_results)
@@ -374,11 +291,11 @@ void DrawResults(TFile* raw_results)
 	SetsPhenixStyle();
 	Skaydis_colors* st = new Skaydis_colors();
 	gStyle->SetPalette(100, st->Lesbian_log_gradient_PT);
+	gVirtualX->GetWindowSize(gClient->GetRoot()->GetId(), x, y, w, h);
 	MakeColorSet(st);
 	CompareSingles(raw_results);
 	ComparePairs(raw_results);
-	for(int lead_bin = 0; lead_bin < 10; ++lead_bin)
-		CompareLeadBin(raw_results, lead_bin);
+	CompareBins(raw_resutls);
 	return;
 }
 #endif
