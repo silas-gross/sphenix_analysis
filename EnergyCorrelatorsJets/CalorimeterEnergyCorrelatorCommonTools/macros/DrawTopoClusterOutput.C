@@ -273,7 +273,7 @@ void CompareLeadBin(TFile* raw_results, int lead_bin)
 		TPad* spectra_pad = static_cast<TPad*>(canvas->cd(category + 1));
 		spectra_pad->SetLogx();
 		spectra_pad->SetLogy();
-		spectra_pad->SetGrid();
+	//	spectra_pad->SetGrid();
 		bool first_spectrum = true;
 		double max_content = 0.;
 		std::size_t sub_bin_index = 0;
@@ -327,7 +327,7 @@ void CompareLeadBin(TFile* raw_results, int lead_bin)
 
 		TPad* ratio_pad = static_cast<TPad*>(canvas->cd(category + 5));
 		ratio_pad->SetLogx();
-		ratio_pad->SetGrid();
+	//	ratio_pad->SetGrid();
 		ratio_pad->SetBottomMargin(0.15);
 		bool first_ratio = true;
 		sub_bin_index = 0;
@@ -380,9 +380,5 @@ void DrawResults(TFile* raw_results)
 	for(int lead_bin = 0; lead_bin < 10; ++lead_bin)
 		CompareLeadBin(raw_results, lead_bin);
 	return;
-}
-void DrawResultsWithBins(TFile* raw_results)
-{
-	//same basic idea but do it over everything in the list of keys
 }
 #endif
