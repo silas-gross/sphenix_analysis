@@ -7,11 +7,13 @@
 #include <TCanvas.h>
 #include <TLegend.h>
 #include <TPad.h>
+#include <TKey.h>
 
 #include <string>
 #include <vector>
 #include <format>
 #include <ctime>
+#include <map>
 
 #include "sPhenixStyle.h"
 #include "sPhenixStyle.C"
@@ -183,6 +185,146 @@ void ComparePairs(TFile* raw_results)
 	MatchToAll(MatchTruthPairs, AllTruthPairs, "Truth_pair");
 	return;	
 }
+
+// Draw the histograms from one jet_dep/lead_bin_N directory on a single page.
+// Each sub-bin is shown in a distinct color; matched histograms use solid
+// lines, all-object histograms use dashed lines, and the lower row shows
+// matched/all ratios.
+void CompareLeadBin(TFile* raw_results, int lead_bin)
+{
+	if(!raw_results) return;
+	TDirectory* dir = raw_results->GetDirectory(Form("jet_dep/lead_bin_%d", lead_bin));
+	if(!dir) return;
+
+	struct HistogramPair
+	{
+		TH1F* matched {nullptr};
+		TH1F* all {nullptr};
+	};
+	using SubBinHistograms = std::map<std::string, HistogramPair>;
+	std::array<SubBinHistograms, 4> histograms {};
+	const std::array<std::string, 8> prefixes {
+		"h_ClET_", "h_ClETAll_", "h_ClPairET_", "h_ClPairETAll_",
+		"h_TrET_", "h_TrETAll_", "h_TrPairET_", "h_TrPairETAll_"
+	};
+	const std::array<int, 8> categories {0, 0, 1, 1, 2, 2, 3, 3};
+	const std::array<bool, 8> is_all {false, true, false, true, false, true, false, true};
+
+	TIter next_key(dir->GetListOfKeys());
+	TKey* key = nullptr;
+	while((key = static_cast<TKey*>(next_key())))
+	{
+		const std::string name = key->GetName();
+		for(std::size_t prefix_index = 0; prefix_index < prefixes.size(); ++prefix_index)
+		{
+			const std::string& prefix = prefixes[prefix_index];
+			if(name.compare(0, prefix.size(), prefix) != 0) continue;
+			TH1F* hist = dynamic_cast<TH1F*>(dir->Get(name.c_str()));
+			if(!hist) break;
+			const std::string sub_bin = name.substr(prefix.size());
+			HistogramPair& pair = histograms[categories[prefix_index]][sub_bin];
+			if(is_all[prefix_index]) pair.all = hist;
+			else pair.matched = hist;
+			break;
+		}
+	}
+
+	const std::array<const char*, 4> category_names {
+		"Cluster E_{T}", "Cluster-pair E_{T}", "Truth E_{T}", "Truth-pair E_{T}"
+	};
+	TCanvas* canvas = new TCanvas(Form("lead_bin_canvas_%d", lead_bin),
+			Form("Lead jet bin %d", lead_bin), 1800, 900);
+	canvas->Divide(4, 2);
+
+	for(std::size_t category = 0; category < histograms.size(); ++category)
+	{
+		TPad* spectra_pad = static_cast<TPad*>(canvas->cd(category + 1));
+		spectra_pad->SetLogx();
+		spectra_pad->SetLogy();
+		spectra_pad->SetGrid();
+		bool first_spectrum = true;
+		double max_content = 0.;
+		std::size_t sub_bin_index = 0;
+		for(const auto& [sub_bin, pair] : histograms[category])
+		{
+			const int color = sp_cls[sub_bin_index % sp_cls.size()];
+			if(pair.matched)
+			{
+				pair.matched->SetLineColor(color);
+				pair.matched->SetLineStyle(1);
+				pair.matched->SetMinimum(0.5);
+				max_content = std::max(max_content, pair.matched->GetMaximum());
+				pair.matched->Draw(first_spectrum ? "hist" : "hist same");
+				first_spectrum = false;
+			}
+			if(pair.all)
+			{
+				pair.all->SetLineColor(color);
+				pair.all->SetLineStyle(2);
+				pair.all->SetMinimum(0.5);
+				max_content = std::max(max_content, pair.all->GetMaximum());
+				pair.all->Draw(first_spectrum ? "hist" : "hist same");
+				first_spectrum = false;
+			}
+			++sub_bin_index;
+		}
+		if(!first_spectrum)
+		{
+			for(const auto& [sub_bin, pair] : histograms[category])
+			{
+				if(pair.matched) pair.matched->SetMaximum(max_content * 1.2);
+				else if(pair.all) pair.all->SetMaximum(max_content * 1.2);
+				break;
+			}
+			spectra_pad->Modified();
+		}
+		else
+		{
+			spectra_pad->cd();
+			TH1F* empty = new TH1F(Form("empty_lead_%d_category_%zu", lead_bin, category),
+					category_names[category], 1, 0, 1);
+			empty->SetDirectory(nullptr);
+			empty->SetStats(false);
+			empty->Draw();
+		}
+
+		TPad* ratio_pad = static_cast<TPad*>(canvas->cd(category + 5));
+		ratio_pad->SetLogx();
+		ratio_pad->SetGrid();
+		ratio_pad->SetBottomMargin(0.15);
+		bool first_ratio = true;
+		sub_bin_index = 0;
+		for(const auto& [sub_bin, pair] : histograms[category])
+		{
+			if(pair.matched && pair.all)
+			{
+				TH1F* ratio = static_cast<TH1F*>(pair.matched->Clone(
+						Form("lead_%d_category_%zu_ratio_%s", lead_bin, category, sub_bin.c_str())));
+				ratio->SetDirectory(nullptr);
+				ratio->Divide(pair.all);
+				ratio->SetLineColor(sp_cls[sub_bin_index % sp_cls.size()]);
+				ratio->SetLineStyle(1);
+				ratio->SetTitle(Form("%s; %s; Matched / All", category_names[category], ratio->GetXaxis()->GetTitle()));
+				ratio->SetMinimum(0.);
+				ratio->Draw(first_ratio ? "hist" : "hist same");
+				first_ratio = false;
+			}
+			++sub_bin_index;
+		}
+		if(first_ratio)
+		{
+			ratio_pad->cd();
+			TH1F* empty = new TH1F(Form("empty_ratio_lead_%d_category_%zu", lead_bin, category),
+					Form("%s; E_{T}; Matched / All", category_names[category]), 1, 0, 1);
+			empty->SetDirectory(nullptr);
+			empty->SetStats(false);
+			empty->Draw();
+		}
+	}
+
+	canvas->Print(Form("~/lead_bin_%d_ET_funct.pdf", lead_bin));
+}
+
 void DrawResults(TFile* raw_results)
 {
 	SetsPhenixStyle();
@@ -191,6 +333,8 @@ void DrawResults(TFile* raw_results)
 	MakeColorSet(st);
 	CompareSingles(raw_results);
 	ComparePairs(raw_results);
+	for(int lead_bin = 0; lead_bin < 10; ++lead_bin)
+		CompareLeadBin(raw_results, lead_bin);
 	return;
 }
 #endif
