@@ -132,7 +132,7 @@ void RunTopoClusterMatching(
 
   se->registerSubsystem(matching);
 
-  se->run(10);
+  se->run(5000);
   se->End();
   se->PrintTimer();
 

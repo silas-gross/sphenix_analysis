@@ -34,7 +34,7 @@ void ProcessGlobalTag()
 	std::size_t Er_pos 	= global_tag.find( "_" );
 	std::size_t sep		= global_tag.find( "-" );
 	std::size_t dR_pos 	= global_tag.rfind( "_" );
-	std::string Er_val 	= global_tag.substr( Er_pos + 2, Er_pos - sep - 2 );
+	std::string Er_val 	= global_tag.substr( Er_pos + 2, sep - Er_pos - 2 );
 	std::string dR_val	= global_tag.substr( dR_pos + 2 );
 	global_name = "E_{Cluster} / E_{Truth} = 0."+Er_val + " , #Delta R_{Truth, Cluster} = 0."+dR_val;
 	return;	
@@ -437,6 +437,8 @@ void DrawResults(TFile* raw_results, std::string tag = "Er_09-dR_01")
 	Skaydis_colors* st = new Skaydis_colors();
 	gStyle->SetPalette(100, st->Lesbian_log_gradient_PT);
 	gVirtualX->GetWindowSize(gClient->GetRoot()->GetId(), x, y, w, h);
+	w=1900;
+	h=1150; //set to my monitor as this stopped acting correctly for some reason--I think I'm having computer issues :/
 	MakeColorSet(st);
 	CompareSingles(raw_results);
 	ComparePairs(raw_results);
