@@ -181,7 +181,7 @@ std::pair<int, int> TopoClusterMatching::findBucket(float lpt, float slpt)
 			break;
 		}
 	//catch the overflow
-	if(l_i == 0 && lpt > lead_bucket.at(2) l_i = lead_bucket.size()-1;
+	if(l_i == 0 && lpt > lead_bucket.at(2)) l_i = lead_bucket.size()-1;
 	if(s_i == 0 && slpt > sub_bucket.at(0).at(2)) s_i = sub_bucket.at(0).size()-1;
 	return std::make_pair(l_i, s_i);
 }
@@ -214,7 +214,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 			CandidateObj* pt = new CandidateObj(p);
 			valid_truth.push_back(pt);
 			h_AllTruth->Fill(pt->Et);
-			h_TrETAll_Div[jet_bin_index.first][jet_bin_index.second]->Fill(pt->Et);
+			h_TruthETAll_Div[jet_bin_index.first][jet_bin_index.second]->Fill(pt->Et);
 			continue;
 		}
 		else continue;
@@ -233,7 +233,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 			CandidateObj* cl = new CandidateObj(iter.second);
 			valid_topo.push_back(cl);
 			h_AllCluster->Fill(cl->Et);
-			h_ClETAll_Div[jet_bin_index.first][jet_bin_index.second]->Fill(cl->Et);
+			h_ClusterETAll_Div[jet_bin_index.first][jet_bin_index.second]->Fill(cl->Et);
 			continue;
 		}
 		else continue;
@@ -251,7 +251,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 			if(matched)
 			{
 				h_MatchedTruth->Fill(t->Et);
-				h_TrET_Div[jet_bin_index.first][jet_bin_index.second]->Fill(t->Et);
+				h_TruthET_Div[jet_bin_index.first][jet_bin_index.second]->Fill(t->Et);
 				if( used_cluster_number.find(j) == used_cluster_number.end())
 				{
 					topo_real.push_back(c);
@@ -259,7 +259,7 @@ void TopoClusterMatching::MatchAllTruthToClusters(PHCompositeNode* topNode)
 				}
 				else used_cluster_number[j]++;
 			      	h_RealCluster->Fill(c->Et);
-				h_ClET_Div[jet_bin_index.first][jet_bin_index.second]->Fill(c->Et);	
+				h_ClusterET_Div[jet_bin_index.first][jet_bin_index.second]->Fill(c->Et);	
 				continue;
 			}
 			else continue;
