@@ -114,7 +114,7 @@ void MakeColorSet(Skaydis_colors* st)
 void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 {
 	if(!Real || !All) return;
-	TCanvas* c1 	= new TCanvas(label.c_str(), label.c_str(), x, y, 0.9*w, 0.9*h);
+	TCanvas* c1 	= new TCanvas(label.c_str(), label.c_str(), x, y, w, h);
 	c1->cd();
 	TPad* p1	= new TPad("p1", "p1", 0, 0, 1, 0.33);
 	TPad* p2	= new TPad("p2", "p2", 0, 0.35, 1,1);
@@ -225,14 +225,14 @@ void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::arra
 		//grab the name for the histogram and find the matching tags
 		std::string real_name = Real.at(i)->GetName();
 		std::string tag_second {};
-		tag_second = real_name.substr(real_name.r_find("_"));
+		tag_second = real_name.substr(real_name.rfind("_"));
 		for(int j=0; j<(int) All.size(); j++)
 		{
 			std::string all_name = All.at(j)->GetName();
-			std::string all_second = all_name.substr(all_name.r_find("_")+1);
+			std::string all_second = all_name.substr(all_name.rfind("_")+1);
 			if(all_second == tag_second)
 			{
-				hists.at(i)=std::make_pair(Real.at(i), All.at(i));
+				hists->at(i)=std::make_pair(Real.at(i), All.at(i));
 				break;
 			}
 		}
@@ -246,7 +246,7 @@ void DrawBinComps(TCanvas* c, int canvas_numb, std::pair<TH1F*, TH1F*> hists)
 	TH1F* Real = hists.first;
 	TH1F* All = hists.second;
 	int offset=0;
-	if(Real->GetName().find("Tr")!= std::string::npos) offset=6;
+	if(((std::string)Real->GetName()).find("Tr")!= std::string::npos) offset=6;
 	if( !Real || !All) return;
 	Real->SetLineColor(sp_cls[0+offset]);
 	All->SetLineColor(sp_cls[(5+offset)%8]);
@@ -261,7 +261,7 @@ void DrawBinComps(TCanvas* c, int canvas_numb, std::pair<TH1F*, TH1F*> hists)
 	real_int = real_int / all_int;
 	TLegend* l1 = new TLegend(0.15, 0.7, 0.3, 0.9);
 	ConfigureTLegend(l1);
-	l1->AddEntry("", std::format("#int Matched / #int All = {:.3e}", real_int), "");
+	l1->AddEntry("", std::format("#int Matched / #int All = {:.3e}", real_int).c_str(), "");
 	l1->Draw();
 	c->cd();
 	return;
@@ -307,7 +307,7 @@ void DrawBinned(TCanvas* c, std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 1
 	c->cd();
 	for(int i = 0; i<(int)subbin_label.size(); i++)
 	{
-		j = 1+(i+1)*12;
+		int j = 1+(i+1)*12;
 		c->cd(j);
 		TLegend* l = new TLegend(0,0,1,1);
 		ConfigureTLegend(l);
@@ -368,33 +368,33 @@ void CompareLeadBin(TFile* raw_results)
 		while( (key=(TKey*)(next_key())))
 		{
 			std::string keyN = key->GetName();
-			TH1F* h = dirs->at(i)->Get(keyN.c_str());
+			TH1F* h = (TH1F*)(dirs.at(i)->Get(keyN.c_str()));
 			if(!h) continue;
 			if(keyN.find("Pair") == std::string::npos)
 			{
 				//this collects all the singles
 				if(keyN.find("ClET") != std::string::npos)
 				{
-					if(keyN.find("All") != std::string::npos) SingleClusterAll->push_back(h);
-					else SingleClusterReal->push_back(h);
+					if(keyN.find("All") != std::string::npos) SingleClusterAll.push_back(h);
+					else SingleClusterReal.push_back(h);
 				}
 				else
 				{
-					if(keyN.find("All") != std::string::npos) SingleTruthAll->push_back(h);
-					else SingleTruthMatch->push_back(h);
+					if(keyN.find("All") != std::string::npos) SingleTruthAll.push_back(h);
+					else SingleTruthMatch.push_back(h);
 				}
 			}
 			else
 			{
 				if(keyN.find("ClET") != std::string::npos)
 				{
-					if(keyN.find("All") != std::string::npos) PairClusterAll->push_back(h);
-					else PairClusterReal->push_back(h);
+					if(keyN.find("All") != std::string::npos) PairClusterAll.push_back(h);
+					else PairClusterReal.push_back(h);
 				}
 				else
 				{
-					if(keyN.find("All") != std::string::npos) PairTruthAll->push_back(h);
-					else PairTruthMatch->push_back(h);
+					if(keyN.find("All") != std::string::npos) PairTruthAll.push_back(h);
+					else PairTruthMatch.push_back(h);
 				}
 			}
 		}
@@ -403,19 +403,19 @@ void CompareLeadBin(TFile* raw_results)
 		std::array<std::pair<TH1F*, TH1F*>,5> clp 	{};
 		std::array<std::pair<TH1F*, TH1F*>,5> tp	{};
 		findPairedHistos(SingleClusterReal, SingleClusterAll, &cls);
-		findPairedHistos(SingleTruthReal, SingleTruthAll, &ts);
+		findPairedHistos(SingleTruthMatch, SingleTruthAll, &ts);
 		findPairedHistos(PairClusterReal, PairClusterAll, &clp);
-		findPairedHistos(PairTruthReal, PairTruthAll, &tp);
+		findPairedHistos(PairTruthMatch, PairTruthAll, &tp);
 		cluster_histograms.at(i)=cls;
 		truth_histograms.at(i)=ts;
 		cluster_pair_histograms.at(i)=clp;
 		truth_pair_histograms.at(i)=tp;
 
 	}
-	TCanvas* truth_canvas = new TCanvas("Truth_Singles", "Truth Singles", 0, 0, 0.9*w, 0.9*h);
-	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, 0.9*w, 0.9*h);
-	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, 0.9*w, 0.9*h);
-	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, 0.9*w, 0.9*h);
+	TCanvas* truth_canvas = new TCanvas("Truth_Singles", "Truth Singles", 0, 0, w, h);
+	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, w, h);
+	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, w, h);
+	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, w, h);
 
 	truth_canvas->Divide(6, 11);
 	cluster_canvas->Divide(6, 11);
@@ -440,7 +440,7 @@ void DrawResults(TFile* raw_results, std::string tag = "Er_09-dR_01")
 	MakeColorSet(st);
 	CompareSingles(raw_results);
 	ComparePairs(raw_results);
-	CompareBins(raw_resutls);
+	CompareLeadBin(raw_results);
 	return;
 }
 #endif
