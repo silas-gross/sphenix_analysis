@@ -220,33 +220,118 @@ static void AddLegendToPad(TPad* pad, const std::vector<std::pair<std::string, i
 	}
 	leg->Draw();
 }
-
+void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::array<std::pair<TH1F*, TH1F*>, 5>* hists)
+{
+	for(int i= 0; i<(int) Real.size(); i++)
+	{
+		//grab the name for the histogram and find the matching tags
+		std::string real_name = Real.at(i)->GetName();
+		std::string tag_second {};
+		tag_second = real_name.substr(real_name.r_find("_"));
+		for(int j=0; j<(int) All.size(); j++)
+		{
+			std::string all_name = All.at(j)->GetName();
+			std::string all_second = all_name.substr(all_name.r_find("_"));
+			if(all_second == tag_second)
+			{
+				hists.at(i)=std::make_pair(Real.at(i), All.at(i));
+				break;
+			}
+		}
+	}
+	return;
+}
 // Draw the histograms from one jet_dep/lead_bin_N directory on a single page.
 // Each sub-bin is shown in a distinct color; matched histograms use solid
 // lines, all-object histograms use dashed lines, and the lower row shows
 // matched/all ratios.
 void CompareLeadBin(TFile* raw_results)
 {
+	std::array<TDirectory*, 10> dirs {};
 	if(!raw_results) return;
-	TDirectory* dir = raw_results->GetDirectory(Form("jet_dep/lead_bin_%d", lead_bin));
-	if(!dir) return;
+	for(int i=0; i<(int)dirs.size(); i++)
+	{
+		TDirectory* dir = raw_results->GetDirectory(Form("jet_dep/lead_bin_%d", i));
+		if(!dir){
+			dirs.at(i)=nullptr;
+		       	continue;
+		}
+		dirs.at(i)=dir;
+	}
+	std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> cluster_histograms {}; 
+	std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> truth_histograms {}; 
+	std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> cluster_pair_histograms {}; 
+	std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> truth_pair_histograms {}; 
+	std::array<std::vector<std::string>, 10> keys {};
+	for(int i=0; i<(int)dirs.size(); i++)
+	{
+		std::vector<std::string> dir_key {};
+		if(!dirs.at(i)){
+			keys.at(i)=dir_key;
+			continue;
+		}
+		TIter next_key(dirs.at(i)->GetListOfKeys());
+		TKey* key {nullptr};
+		std::vector<TH1F*> SingleClusterReal 	{};
+		std::vector<TH1F*> SingleClusterAll  	{};
+		std::vector<TH1F*> SingleTruthMatch  	{};
+		std::vector<TH1F*> SingleTruthAll	{};
+		std::vector<TH1F*> PairClusterReal 	{};
+		std::vector<TH1F*> PairClusterAll  	{};
+		std::vector<TH1F*> PairTruthMatch  	{};
+		std::vector<TH1F*> PairTruthAll		{};
+
+		while( (key=(TKey*)(next_key())))
+		{
+			std::string keyN = key->GetName();
+			TH1F* h = dirs->at(i)->Get(keyN.c_str());
+			if(!h) continue;
+			if(keyN.find("Pair") == std::string::npos)
+			{
+				//this collects all the singles
+				if(keyN.find("ClET") != std::string::npos)
+				{
+					if(keyN.find("All") != std::string::npos) SingleClusterAll->push_back(h);
+					else SingleClusterReal->push_back(h);
+				}
+				else
+				{
+					if(keyN.find("All") != std::string::npos) SingleTruthAll->push_back(h);
+					else SingleTruthMatch->push_back(h);
+				}
+			}
+			else
+			{
+				if(keyN.find("ClET") != std::string::npos)
+				{
+					if(keyN.find("All") != std::string::npos) PairClusterAll->push_back(h);
+					else PairClusterReal->push_back(h);
+				}
+				else
+				{
+					if(keyN.find("All") != std::string::npos) PairTruthAll->push_back(h);
+					else PairTruthMatch->push_back(h);
+				}
+			}
+		}
+		std::array<std::pair<TH1F*, TH1F*>,5> cls 	{};
+		std::array<std::pair<TH1F*, TH1F*>,5> ts 	{};
+		std::array<std::pair<TH1F*, TH1F*>,5> clp 	{};
+		std::array<std::pair<TH1F*, TH1F*>,5> tp	{};
+		findPairedHistos(SingleClusterReal, SingleClusterAll, &cls);
+		findPairedHistos(SingleTruthReal, SingleTruthAll, &ts);
+		findPairedHistos(PairClusterReal, PairClusterAll, &clp);
+		findPairedHistos(PairTruthReal, PairTruthAll, &tp);
+		cluster_histograms.at(i)=cls;
+		truth_histograms.at(i)=ts;
+		cluster_pair_histograms.at(i)=clp;
+		truth_pair_histograms.at(i)=tp;
+
+	}
 	//I need to rethink the way this is structured and just do it as 4 pages of a grid
 	/*
 	struct HistogramPair
 	{
-		TH1F* matched {nullptr};
-		TH1F* all {nullptr};
-	};
-	using SubBinHistograms = std::map<std::string, HistogramPair>;
-	std::array<SubBinHistograms, 4> histograms {};
-	const std::array<std::string, 8> prefixes {
-		"h_ClET_", "h_ClETAll_", "h_ClPairET_", "h_ClPairETAll_",
-		"h_TrET_", "h_TrETAll_", "h_TrPairET_", "h_TrPairETAll_"
-	};
-	const std::array<int, 8> categories {0, 0, 1, 1, 2, 2, 3, 3};
-	const std::array<bool, 8> is_all {false, true, false, true, false, true, false, true};
-
-	std::vector<std::string> keys;
 	TIter next_key(dir->GetListOfKeys());
 	TKey* key = nullptr;
 	while((key = static_cast<TKey*>(next_key())))
