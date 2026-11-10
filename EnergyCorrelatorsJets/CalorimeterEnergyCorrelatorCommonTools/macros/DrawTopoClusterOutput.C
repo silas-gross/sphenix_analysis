@@ -26,7 +26,19 @@ std::array<Int_t, 8> sp_cls {};
 Int_t x {0}, y {0};
 UInt_t w = 0;
 UInt_t h = 0;
+std::string global_tag {"Er_09-dR_01"};
+std::string global_name {};
 
+void ProcessGlobalTag()
+{
+	std::size_t Er_pos 	= global_tag.find( "_" );
+	std::size_t sep		= global_tag.find( "-" );
+	std::size_t dR_pos 	= global_tag.rfind( "_" );
+	std::string Er_val 	= global_tag.substr( Er_pos + 2, Er_pos - sep - 2 );
+	std::string dR_val	= global_tag.substr( dR_pos + 2 );
+	global_name = "E_{Cluster} / E_{Truth} = 0."+Er_val + " , #Delta R_{Truth, Cluster} = 0."+dR_val;
+	return;	
+}	
 void ConfigureTLegend(TLegend* l, bool header=false)
 {
 	l->SetFillColor(0);
@@ -41,6 +53,7 @@ void ConfigureTLegend(TLegend* l, bool header=false)
 		time_t timestamp;
 		time(&timestamp);
 		l->AddEntry("", ctime(&timestamp), "");
+		l->AddEntry("", global_name.c_str(), "");
 	}
 	return;
 }
@@ -107,10 +120,12 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	TPad* p2	= new TPad("p2", "p2", 0, 0.35, 1,1);
 	p2->cd();
 
-	Real->SetLineColor(sp_cls[5]);
-	All->SetLineColor(sp_cls[6]);
-	Real->SetMarkerColor(sp_cls[5]);
-	All->SetMarkerColor(sp_cls[6]);
+	int offset = 0; 
+	if(label.find("Tr") != std::string::npos) offset=6;
+	Real->SetLineColor(sp_cls[0+offset]);
+	All->SetLineColor(sp_cls[(5+offset)%8]);
+	Real->SetMarkerColor(sp_cls[0+offset]);
+	All->SetMarkerColor(sp_cls[(5+offset)%8]);
 	
 	All->Draw("e1");
 	All->GetYaxis()->SetRangeUser(Real->GetMean()*0.5, All->GetMaximum()*1.25);
@@ -162,11 +177,11 @@ void MatchToAll(TH1F* Real, TH1F* All, std::string label)
 	l1->AddEntry(ratio, Form("Real / All %s", lb.c_str()));
 	l1->AddEntry("", "", "");
 	float integral_rat = (float) Real->Integral() / (float) All->Integral();
-	l1->AddEntry("", std::format("#int Real / #int All = {:.3f}", integral_rat).c_str(), "");
+	l1->AddEntry("", std::format("#int Real / #int All = {:.3e}", integral_rat).c_str(), "");
 	l1->Draw();
 	
 	c1->cd();
-	c1->Print(Form("~/%s_ET_funct.pdf", label.c_str()));
+	c1->Print(Form("~/%s_%s_ET_funct.pdf", global_tag.c_str(), label.c_str()));
 
 	return;
 
@@ -196,30 +211,13 @@ void ComparePairs(TFile* raw_results)
 	return;	
 }
 
-static std::string GetSubBinLabel(const std::string& name)
+std::string DropUnderscore(std::string name)
 {
 	std::string label = name;
 	std::replace(label.begin(), label.end(), '_', ' ');
 	return label;
 }
 
-static void AddLegendToPad(TPad* pad, const std::vector<std::pair<std::string, int>>& entries, const std::string& title)
-{
-	if(!pad) return;
-	pad->cd();
-	TLegend* leg = new TLegend(0.15, 0.7, 0.45, 0.9);
-	leg->SetFillStyle(0);
-	leg->SetBorderSize(0);
-	leg->SetTextSize(0.035f);
-	leg->SetHeader(title.c_str());
-	for(const auto& [label, color] : entries)
-	{
-		TLine line;
-		line.SetLineColor(color);
-		leg->AddEntry((TObject*)nullptr, label.c_str(), "l");
-	}
-	leg->Draw();
-}
 void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::array<std::pair<TH1F*, TH1F*>, 5>* hists)
 {
 	for(int i= 0; i<(int) Real.size(); i++)
@@ -231,7 +229,7 @@ void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::arra
 		for(int j=0; j<(int) All.size(); j++)
 		{
 			std::string all_name = All.at(j)->GetName();
-			std::string all_second = all_name.substr(all_name.r_find("_"));
+			std::string all_second = all_name.substr(all_name.r_find("_")+1);
 			if(all_second == tag_second)
 			{
 				hists.at(i)=std::make_pair(Real.at(i), All.at(i));
@@ -241,10 +239,96 @@ void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::arra
 	}
 	return;
 }
-// Draw the histograms from one jet_dep/lead_bin_N directory on a single page.
-// Each sub-bin is shown in a distinct color; matched histograms use solid
-// lines, all-object histograms use dashed lines, and the lower row shows
-// matched/all ratios.
+void DrawBinComps(TCanvas* c, int canvas_numb, std::pair<TH1F*, TH1F*> hists)
+{
+	c->cd();
+	c->cd(canvas_numb);
+	TH1F* Real = hists.first;
+	TH1F* All = hists.second;
+	int offset=0;
+	if(Real->GetName().find("Tr")!= std::string::npos) offset=6;
+	if( !Real || !All) return;
+	Real->SetLineColor(sp_cls[0+offset]);
+	All->SetLineColor(sp_cls[(5+offset)%8]);
+	Real->SetMarkerColor(sp_cls[0+offset]);
+	All->SetMarkerColor(sp_cls[(5+offset)%8]);
+	
+	All->Draw("e1");
+	All->GetYaxis()->SetRangeUser(Real->GetMean()*0.5, All->GetMaximum()*1.25);
+	Real->Draw("e1 same");
+	float all_int = All->Integral();
+	float real_int = Real->Integral();
+	real_int = real_int / all_int;
+	TLegend* l1 = new TLegend(0.15, 0.7, 0.3, 0.9);
+	ConfigureTLegend(l1);
+	l1->AddEntry("", std::format("#int Matched / #int All = {:.3e}", real_int), "");
+	l1->Draw();
+	c->cd();
+	return;
+}
+void DrawBinned(TCanvas* c, std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> histos, std::string var_tag)
+{
+	std::array<std::string, 10> bin_label {};
+	std::array<std::string, 5> subbin_label {}; 
+	for(int i = 0; i<(int)histos.size(); i++)
+	{
+		for(int j=0; j<(int)histos.at(i).size(); j++)
+		{
+			if(!histos[i][j].first) continue;
+			else{
+				std::string hTitle = histos[i][j].first->GetTitle();
+				std::size_t first_comma = hTitle.find(",");
+				std::size_t second_comma = hTitle.find(",", first_comma);
+				std::string tag_second = hTitle.substr(second_comma+1);
+				if(subbin_label[j].find("p") == std::string::npos)
+					subbin_label[j]=tag_second;
+				std::string tag_first = hTitle.substr(first_comma, second_comma - first_comma - 1);
+				if(bin_label[i].find("p") == std::string::npos) 
+					bin_label[i]=tag_first;
+			}
+		}
+	}
+	c->cd();
+	c->cd(1);
+	TLegend* l1= new TLegend(0,0,1,1);
+	ConfigureTLegend(l1, true);
+	l1->SetTextSize(0.04f);
+	l1->AddEntry("", DropUnderscore(var_tag).c_str(), "");
+	c->cd();
+	for(int i = 2; i<(int)bin_label.size() + 2; i++)
+	{
+		c->cd(i);
+		TLegend* l = new TLegend(0,0,1,1);
+		ConfigureTLegend(l);
+		l->SetTextSize(0.05f);
+		l->AddEntry("", bin_label[i-2].c_str(), "");
+		l->Draw();
+	}
+	c->cd();
+	for(int i = 0; i<(int)subbin_label.size(); i++)
+	{
+		j = 1+(i+1)*12;
+		c->cd(j);
+		TLegend* l = new TLegend(0,0,1,1);
+		ConfigureTLegend(l);
+		l->SetTextSize(0.05f);
+		l->AddEntry("", subbin_label[i].c_str(), "");
+		l->Draw();
+	}
+	c->cd();
+	for(int i=0; i<(int)histos.size(); i++)
+	{
+		for(int j=0; j<(int)histos[i].size(); j++)
+		{
+			int canvas_column = i+2;
+			int canvas_row = j+1;
+			int canvas_number = canvas_row*11 + canvas_column;
+			DrawBinComps(c, canvas_number, histos[i][j]);
+		}
+	}
+	c->Print(Form("~/%s_%s_binned.pdf", global_tag.c_str(), var_tag.c_str()));
+	return;
+}
 void CompareLeadBin(TFile* raw_results)
 {
 	std::array<TDirectory*, 10> dirs {};
@@ -328,52 +412,28 @@ void CompareLeadBin(TFile* raw_results)
 		truth_pair_histograms.at(i)=tp;
 
 	}
-	//I need to rethink the way this is structured and just do it as 4 pages of a grid
-	/*
-	struct HistogramPair
-	{
-	TIter next_key(dir->GetListOfKeys());
-	TKey* key = nullptr;
-	while((key = static_cast<TKey*>(next_key())))
-		keys.push_back(key->GetName());
-	std::sort(keys.begin(), keys.end());
-
-	for(const auto& key_name : keys)
-	{
-		for(std::size_t prefix_index = 0; prefix_index < prefixes.size(); ++prefix_index)
-		{
-			const std::string& prefix = prefixes[prefix_index];
-			if(key_name.compare(0, prefix.size(), prefix) != 0) continue;
-			TH1F* hist = dynamic_cast<TH1F*>(dir->Get(key_name.c_str()));
-			if(!hist) break;
-			const std::string sub_bin = key_name.substr(prefix.size());
-			HistogramPair& pair = histograms[categories[prefix_index]][sub_bin];
-			if(is_all[prefix_index]) pair.all = hist;
-			else pair.matched = hist;
-			break;
-		}
-	}
-
-	const std::array<const char*, 4> category_names {
-		"Cluster E_{T}", "Cluster-pair E_{T}", "Truth E_{T}", "Truth-pair E_{T}"
-	};*/
 	TCanvas* truth_canvas = new TCanvas("Truth_Singles", "Truth Singles", 0, 0, 0.9*w, 0.9*h);
 	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, 0.9*w, 0.9*h);
 	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, 0.9*w, 0.9*h);
 	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, 0.9*w, 0.9*h);
 
-	truth_canvas->Divide(5, 10);
-	cluster_canvas->Divide(5, 10);
-	truth_pair_canvas->Divide(5, 10);
-	cluster_pair_canvas->Divide(5, 10);
-	
+	truth_canvas->Divide(6, 11);
+	cluster_canvas->Divide(6, 11);
+	truth_pair_canvas->Divide(6, 11);
+	cluster_pair_canvas->Divide(6, 11);
+	DrawBinned(truth_canvas, truth_histograms, "Single_Truth");
+	DrawBinned(cluster_canvas, cluster_histograms, "Single_Cluster");
+	DrawBinned(truth_pair_canvas, truth_pair_histograms, "Pair_Truth");
+	DrawBinned(cluster_pair_canvas, cluster_pair_histograms, "Pair_Cluster");
 
 	return;
 }
 
-void DrawResults(TFile* raw_results)
+void DrawResults(TFile* raw_results, std::string tag = "Er_09-dR_01")
 {
 	SetsPhenixStyle();
+	global_tag = tag;
+	ProcessGlobalTag();
 	Skaydis_colors* st = new Skaydis_colors();
 	gStyle->SetPalette(100, st->Lesbian_log_gradient_PT);
 	gVirtualX->GetWindowSize(gClient->GetRoot()->GetId(), x, y, w, h);
