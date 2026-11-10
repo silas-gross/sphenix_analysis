@@ -242,12 +242,12 @@ void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::arra
 void DrawBinComps(TCanvas* c, int canvas_numb, std::pair<TH1F*, TH1F*> hists)
 {
 	c->cd();
-	c->cd(canvas_numb);
+	TPad* p = (TPad*)(c->cd(canvas_numb));
 	TH1F* Real = hists.first;
 	TH1F* All = hists.second;
+	if( !Real || !All) return;
 	int offset=0;
 	if(((std::string)Real->GetName()).find("Tr")!= std::string::npos) offset=6;
-	if( !Real || !All) return;
 	Real->SetLineColor(sp_cls[0+offset]);
 	All->SetLineColor(sp_cls[(5+offset)%8]);
 	Real->SetMarkerColor(sp_cls[0+offset]);
@@ -256,6 +256,8 @@ void DrawBinComps(TCanvas* c, int canvas_numb, std::pair<TH1F*, TH1F*> hists)
 	All->Draw("e1");
 	All->GetYaxis()->SetRangeUser(Real->GetMean()*0.5, All->GetMaximum()*1.25);
 	Real->Draw("e1 same");
+	p->SetLogx();
+	p->SetLogy();
 	float all_int = All->Integral();
 	float real_int = Real->Integral();
 	real_int = real_int / all_int;
@@ -264,6 +266,7 @@ void DrawBinComps(TCanvas* c, int canvas_numb, std::pair<TH1F*, TH1F*> hists)
 	l1->AddEntry("", std::format("#int Matched / #int All = {:.3e}", real_int).c_str(), "");
 	l1->Draw();
 	c->cd();
+	p->Draw();
 	return;
 }
 void DrawBinned(TCanvas* c, std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> histos, std::string var_tag)
@@ -413,18 +416,18 @@ void CompareLeadBin(TFile* raw_results)
 
 	}
 	TCanvas* truth_canvas = new TCanvas("Truth_Singles", "Truth Singles", 0, 0, w, h);
-	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, w, h);
-	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, w, h);
-	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, w, h);
+//	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, w, h);
+//	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, w, h);
+//	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, w, h);
 
 	truth_canvas->Divide(6, 11);
-	cluster_canvas->Divide(6, 11);
-	truth_pair_canvas->Divide(6, 11);
-	cluster_pair_canvas->Divide(6, 11);
+//	cluster_canvas->Divide(6, 11);
+//	truth_pair_canvas->Divide(6, 11);
+//	cluster_pair_canvas->Divide(6, 11);
 	DrawBinned(truth_canvas, truth_histograms, "Single_Truth");
-	DrawBinned(cluster_canvas, cluster_histograms, "Single_Cluster");
-	DrawBinned(truth_pair_canvas, truth_pair_histograms, "Pair_Truth");
-	DrawBinned(cluster_pair_canvas, cluster_pair_histograms, "Pair_Cluster");
+//	DrawBinned(cluster_canvas, cluster_histograms, "Single_Cluster");
+//	DrawBinned(truth_pair_canvas, truth_pair_histograms, "Pair_Truth");
+//	DrawBinned(cluster_pair_canvas, cluster_pair_histograms, "Pair_Cluster");
 
 	return;
 }
@@ -440,8 +443,8 @@ void DrawResults(TFile* raw_results, std::string tag = "Er_09-dR_01")
 	w=1900;
 	h=1150; //set to my monitor as this stopped acting correctly for some reason--I think I'm having computer issues :/
 	MakeColorSet(st);
-	CompareSingles(raw_results);
-	ComparePairs(raw_results);
+	//CompareSingles(raw_results);
+	//ComparePairs(raw_results);
 	CompareLeadBin(raw_results);
 	return;
 }
