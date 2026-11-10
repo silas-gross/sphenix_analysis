@@ -220,12 +220,14 @@ std::string DropUnderscore(std::string name)
 
 void findPairedHistos(std::vector<TH1F*> Real, std::vector<TH1F*> All, std::array<std::pair<TH1F*, TH1F*>, 5>* hists)
 {
+	std::cout<<"Real vector size " <<Real.size() <<std::endl;
+	std::cout<<"All vector size " <<All.size() <<std::endl;
 	for(int i= 0; i<(int) Real.size(); i++)
 	{
 		//grab the name for the histogram and find the matching tags
 		std::string real_name = Real.at(i)->GetName();
 		std::string tag_second {};
-		tag_second = real_name.substr(real_name.rfind("_"));
+		tag_second = real_name.substr(real_name.rfind("_")+1);
 		for(int j=0; j<(int) All.size(); j++)
 		{
 			std::string all_name = All.at(j)->GetName();
@@ -281,11 +283,11 @@ void DrawBinned(TCanvas* c, std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 1
 			else{
 				std::string hTitle = histos[i][j].first->GetTitle();
 				std::size_t first_comma = hTitle.find(",");
-				std::size_t second_comma = hTitle.find(",", first_comma);
+				std::size_t second_comma = hTitle.find(",", first_comma+1);
 				std::string tag_second = hTitle.substr(second_comma+1);
 				if(subbin_label[j].find("p") == std::string::npos)
 					subbin_label[j]=tag_second;
-				std::string tag_first = hTitle.substr(first_comma, second_comma - first_comma - 1);
+				std::string tag_first = hTitle.substr(first_comma+1, second_comma - first_comma - 1);
 				if(bin_label[i].find("p") == std::string::npos) 
 					bin_label[i]=tag_first;
 			}
@@ -295,15 +297,16 @@ void DrawBinned(TCanvas* c, std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 1
 	c->cd(1);
 	TLegend* l1= new TLegend(0,0,1,1);
 	ConfigureTLegend(l1, true);
-	l1->SetTextSize(0.04f);
+	l1->SetTextSize(0.08f);
 	l1->AddEntry("", DropUnderscore(var_tag).c_str(), "");
+	l1->Draw();
 	c->cd();
 	for(int i = 2; i<(int)bin_label.size() + 2; i++)
 	{
 		c->cd(i);
 		TLegend* l = new TLegend(0,0,1,1);
 		ConfigureTLegend(l);
-		l->SetTextSize(0.05f);
+		l->SetTextSize(0.1f);
 		l->AddEntry("", bin_label[i-2].c_str(), "");
 		l->Draw();
 	}
@@ -314,7 +317,7 @@ void DrawBinned(TCanvas* c, std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 1
 		c->cd(j);
 		TLegend* l = new TLegend(0,0,1,1);
 		ConfigureTLegend(l);
-		l->SetTextSize(0.05f);
+		l->SetTextSize(0.1f);
 		l->AddEntry("", subbin_label[i].c_str(), "");
 		l->Draw();
 	}
@@ -350,6 +353,7 @@ void CompareLeadBin(TFile* raw_results)
 	std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> cluster_pair_histograms {}; 
 	std::array<std::array<std::pair<TH1F*, TH1F*>, 5>, 10> truth_pair_histograms {}; 
 	std::array<std::vector<std::string>, 10> keys {};
+	int j=0;
 	for(int i=0; i<(int)dirs.size(); i++)
 	{
 		std::vector<std::string> dir_key {};
@@ -376,7 +380,7 @@ void CompareLeadBin(TFile* raw_results)
 			if(keyN.find("Pair") == std::string::npos)
 			{
 				//this collects all the singles
-				if(keyN.find("ClET") != std::string::npos)
+				if(keyN.find("Cl") != std::string::npos)
 				{
 					if(keyN.find("All") != std::string::npos) SingleClusterAll.push_back(h);
 					else SingleClusterReal.push_back(h);
@@ -384,12 +388,14 @@ void CompareLeadBin(TFile* raw_results)
 				else
 				{
 					if(keyN.find("All") != std::string::npos) SingleTruthAll.push_back(h);
-					else SingleTruthMatch.push_back(h);
+					else{
+					       	SingleTruthMatch.push_back(h);
+					}
 				}
 			}
 			else
 			{
-				if(keyN.find("ClET") != std::string::npos)
+				if(keyN.find("Cl") != std::string::npos)
 				{
 					if(keyN.find("All") != std::string::npos) PairClusterAll.push_back(h);
 					else PairClusterReal.push_back(h);
@@ -415,19 +421,20 @@ void CompareLeadBin(TFile* raw_results)
 		truth_pair_histograms.at(i)=tp;
 
 	}
-	TCanvas* truth_canvas = new TCanvas("Truth_Singles", "Truth Singles", 0, 0, w, h);
-//	TCanvas* cluster_canvas = new TCanvas("Clusters_Singles", "Cluster Singles", 0, 0, w, h);
-//	TCanvas* truth_pair_canvas = new TCanvas("Truth_Pair", "Truth Pair", 0, 0, w, h);
-//	TCanvas* cluster_pair_canvas = new TCanvas("Clusters_Pair", "Cluster Pair", 0, 0, w, h);
+	TCanvas* truth_canvas = new TCanvas("Bin_Truth_Singles", "Bin Truth Singles", 0, 0, w, h);
+	TCanvas* cluster_canvas = new TCanvas("Bin_Clusters_Singles", "Bin Cluster Singles", 0, 0, w, h);
+	TCanvas* truth_pair_canvas = new TCanvas("Bin_Truth_Pair", "Bin Truth Pair", 0, 0, w, h);
+	TCanvas* cluster_pair_canvas = new TCanvas("Bin_Clusters_Pair", "Bin Cluster Pair", 0, 0, w, h);
 
-	truth_canvas->Divide(6, 11);
-//	cluster_canvas->Divide(6, 11);
-//	truth_pair_canvas->Divide(6, 11);
-//	cluster_pair_canvas->Divide(6, 11);
+	truth_canvas->Divide(11, 6, 0.005, 0.005);
+	std::cout<<"The truth histograms number: " <<j <<std::endl;
+	cluster_canvas->Divide(11, 6, 0.005, 0.005);
+	truth_pair_canvas->Divide(11, 6, 0.005, 0.005);
+	cluster_pair_canvas->Divide(11, 6, 0.005, 0.005);
 	DrawBinned(truth_canvas, truth_histograms, "Single_Truth");
-//	DrawBinned(cluster_canvas, cluster_histograms, "Single_Cluster");
-//	DrawBinned(truth_pair_canvas, truth_pair_histograms, "Pair_Truth");
-//	DrawBinned(cluster_pair_canvas, cluster_pair_histograms, "Pair_Cluster");
+	DrawBinned(cluster_canvas, cluster_histograms, "Single_Cluster");
+	DrawBinned(truth_pair_canvas, truth_pair_histograms, "Pair_Truth");
+	DrawBinned(cluster_pair_canvas, cluster_pair_histograms, "Pair_Cluster");
 
 	return;
 }

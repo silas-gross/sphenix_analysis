@@ -146,7 +146,7 @@ class TopoClusterMatching : public SubsysReco
 	int n_good	{0};
 	float minpt	{0.};
 	float Q2	{-999.};
-	float eratmin	{0.9};
+	float eratmin	{0.3};
 	float dRmax	{0.1};
 	
 	std::string jet_node_name {"AntiKt_Truth_r04"};
@@ -189,6 +189,7 @@ class TopoClusterMatching : public SubsysReco
 	std::array< std::array<TH1F*, 5>, 10> h_TruthETAll_Div{};  
 	
 	TH1F* h_MatchedTruth {nullptr};
+	TH1F* h_AllTruth {nullptr};
 	TH1F* h_RealCluster {nullptr};
 	TH1F* h_AllCluster {nullptr};
 
